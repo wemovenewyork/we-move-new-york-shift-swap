@@ -1,3 +1,5 @@
+"use client";
+import Link from "next/link";
 import { C } from "@/constants/colors";
 
 export default function Footer() {
@@ -19,9 +21,8 @@ export default function Footer() {
         <div style={{ borderTop: "1px solid " + C.bd, paddingTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <div style={{ fontSize: 10, color: "rgba(255,255,255,.35)" }}>© {new Date().getFullYear()} We Move New York. All rights reserved.</div>
           <div style={{ display: "flex", gap: 16 }}>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,.35)" }}>Privacy Policy</span>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,.35)" }}>Terms of Use</span>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,.35)" }}>Contact</span>
+            <Link href="/privacy" style={{ fontSize: 10, color: "rgba(255,255,255,.45)", textDecoration: "none" }}>Privacy Policy</Link>
+            <Link href="/terms" style={{ fontSize: 10, color: "rgba(255,255,255,.45)", textDecoration: "none" }}>Terms of Use</Link>
           </div>
         </div>
       </div>
