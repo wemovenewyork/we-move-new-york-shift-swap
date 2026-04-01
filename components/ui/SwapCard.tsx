@@ -65,14 +65,54 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onIn
       </div>
       <p style={{ fontSize: 13, color: "rgba(255,255,255,.6)", lineHeight: 1.5, marginTop: 6 }}>{s.details}</p>
 
-      {s.category === "work" && (s.run || s.startTime) && (
-        <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-          {[{ l: "Run", v: s.run, r: true }, { l: "Route", v: s.route, r: true }, { l: "Start", v: s.startTime }, { l: "Clear", v: s.clearTime }, { l: "Swing Start", v: s.swingStart }, { l: "Swing End", v: s.swingEnd }].filter(t => t.v).map(t => (
-            <div key={t.l} style={{ padding: "3px 8px", borderRadius: 6, background: C.blue + "12", border: `1px solid ${C.blue}22` }}>
-              <div style={{ fontSize: 8, color: C.blue, letterSpacing: 1, textTransform: "uppercase" }}>{t.l}</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.white }}>{t.r ? t.v : ft(t.v ?? undefined)}</div>
+      {s.category === "work" && (
+        <div style={{ marginTop: 10, borderRadius: 12, background: C.blue + "0d", border: `1px solid ${C.blue}22`, padding: "10px 12px" }}>
+          {/* Run + Route */}
+          {(s.run || s.route) && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              {s.run && (
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 9, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>Run</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: C.white }}>{s.run}</div>
+                </div>
+              )}
+              {s.route && (
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 9, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>Route</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: C.white }}>{s.route}</div>
+                </div>
+              )}
             </div>
-          ))}
+          )}
+          {/* Start → Clear */}
+          {(s.startTime || s.clearTime) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: s.swingStart ? 8 : 0 }}>
+              <div style={{ flex: 1, padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,.04)", border: `1px solid ${C.blue}22` }}>
+                <div style={{ fontSize: 9, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>Start</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: C.white }}>{ft(s.startTime) || "—"}</div>
+              </div>
+              <Icon n="arr" s={14} c={C.m} />
+              <div style={{ flex: 1, padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,.04)", border: `1px solid ${C.blue}22` }}>
+                <div style={{ fontSize: 9, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>Clear</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: C.white }}>{ft(s.clearTime) || "—"}</div>
+              </div>
+            </div>
+          )}
+          {/* Swing times (only if present) */}
+          {(s.swingStart || s.swingEnd) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 8, borderTop: `1px solid ${C.blue}18` }}>
+              <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1, flexShrink: 0 }}>Swing</div>
+              <div style={{ flex: 1, padding: "4px 8px", borderRadius: 6, background: "rgba(255,255,255,.03)", border: `1px solid ${C.blue}18`, textAlign: "center" }}>
+                <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1, marginBottom: 1 }}>In</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.8)" }}>{ft(s.swingStart) || "—"}</div>
+              </div>
+              <Icon n="arr" s={12} c={C.m} />
+              <div style={{ flex: 1, padding: "4px 8px", borderRadius: 6, background: "rgba(255,255,255,.03)", border: `1px solid ${C.blue}18`, textAlign: "center" }}>
+                <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1, marginBottom: 1 }}>Out</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.8)" }}>{ft(s.swingEnd) || "—"}</div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -98,14 +98,44 @@ export default function SwapDetailPage() {
               <Icon n="tmr" s={16} c={C.blue} />
               <span style={{ fontSize: 11, fontWeight: 700, color: C.blue, textTransform: "uppercase", letterSpacing: 2 }}>Shift Details</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {[{ l: "Run Number", v: swap.run || "—" }, { l: "Route", v: swap.route || "—" }, { l: "Start Time", v: ft(swap.startTime) }, { l: "Clear Time", v: ft(swap.clearTime) }, { l: "Swing Start", v: ft(swap.swingStart) }, { l: "Swing End", v: ft(swap.swingEnd) }].map(t => (
-                <div key={t.l} style={{ padding: 12, borderRadius: 12, background: C.blue + "0a", border: "1px solid " + C.blue + "18" }}>
+            {/* Run + Route */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              {[{ l: "Run Number", v: swap.run || "—" }, { l: "Route", v: swap.route || "—" }].map(t => (
+                <div key={t.l} style={{ padding: 14, borderRadius: 12, background: C.blue + "0a", border: "1px solid " + C.blue + "18" }}>
                   <div style={{ fontSize: 10, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>{t.l}</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: C.white }}>{t.v}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: C.white }}>{t.v}</div>
                 </div>
               ))}
             </div>
+            {/* Start → Clear */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: (swap.swingStart || swap.swingEnd) ? 10 : 0 }}>
+              <div style={{ flex: 1, padding: 14, borderRadius: 12, background: C.blue + "0a", border: "1px solid " + C.blue + "18" }}>
+                <div style={{ fontSize: 10, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Start Time</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: C.white }}>{ft(swap.startTime) || "—"}</div>
+              </div>
+              <Icon n="arr" s={18} c={C.m} />
+              <div style={{ flex: 1, padding: 14, borderRadius: 12, background: C.blue + "0a", border: "1px solid " + C.blue + "18" }}>
+                <div style={{ fontSize: 10, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Clear Time</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: C.white }}>{ft(swap.clearTime) || "—"}</div>
+              </div>
+            </div>
+            {/* Swing times — only shown when present */}
+            {(swap.swingStart || swap.swingEnd) && (
+              <div style={{ padding: 14, borderRadius: 12, background: "rgba(255,255,255,.02)", border: "1px solid " + C.blue + "18" }}>
+                <div style={{ fontSize: 10, color: C.m, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>Swing Break</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 10, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Swing In</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: C.white }}>{ft(swap.swingStart) || "—"}</div>
+                  </div>
+                  <Icon n="arr" s={16} c={C.m} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 10, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Swing Out</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: C.white }}>{ft(swap.swingEnd) || "—"}</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
