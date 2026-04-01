@@ -26,6 +26,10 @@ export default function Icon({ n, s = 20, c = "currentColor" }: IconProps) {
     inf: <svg style={st} viewBox="0 0 24 24"><circle {...p} cx="12" cy="12" r="10" /><path {...p} d="M12 16v-4M12 8h.01" /></svg>,
     mt: <svg style={st} viewBox="0 0 24 24"><path {...p} d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z" /><path {...p} d="M13 2v7h7" /></svg>,
     msg: <svg style={st} viewBox="0 0 24 24"><path {...p} d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>,
+    match: <svg style={st} viewBox="0 0 24 24"><path {...p} d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>,
+    bell: <svg style={st} viewBox="0 0 24 24"><path {...p} d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" /></svg>,
+    shield: <svg style={st} viewBox="0 0 24 24"><path {...p} d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
+    agree: <svg style={st} viewBox="0 0 24 24"><path {...p} d="M9 11l3 3L22 4" /><path {...p} d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>,
   };
   return (icons[n] ?? null) as React.ReactElement | null;
 }

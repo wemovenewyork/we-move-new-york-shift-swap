@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
     email: dbUser.email,
     depotId: dbUser.depotId,
     depot: dbUser.depot,
+    role: dbUser.role,
     language: dbUser.language,
     avatarUrl: dbUser.avatarUrl,
     reputation,
@@ -83,6 +84,7 @@ export async function PUT(req: NextRequest) {
     email: updated.email,
     depotId: updated.depotId,
     depot: updated.depot,
+    role: updated.role,
     language: updated.language,
   });
 }

@@ -13,6 +13,7 @@ model User {
   firstName    String   @map("first_name")
   lastName     String   @map("last_name")
   depotId      String?  @map("depot_id")
+  role         UserRole @default(operator)
   language     String   @default("en")
   avatarUrl    String?  @map("avatar_url")
   verified     Boolean  @default(false)
@@ -20,18 +21,21 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  depot            Depot?       @relation(fields: [depotId], references: [id])
-  inviter          User?        @relation("Invites", fields: [invitedBy], references: [id])
-  invitees         User[]       @relation("Invites")
-  swaps            Swap[]
-  sentMessages     Message[]    @relation("SentMessages")
-  receivedMessages Message[]    @relation("ReceivedMessages")
-  inviteCodes      InviteCode[] @relation("CodeCreator")
-  usedCode         InviteCode?  @relation("CodeUser")
-  reputation       Reputation?
-  reviewsGiven     Review[]     @relation("ReviewsGiven")
-  reviewsReceived  Review[]     @relation("ReviewsReceived")
-  reports          Report[]
+  depot              Depot?             @relation(fields: [depotId], references: [id])
+  inviter            User?              @relation("Invites", fields: [invitedBy], references: [id])
+  invitees           User[]             @relation("Invites")
+  swaps              Swap[]
+  sentMessages       Message[]          @relation("SentMessages")
+  receivedMessages   Message[]          @relation("ReceivedMessages")
+  inviteCodes        InviteCode[]       @relation("CodeCreator")
+  usedCode           InviteCode?        @relation("CodeUser")
+  reputation         Reputation?
+  reviewsGiven       Review[]           @relation("ReviewsGiven")
+  reviewsReceived    Review[]           @relation("ReviewsReceived")
+  reports            Report[]
+  pushSubscriptions  PushSubscription[]
+  agreementsAsA      SwapAgreement[]    @relation("AgreementUserA")
+  agreementsAsB      SwapAgreement[]    @relation("AgreementUserB")
 
   @@map("users")
 }
@@ -75,11 +79,12 @@ model Swap {
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
-  user     User      @relation(fields: [userId], references: [id])
-  depot    Depot     @relation(fields: [depotId], references: [id])
-  messages Message[]
-  reviews  Review[]
-  reports  Report[]
+  user       User            @relation(fields: [userId], references: [id])
+  depot      Depot           @relation(fields: [depotId], references: [id])
+  messages   Message[]
+  reviews    Review[]
+  reports    Report[]
+  agreements SwapAgreement[]
 
   @@map("swaps")
 }
@@ -156,6 +161,40 @@ model Report {
   @@map("reports")
 }
 
+model SwapAgreement {
+  id          String          @id @default(uuid())
+  swapId      String          @map("swap_id")
+  userAId     String          @map("user_a_id")
+  userBId     String          @map("user_b_id")
+  status      AgreementStatus @default(pending)
+  userANote   String?         @map("user_a_note") @db.VarChar(500)
+  userBNote   String?         @map("user_b_note") @db.VarChar(500)
+  userAAt     DateTime?       @map("user_a_at")
+  userBAt     DateTime?       @map("user_b_at")
+  completedAt DateTime?       @map("completed_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  swap  Swap @relation(fields: [swapId], references: [id], onDelete: Cascade)
+  userA User @relation("AgreementUserA", fields: [userAId], references: [id])
+  userB User @relation("AgreementUserB", fields: [userBId], references: [id])
+
+  @@map("swap_agreements")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
+}
+
 enum SwapCategory {
   work
   daysoff
@@ -173,4 +212,17 @@ enum ReportStatus {
   pending
   reviewed
   dismissed
+}
+
+enum UserRole {
+  operator
+  depotRep
+  admin
+}
+
+enum AgreementStatus {
+  pending
+  userA_confirmed
+  completed
+  cancelled
 }

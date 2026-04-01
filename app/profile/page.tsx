@@ -10,6 +10,7 @@ import Icon from "@/components/ui/Icon";
 import RepBadge from "@/components/ui/RepBadge";
 import DepotBadge from "@/components/ui/DepotBadge";
 import Toast from "@/components/ui/Toast";
+import NotifToggle from "@/components/ui/NotifToggle";
 
 const lb: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: 12, fontWeight: 600, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
 
@@ -106,7 +107,6 @@ export default function ProfilePage() {
                 <option value="en">English</option>
                 <option value="es">Español</option>
                 <option value="ht">Kreyòl Ayisyen</option>
-                <option value="zh">中文</option>
               </select>
             </div>
             {depot && (
@@ -145,6 +145,12 @@ export default function ProfilePage() {
             </div>
 
             <div style={{ marginTop: 8 }}><RepBadge rep={user.reputation} size="full" /></div>
+
+            {/* Push Notifications */}
+            <div style={{ background: "rgba(255,255,255,.03)", borderRadius: 14, padding: 14, border: `1px solid ${C.bd}` }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: "uppercase", letterSpacing: 2, marginBottom: 10 }}>Notifications</div>
+              <NotifToggle />
+            </div>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 16 }}>

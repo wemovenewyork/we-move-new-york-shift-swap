@@ -5,25 +5,28 @@ import { useRouter } from "next/navigation";
 import Icon from "./Icon";
 import { api } from "@/lib/api";
 import { C } from "@/constants/colors";
+import { useT } from "@/lib/i18n";
 
 interface Props {
   active: "browse" | "post" | "my" | "messages";
   depotCode: string;
+  lang?: string;
 }
 
-export default function BottomNav({ active, depotCode }: Props) {
+export default function BottomNav({ active, depotCode, lang }: Props) {
   const router = useRouter();
   const [unread, setUnread] = useState(0);
+  const tr = useT(lang);
 
   useEffect(() => {
     api.get<{ unreadCount: number }>("/messages").then(d => setUnread(d.unreadCount)).catch(() => {});
   }, []);
 
   const items = [
-    { k: "browse", ic: "list", l: "Browse", href: `/depot/${depotCode}/swaps` },
-    { k: "post", ic: "edit", l: "Post", href: `/depot/${depotCode}/post` },
-    { k: "my", ic: "usr", l: "My Posts", href: `/depot/${depotCode}/my` },
-    { k: "messages", ic: "msg", l: "Messages", href: `/depot/${depotCode}/messages`, badge: unread },
+    { k: "browse", ic: "list", l: tr("nav.swaps"), href: `/depot/${depotCode}/swaps` },
+    { k: "post", ic: "edit", l: tr("nav.post"), href: `/depot/${depotCode}/post` },
+    { k: "my", ic: "usr", l: tr("nav.profile"), href: `/depot/${depotCode}/my` },
+    { k: "messages", ic: "msg", l: tr("nav.messages"), href: `/depot/${depotCode}/messages`, badge: unread },
   ];
 
   return (

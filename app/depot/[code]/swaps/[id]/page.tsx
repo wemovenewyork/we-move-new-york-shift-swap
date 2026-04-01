@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
-import { Swap } from "@/types";
+import { Swap, SwapAgreement } from "@/types";
 import { C, CM, STC, SWAP_TYPES } from "@/constants/colors";
 import Icon from "@/components/ui/Icon";
 import RepBadge from "@/components/ui/RepBadge";
 import MsgModal from "@/components/ui/MsgModal";
 import Toast from "@/components/ui/Toast";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import AgreementPanel from "@/components/ui/AgreementPanel";
 
 const ft = (t?: string | null) => { if (!t) return "—"; const [h, m] = t.split(":"); const hr = +h; return `${hr % 12 || 12}:${m} ${hr >= 12 ? "PM" : "AM"}`; };
 const timeAgo = (d: string) => { const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000); if (s < 60) return "just now"; if (s < 3600) return Math.floor(s/60) + "m ago"; if (s < 86400) return Math.floor(s/3600) + "h ago"; return Math.floor(s/86400) + "d ago"; };
@@ -22,6 +23,11 @@ export default function SwapDetailPage() {
   const { code, id } = params;
 
   const [swap, setSwap] = useState<Swap | null>(null);
+  const [agreement, setAgreement] = useState<SwapAgreement | null>(null);
+  const [agreeLoaded, setAgreeLoaded] = useState(false);
+  const [proposeModal, setProposeModal] = useState(false);
+  const [proposeNote, setProposeNote] = useState("");
+  const [proposeBusy, setProposeBusy] = useState(false);
   const [msgModal, setMsgModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{ title: string; text: string; action: () => void } | null>(null);
@@ -35,7 +41,24 @@ export default function SwapDetailPage() {
   useEffect(() => {
     if (!id || !user) return;
     api.get<Swap>(`/swaps/${id}`).then(setSwap).catch(() => router.replace(`/depot/${code}/swaps`));
+    api.get<SwapAgreement>(`/swaps/${id}/agreement`)
+      .then(setAgreement)
+      .catch(() => {})
+      .finally(() => setAgreeLoaded(true));
   }, [id, user, code, router]);
+
+  const handlePropose = async () => {
+    if (!id) return;
+    setProposeBusy(true);
+    try {
+      const a = await api.post<SwapAgreement>(`/swaps/${id}/agreement`, { note: proposeNote || undefined });
+      setAgreement(a);
+      setProposeModal(false);
+      setProposeNote("");
+      showToast("Agreement proposed!");
+    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed to propose"); }
+    setProposeBusy(false);
+  };
 
   const handleSend = async (s: Swap, text: string) => {
     try {
@@ -186,11 +209,56 @@ export default function SwapDetailPage() {
             I&apos;m Interested <Icon n="arr" s={18} c="#fff" />
           </button>
         )}
+
+        {!own && agreeLoaded && (
+          <AgreementPanel
+            swapId={swap.id}
+            agreement={agreement}
+            isOwner={false}
+            currentUserId={user?.id ?? ""}
+            onUpdate={setAgreement}
+            onPropose={() => setProposeModal(true)}
+          />
+        )}
+
+        {own && agreeLoaded && agreement && (
+          <AgreementPanel
+            swapId={swap.id}
+            agreement={agreement}
+            isOwner={true}
+            currentUserId={user?.id ?? ""}
+            onUpdate={setAgreement}
+            onPropose={() => {}}
+          />
+        )}
       </main>
 
       {msgModal && swap && <MsgModal swap={swap} onSend={handleSend} onClose={() => setMsgModal(false)} />}
       {confirm && <ConfirmModal title={confirm.title} text={confirm.text} onConfirm={confirm.action} onCancel={() => setConfirm(null)} />}
       {toast && <Toast message={toast} />}
+
+      {proposeModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={() => setProposeModal(false)}>
+          <div style={{ width: "100%", background: "rgb(6,5,50)", borderRadius: "20px 20px 0 0", padding: "24px 20px 40px", maxWidth: 520, margin: "0 auto" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.white, marginBottom: 6 }}>Propose Formal Agreement</div>
+            <div style={{ fontSize: 12, color: C.m, lineHeight: 1.6, marginBottom: 16 }}>This creates a timestamped record. Both operators must confirm to complete the swap.</div>
+            <textarea
+              value={proposeNote}
+              onChange={e => setProposeNote(e.target.value)}
+              placeholder="Add a note (optional)"
+              maxLength={300}
+              rows={3}
+              style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.04)", color: C.white, fontSize: 14, resize: "none", fontFamily: "inherit", marginBottom: 14, boxSizing: "border-box" }}
+            />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <button onClick={() => setProposeModal(false)} style={{ padding: 14, borderRadius: 14, border: `1px solid ${C.bd}`, background: "transparent", cursor: "pointer", fontSize: 14, fontWeight: 600, color: C.m }}>Cancel</button>
+              <button onClick={handlePropose} disabled={proposeBusy} style={{ padding: 14, borderRadius: 14, border: "none", background: "linear-gradient(135deg,#00C9A7,#00C9A7cc)", cursor: "pointer", fontSize: 14, fontWeight: 700, color: "#fff", opacity: proposeBusy ? 0.7 : 1 }}>
+                {proposeBusy ? "Proposing..." : "Propose"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

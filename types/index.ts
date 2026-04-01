@@ -47,6 +47,9 @@ export interface RepScore {
   total: number;
 }
 
+export type UserRole = "operator" | "depotRep" | "admin";
+export type AgreementStatus = "pending" | "userA_confirmed" | "completed" | "cancelled";
+
 export interface User {
   id: string;
   firstName: string;
@@ -54,10 +57,29 @@ export interface User {
   email: string;
   depotId?: string | null;
   depot?: Depot | null;
+  role: UserRole;
   language: string;
   avatarUrl?: string | null;
   reputation?: RepScore;
   inviteCodes?: { code: string; isValid: boolean }[];
+}
+
+export interface SwapAgreement {
+  id: string;
+  swapId: string;
+  userAId: string;
+  userBId: string;
+  status: AgreementStatus;
+  userANote?: string | null;
+  userBNote?: string | null;
+  userAAt?: string | null;
+  userBAt?: string | null;
+  completedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  swap?: Pick<Swap, "id" | "details" | "category" | "posterName">;
+  userA?: Pick<User, "id" | "firstName" | "lastName">;
+  userB?: Pick<User, "id" | "firstName" | "lastName">;
 }
 
 export interface Message {
