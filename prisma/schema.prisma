@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  depotId      String?  @map("depot_id")
+  language     String   @default("en")
+  avatarUrl    String?  @map("avatar_url")
+  verified     Boolean  @default(false)
+  invitedBy    String?  @map("invited_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  depot            Depot?       @relation(fields: [depotId], references: [id])
+  inviter          User?        @relation("Invites", fields: [invitedBy], references: [id])
+  invitees         User[]       @relation("Invites")
+  swaps            Swap[]
+  sentMessages     Message[]    @relation("SentMessages")
+  receivedMessages Message[]    @relation("ReceivedMessages")
+  inviteCodes      InviteCode[] @relation("CodeCreator")
+  usedCode         InviteCode?  @relation("CodeUser")
+  reputation       Reputation?
+  reviewsGiven     Review[]     @relation("ReviewsGiven")
+  reviewsReceived  Review[]     @relation("ReviewsReceived")
+  reports          Report[]
+
+  @@map("users")
+}
+
+model Depot {
+  id       String  @id @default(uuid())
+  name     String
+  code     String  @unique
+  borough  String
+  operator String
+  logoUrl  String? @map("logo_url")
+
+  users User[]
+  swaps Swap[]
+
+  @@map("depots")
+}
+
+model Swap {
+  id           String       @id @default(uuid())
+  userId       String       @map("user_id")
+  depotId      String       @map("depot_id")
+  category     SwapCategory
+  status       SwapStatus   @default(open)
+  date         DateTime?    @db.Date
+  details      String       @db.VarChar(500)
+  contact      String?
+  run          String?
+  route        String?
+  startTime    String?      @map("start_time")
+  clearTime    String?      @map("clear_time")
+  swingStart   String?      @map("swing_start")
+  swingEnd     String?      @map("swing_end")
+  fromDay      String?      @map("from_day")
+  fromDate     DateTime?    @map("from_date") @db.Date
+  toDay        String?      @map("to_day")
+  toDate       DateTime?    @map("to_date") @db.Date
+  vacationHave String?      @map("vacation_have")
+  vacationWant String?      @map("vacation_want")
+  posterName   String       @map("poster_name")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id])
+  depot    Depot     @relation(fields: [depotId], references: [id])
+  messages Message[]
+  reviews  Review[]
+  reports  Report[]
+
+  @@map("swaps")
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  swapId     String   @map("swap_id")
+  fromUserId String   @map("from_user_id")
+  toUserId   String   @map("to_user_id")
+  text       String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  swap     Swap @relation(fields: [swapId], references: [id], onDelete: Cascade)
+  fromUser User @relation("SentMessages", fields: [fromUserId], references: [id])
+  toUser   User @relation("ReceivedMessages", fields: [toUserId], references: [id])
+
+  @@map("messages")
+}
+
+model InviteCode {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  createdBy String   @map("created_by")
+  usedBy    String?  @unique @map("used_by")
+  isValid   Boolean  @default(true) @map("is_valid")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  creator User  @relation("CodeCreator", fields: [createdBy], references: [id])
+  user    User? @relation("CodeUser", fields: [usedBy], references: [id])
+
+  @@map("invite_codes")
+}
+
+model Reputation {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  completed Int      @default(0)
+  cancelled Int      @default(0)
+  noShow    Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("reputation")
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  swapId     String   @map("swap_id")
+  reviewerId String   @map("reviewer_id")
+  reviewedId String   @map("reviewed_id")
+  rating     Int
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  swap     Swap @relation(fields: [swapId], references: [id], onDelete: Cascade)
+  reviewer User @relation("ReviewsGiven", fields: [reviewerId], references: [id])
+  reviewed User @relation("ReviewsReceived", fields: [reviewedId], references: [id])
+
+  @@map("reviews")
+}
+
+model Report {
+  id         String       @id @default(uuid())
+  swapId     String       @map("swap_id")
+  reporterId String       @map("reporter_id")
+  reason     String?
+  status     ReportStatus @default(pending)
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  swap     Swap @relation(fields: [swapId], references: [id], onDelete: Cascade)
+  reporter User @relation(fields: [reporterId], references: [id])
+
+  @@map("reports")
+}
+
+enum SwapCategory {
+  work
+  daysoff
+  vacation
+}
+
+enum SwapStatus {
+  open
+  pending
+  filled
+  expired
+}
+
+enum ReportStatus {
+  pending
+  reviewed
+  dismissed
+}
