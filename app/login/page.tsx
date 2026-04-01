@@ -97,9 +97,6 @@ export default function LoginPage() {
           </div>
         )}
 
-        <div style={{ marginTop: 22, padding: 16, borderRadius: 14, background: "rgba(255,255,255,.06)", border: `1px solid ${C.gold}22` }}>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,.7)", lineHeight: 1.7 }}>We Move New York Shift Swap is not affiliated with the New York City Transit or any agencies governed by the Metropolitan Transit Authority. We Move New York Shift Swap is an unofficial peer-to-peer tool for bus operators to assist with swaps. All swaps must still be approved through your dispatcher and official depot channels.</p>
-        </div>
         <Footer />
       </div>
     </main>
