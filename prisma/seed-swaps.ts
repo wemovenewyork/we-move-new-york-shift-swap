@@ -111,7 +111,7 @@ async function main() {
   });
   console.log(`Cleared ${deletedVac.count} old vacation swaps`);
 
-  const statuses = ["open","open","open","open","open","pending","pending","filled"];
+  const statuses: Array<"open"|"pending"|"filled"> = ["open","open","open","open","open","pending","pending","filled"];
 
   // ── WORK SWAPS: 80 ──────────────────────────────────────────────
   console.log("Creating 80 work swaps...");
