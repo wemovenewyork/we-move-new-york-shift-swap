@@ -13,7 +13,10 @@ const lb: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: 1
 export default function LoginPage() {
   const { login, user, loading } = useAuth();
   const router = useRouter();
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return !sessionStorage.getItem("intro-seen");
+  });
   const [mode, setMode] = useState<"signin" | "register">("signin");
   const [em, setEm] = useState(""); const [pw, setPw] = useState("");
   const [fn, setFn] = useState(""); const [ln, setLn] = useState(""); const [pw2, setPw2] = useState(""); const [invCode, setInvCode] = useState("");
@@ -48,7 +51,7 @@ export default function LoginPage() {
     } finally { setSubmitting(false); }
   };
 
-  if (showIntro) return <Intro onDone={() => setShowIntro(false)} />;
+  if (showIntro) return <Intro onDone={() => { sessionStorage.setItem("intro-seen", "1"); setShowIntro(false); }} />;
 
   return (
     <main id="main-content" style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
