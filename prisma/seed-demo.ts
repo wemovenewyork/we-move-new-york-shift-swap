@@ -1,202 +1,305 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 const adapter = new PrismaPg(process.env.DATABASE_URL!);
 const prisma = new PrismaClient({ adapter });
 
-const USERS = [
-  { email: "marcus.johnson@mta.com", firstName: "Marcus", lastName: "Johnson", depotCode: "FB", completed: 18, cancelled: 1, noShow: 0, avgRating: 4.9 },
-  { email: "diana.reyes@mta.com", firstName: "Diana", lastName: "Reyes", depotCode: "JA", completed: 24, cancelled: 2, noShow: 0, avgRating: 4.8 },
-  { email: "kevin.williams@mta.com", firstName: "Kevin", lastName: "Williams", depotCode: "GH", completed: 7, cancelled: 1, noShow: 1, avgRating: 4.2 },
-  { email: "patricia.brown@mta.com", firstName: "Patricia", lastName: "Brown", depotCode: "QV", completed: 31, cancelled: 0, noShow: 0, avgRating: 5.0 },
-  { email: "darnell.thomas@mta.com", firstName: "Darnell", lastName: "Thomas", depotCode: "EN", completed: 3, cancelled: 0, noShow: 0, avgRating: 4.5 },
-  { email: "shanice.davis@mta.com", firstName: "Shanice", lastName: "Davis", depotCode: "TA", completed: 14, cancelled: 3, noShow: 0, avgRating: 4.6 },
-  { email: "robert.carter@mta.com", firstName: "Robert", lastName: "Carter", depotCode: "WF", completed: 9, cancelled: 1, noShow: 0, avgRating: 4.7 },
-  { email: "latoya.harris@mta.com", firstName: "Latoya", lastName: "Harris", depotCode: "UP", completed: 0, cancelled: 0, noShow: 0, avgRating: 5.0 },
-  { email: "james.robinson@mta.com", firstName: "James", lastName: "Robinson", depotCode: "MQ", completed: 22, cancelled: 2, noShow: 1, avgRating: 4.5 },
-  { email: "michelle.clark@mta.com", firstName: "Michelle", lastName: "Clark", depotCode: "SC", completed: 11, cancelled: 0, noShow: 0, avgRating: 4.8 },
-  { email: "anthony.lewis@mta.com", firstName: "Anthony", lastName: "Lewis", depotCode: "KB", completed: 5, cancelled: 2, noShow: 0, avgRating: 4.3 },
-  { email: "brenda.walker@mta.com", firstName: "Brenda", lastName: "Walker", depotCode: "MC", completed: 16, cancelled: 1, noShow: 0, avgRating: 4.7 },
+const DEPOT_CODES = ["BP","CS","CA","CH","CP","EN","EC","FR","FB","FP","GA","GH","JG","JA","JF","KB","LG","MV","ME","MQ","MC","QV","SC","TA","UP","WF","YK","YU"];
+
+const FIRST_NAMES = [
+  "Marcus","Diana","Kevin","Patricia","Darnell","Shanice","Robert","Latoya","James","Michelle",
+  "Anthony","Brenda","Tyrone","Keisha","Raymond","Veronica","Curtis","Denise","Jerome","Tanya",
+  "Andre","Monique","Clarence","Yolanda","Reginald","Tamika","Leon","Felicia","Calvin","Renee",
+  "Earl","Cheryl","Floyd","Bernadette","Roosevelt","Gwendolyn","Wendell","Rochelle","Alton","Lorraine",
+  "Derek","Charlene","Marvin","Adrienne","Glenn","Jacqueline","Rodney","Valerie","Nathaniel","Crystal",
+  "Harold","Sylvia","Bernard","Carolyn","Ernest","Theresa","Herman","Vanessa","Clifford","Barbara",
+  "Leroy","Dorothy","Willie","Gloria","Walter","Ruth","Arthur","Evelyn","Howard","Frances",
+  "Frank","Alice","George","Helen","Thomas","Virginia","Charles","Martha","Edward","Elizabeth",
+  "Henry","Sandra","William","Lisa","Richard","Karen","Michael","Nancy","David","Betty",
+  "Daniel","Margaret","Joseph","Jennifer","Paul","Susan","Mark","Angela","Donald","Sarah",
+  "Steven","Dorothy","Kenneth","Jessica","Brian","Amanda","Gary","Melissa","Timothy","Deborah",
+  "Jose","Maria","Carlos","Ana","Miguel","Rosa","Juan","Carmen","Luis","Gloria",
+  "Roberto","Elena","Manuel","Isabel","Pedro","Lucia","Francisco","Teresa","Antonio","Marta",
+  "Kwame","Amara","Kofi","Abena","Kwabena","Akua","Yaw","Adwoa","Kojo","Ama",
+  "Jamal","Aaliyah","DeShawn","Destiny","Malik","Imani","Rasheed","Jasmine","Terrell","Brianna",
+  "Xavier","Camille","Dominique","Serena","Damien","Simone","Laurent","Chanel","Remy","Celeste",
+  "Hector","Rosa","Rafael","Marisol","Ernesto","Xiomara","Alejandro","Yessenia","Felix","Luz",
+  "Jin","Mei","Wei","Ling","Tao","Hui","Bao","Fang","Zhen","Yan",
+  "Aisha","Fatima","Hassan","Zara","Omar","Layla","Kareem","Nadia","Tariq","Amira",
+  "Patrick","Colleen","Sean","Maureen","Brendan","Siobhan","Declan","Aoife","Conor","Niamh",
 ];
 
-const WORK_SWAPS = [
-  { run: "R101", route: "B41", startTime: "05:00", clearTime: "13:30", details: "Looking to swap this early AM run. Great route, just need a different day off this week.", contact: "646-555-0101" },
-  { run: "R204", route: "Bx12", startTime: "06:30", clearTime: "15:00", swingStart: "10:00", swingEnd: "11:30", details: "Split shift on the Bx12. Works great if you live in the Bronx. Looking to pick up a later piece.", contact: "718-555-0202" },
-  { run: "R007", route: "Q44", startTime: "14:00", clearTime: "22:30", details: "PM piece on the Q44 Select Bus. Easy route, AC bus. Need morning instead for a family event.", contact: "347-555-0303" },
-  { run: "R318", route: "B46", startTime: "07:15", clearTime: "15:45", details: "Solid AM piece on the B46. Ends at Flatbush Ave. Open to any comparable run.", contact: "718-555-0404" },
-  { run: "R512", route: "M15-SBS", startTime: "09:00", clearTime: "17:30", details: "Mid-day piece on the M15 Select Bus Service. 1st Ave / 2nd Ave. Looking for earlier start.", contact: "212-555-0505" },
-  { run: "R088", route: "S79-SBS", startTime: "06:00", clearTime: "14:00", details: "Early Staten Island Express SBS. Great piece, just need to attend a morning appointment next Tuesday.", contact: "718-555-0606" },
-  { run: "R223", route: "Bx36", startTime: "15:30", clearTime: "00:00", details: "Night owl piece on the Bx36. Looking to swap for any AM or mid-day run.", contact: "929-555-0707" },
-  { run: "R145", route: "B44-SBS", startTime: "07:00", clearTime: "15:00", details: "AM piece on the B44 SBS up Nostrand Ave. Reliable route, looking for similar or trade for days off.", contact: "718-555-0808" },
+const LAST_NAMES = [
+  "Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Wilson","Anderson","Taylor",
+  "Thomas","Jackson","White","Harris","Martin","Thompson","Robinson","Clark","Rodriguez","Lewis",
+  "Lee","Walker","Hall","Allen","Young","Hernandez","King","Wright","Lopez","Hill",
+  "Scott","Green","Adams","Baker","Nelson","Carter","Mitchell","Perez","Roberts","Turner",
+  "Phillips","Campbell","Parker","Evans","Edwards","Collins","Stewart","Sanchez","Morris","Rogers",
+  "Reed","Cook","Morgan","Bell","Murphy","Bailey","Rivera","Cooper","Richardson","Cox",
+  "Howard","Ward","Torres","Peterson","Gray","Ramirez","James","Watson","Brooks","Kelly",
+  "Sanders","Price","Bennett","Wood","Barnes","Ross","Henderson","Coleman","Jenkins","Perry",
+  "Powell","Long","Patterson","Hughes","Flores","Washington","Butler","Simmons","Foster","Gonzales",
+  "Bryant","Alexander","Russell","Griffin","Diaz","Hayes","Myers","Ford","Hamilton","Graham",
+  "Sullivan","Wallace","Woods","Cole","West","Jordan","Owens","Reynolds","Fisher","Ellis",
+  "Harrison","Gibson","Mcdonald","Cruz","Marshall","Ortiz","Gomez","Murray","Freeman","Wells",
+  "Webb","Simpson","Stevens","Tucker","Porter","Hunter","Hicks","Crawford","Henry","Boyd",
+  "Mason","Morales","Kennedy","Warren","Dixon","Ramos","Reyes","Burns","Gordon","Shaw",
+  "Holmes","Rice","Robertson","Henderson","Patterson","Alvarez","Castillo","Gutierrez","Chavez","Romero",
+  "Okafor","Mensah","Asante","Boateng","Owusu","Amponsah","Darko","Appiah","Acheampong","Amoah",
+  "Baptiste","Leblanc","Delacroix","Dupont","Fontaine","Beaumont","Girard","Leclerc","Mercier","Renard",
+  "Yamamoto","Tanaka","Watanabe","Suzuki","Sato","Ito","Nakamura","Kobayashi","Kato","Yoshida",
+  "Okonkwo","Adeyemi","Afolabi","Nwosu","Eze","Chukwu","Nwachukwu","Obiora","Obi","Nkem",
+  "OBrien","McCarthy","Fitzpatrick","Gallagher","Brennan","Doyle","Burke","Nolan","Ryan","Quinn",
 ];
 
-const DAYSOFF_SWAPS = [
-  { fromDay: "Monday", toDay: "Wednesday", fromDate: "2026-04-06", toDate: "2026-04-08", details: "Need Monday off for a doctor's appointment. Will take your Wednesday no questions asked." },
-  { fromDay: "Saturday", toDay: "Thursday", fromDate: "2026-04-11", toDate: "2026-04-09", details: "Have Saturday off, looking for a weekday. Any Thursday or Friday works." },
-  { fromDay: "Sunday", toDay: "Friday", fromDate: "2026-04-12", toDate: "2026-04-10", details: "Trading my Sunday for a Friday. Great deal — get a full weekend!" },
-  { fromDay: "Tuesday", toDay: "Saturday", fromDate: "2026-04-07", toDate: "2026-04-11", details: "Have Tuesday off, want Saturday. My kid's birthday is Saturday and I need to be there." },
-  { fromDay: "Wednesday", toDay: "Monday", fromDate: "2026-04-08", toDate: "2026-04-06", details: "Looking to get Monday off for a long weekend. Trading my Wednesday." },
-  { fromDay: "Friday", toDay: "Tuesday", fromDate: "2026-04-10", toDate: "2026-04-07", details: "Have Friday, need Tuesday. Routine schedule thing, flexible on week." },
+const ROUTES = [
+  "B1","B2","B3","B4","B6","B7","B8","B9","B11","B12","B13","B14","B15","B16","B17","B20","B25","B26","B31","B32","B35","B36","B37","B38","B39","B41","B42","B43","B44","B44-SBS","B45","B46","B46-SBS","B47","B48","B49","B52","B54","B57","B60","B61","B62","B63","B65","B67","B68","B69","B70","B74","B82","B82-SBS","B83","B84","B103",
+  "Bx1","Bx2","Bx3","Bx4","Bx4A","Bx5","Bx6","Bx7","Bx8","Bx9","Bx10","Bx11","Bx12","Bx12-SBS","Bx13","Bx15","Bx16","Bx17","Bx18","Bx19","Bx20","Bx21","Bx22","Bx23","Bx24","Bx25","Bx26","Bx27","Bx28","Bx29","Bx30","Bx31","Bx32","Bx33","Bx34","Bx35","Bx36","Bx38","Bx39","Bx40","Bx41","Bx42",
+  "M1","M2","M3","M4","M5","M7","M8","M9","M10","M11","M14A","M14D","M15","M15-SBS","M20","M21","M22","M23-SBS","M31","M34","M34A-SBS","M35","M42","M50","M55","M57","M60-SBS","M66","M72","M79-SBS","M86-SBS","M96","M98","M100","M101","M102","M103","M104","M106","M116",
+  "Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Q11","Q12","Q13","Q15","Q15A","Q16","Q17","Q18","Q19","Q20A","Q20B","Q21","Q22","Q23","Q24","Q25","Q26","Q27","Q28","Q29","Q30","Q31","Q32","Q33","Q34","Q35","Q36","Q37","Q38","Q39","Q40","Q41","Q42","Q43","Q44","Q44-SBS","Q46","Q47","Q48","Q49","Q52-SBS","Q53-SBS","Q54","Q55","Q56","Q58","Q59","Q60","Q64","Q65","Q66","Q67","Q69","Q70-SBS","Q72","Q76","Q77","Q83","Q84","Q85","Q88","Q100","Q101","Q102","Q103","Q104","Q110","Q111","Q112","Q113",
+  "S40","S42","S44","S46","S48","S51","S52","S53","S54","S55","S56","S57","S59","S61","S62","S66","S74","S76","S78","S79-SBS","S81","S84","S86","S87","S88","S89","S90","S91","S92","S93","S94","S96","S98",
+  "BM1","BM2","BM3","BM4","BM5","QM1","QM2","QM3","QM4","QM5","QM6","QM7","QM8","QM10","QM11","QM12","QM15","QM16","QM17","QM18","QM20","QM21","QM24","QM25","QM31","QM32","QM34","QM35","QM36","QM40","QM42","QM44",
 ];
 
-const VACATION_SWAPS = [
-  { vacationHave: "Week 22", vacationWant: "Week 26", details: "Have Week 22 (late May), looking for Week 26 (end of June). Family reunion planned." },
-  { vacationHave: "Week 14", vacationWant: "Week 10", details: "Want Week 10 (early March) for a trip. Trading my Week 14 (early April)." },
-  { vacationHave: "Week 34", vacationWant: "Week 30", details: "Have late August (Week 34). Want Week 30 (late July) instead for the kids' summer break." },
-  { vacationHave: "Week 52", vacationWant: "Week 51", details: "Have the last week of the year, but need Week 51 (Christmas week) to be with family." },
-  { vacationHave: "Week 18", vacationWant: "Week 20", details: "Trading Week 18 for Week 20. Just need the timing to work with a cruise booking." },
+const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const WORK_DETAILS = [
+  "Looking to swap this piece. Open to any comparable run at my depot.",
+  "Need to switch this shift for a personal appointment. Great run, easy route.",
+  "Trading this piece — looking for something later in the day.",
+  "Early AM run available. Would prefer a mid-day or PM piece.",
+  "Night piece available, looking for a day shift. Contact me ASAP.",
+  "Reliable route, always on time. Need a day off this week, open to any trade.",
+  "SBS piece available. Clean bus, easy terminals. Looking for straight run.",
+  "Need to swap for a family obligation. Flexible on what I pick up.",
+  "This is a solid piece with minimal traffic. Looking for any weekday swap.",
+  "Midday run, great layovers. Willing to work with your schedule.",
+  "Express run available — easy highway piece. Looking for local run.",
+  "Good piece, looking to swap just for next week. Flexible on route.",
+  "Available to swap ASAP. Reliable operator with strong rep.",
+  "Run ends at a convenient terminal. Looking for similar or earlier clear.",
+  "Weekend piece available. Looking for a weekday in exchange.",
+  "Short piece with great recovery time. Open to comparable swaps.",
+  "Swing piece available — split shift. Looking for straight piece.",
+  "Overnight piece — looking for any AM or PM straight run.",
+  "Early bird piece, great for someone who lives nearby. Looking for PM.",
+  "Dependable route, no issues. Need this day off for court appearance.",
 ];
+const DAYSOFF_DETAILS = [
+  "Need this day off for a doctor's appointment. Will take your day no questions asked.",
+  "Family event coming up. Flexible on what day I pick up in exchange.",
+  "Trading my day off for any weekday. Easy swap.",
+  "Have a long weekend coming up and need to shift my RDO.",
+  "School event for my kids. Need to be there. Trading my day off.",
+  "Court date. Need this specific day off. Will work any of your days.",
+  "Moving apartments. Just need the one day. Flexible on trade.",
+  "Medical procedure scheduled. Need this day guaranteed.",
+  "Union meeting I can't miss. Looking to swap just this one day.",
+  "Anniversary trip — need specific date off. Will trade any comparable day.",
+  "Graduation ceremony. Non-negotiable date. Happy to pick up a holiday.",
+  "Car repair appointment that was hard to schedule. Need the day.",
+  "Immigration appointment. Need this day, can't reschedule.",
+  "Kid's recital. Been planning for months. Any day in trade.",
+  "Just need a long weekend this one time. Trading my Friday for your Monday.",
+];
+const VACATION_DETAILS = [
+  "Booked a trip and need to move my vacation week. Flexible on which week I take.",
+  "Family reunion is that specific week. Need to swap vacation ASAP.",
+  "Got a cruise deal that week. Trading my vacation week — open to offers.",
+  "Kid starts school that week, need to be available. Trading my vacation.",
+  "Religious observance. Need that specific week off.",
+  "Surgery scheduled. Need the week I have to recover. Will swap.",
+  "Visiting family out of country. Need flexibility on vacation week.",
+  "Concert tickets, hotel booked. Need this week. Willing to trade.",
+  "My spouse has that week off and we want to travel together. Will trade.",
+  "Just need a summer week instead of the one I got. Open to any swap.",
+];
+
+function rand<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+function randInt(min: number, max: number): number { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function genCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "WMNY-";
+  for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+function padTime(h: number, m: number): string { return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`; }
+function randTime(): string { return padTime(randInt(4,22), [0,15,30,45][randInt(0,3)]); }
+function futureDate(daysAhead: number): Date { const d = new Date(); d.setDate(d.getDate() + daysAhead); return d; }
 
 async function main() {
-  console.log("Creating demo users...");
-  const userMap: Record<string, string> = {};
+  console.log("Fetching depots...");
+  const depots = await prisma.depot.findMany();
+  const depotMap: Record<string, string> = {};
+  for (const d of depots) depotMap[d.code] = d.id;
 
-  for (const u of USERS) {
-    const depot = await prisma.depot.findUnique({ where: { code: u.depotCode } });
-    const hash = await bcrypt.hash("password123", 10);
-    const user = await prisma.user.upsert({
-      where: { email: u.email },
-      update: {},
-      create: {
-        email: u.email,
-        passwordHash: hash,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        depotId: depot?.id,
-        verified: true,
-      },
-    });
-    userMap[u.email] = user.id;
+  // Check existing demo user count
+  const existingCount = await prisma.user.count({ where: { email: { endsWith: "@mta.com" } } });
+  console.log(`Existing demo users: ${existingCount}`);
 
-    // Reputation
-    const total = u.completed + u.cancelled + u.noShow;
-    await prisma.reputation.upsert({
-      where: { userId: user.id },
-      update: {},
-      create: { userId: user.id, completed: u.completed, cancelled: u.cancelled, noShow: u.noShow },
-    });
+  const pwHash = await bcrypt.hash("password123", 10);
+  const usedNames = new Set<string>();
+  const createdUsers: { id: string; depotId: string; name: string }[] = [];
 
-    // Reviews
-    const existing = await prisma.review.count({ where: { reviewedId: user.id } });
-    if (existing === 0 && u.completed > 0) {
-      const fakeSwap = await prisma.swap.create({
+  // Load already-created demo users
+  const existingUsers = await prisma.user.findMany({
+    where: { email: { endsWith: "@mta.com" }, NOT: { email: "system@wemoveny.internal" } },
+    select: { id: true, depotId: true, firstName: true, lastName: true },
+  });
+  for (const u of existingUsers) {
+    usedNames.add(`${u.firstName} ${u.lastName}`);
+    if (u.depotId) createdUsers.push({ id: u.id, depotId: u.depotId, name: `${u.firstName} ${u.lastName}` });
+  }
+
+  const target = 200;
+  const toCreate = target - existingUsers.length;
+  console.log(`Creating ${toCreate} new operators...`);
+
+  let created = 0;
+  let attempts = 0;
+  const depotIdx = { current: 0 };
+
+  while (created < toCreate && attempts < toCreate * 10) {
+    attempts++;
+    const firstName = rand(FIRST_NAMES);
+    const lastName = rand(LAST_NAMES);
+    const fullName = `${firstName} ${lastName}`;
+    if (usedNames.has(fullName)) continue;
+    usedNames.add(fullName);
+
+    const depotCode = DEPOT_CODES[depotIdx.current % DEPOT_CODES.length];
+    depotIdx.current++;
+    const depotId = depotMap[depotCode];
+    if (!depotId) continue;
+
+    const emailSlug = `${firstName.toLowerCase().replace(/[^a-z]/g,"")}.${lastName.toLowerCase().replace(/[^a-z]/g,"")}.${crypto.randomBytes(2).toString("hex")}`;
+    const completed = randInt(0, 35);
+    const cancelled = randInt(0, Math.max(0, Math.floor(completed * 0.15)));
+    const noShow = Math.random() < 0.05 ? 1 : 0;
+
+    try {
+      const user = await prisma.user.create({
         data: {
-          userId: user.id,
-          depotId: depot!.id,
-          category: "work",
-          status: "filled",
-          details: "Historical swap",
-          posterName: `${u.firstName} ${u.lastName}`,
-          date: new Date("2025-01-01"),
+          email: `${emailSlug}@mta.com`,
+          passwordHash: pwHash,
+          firstName,
+          lastName,
+          depotId,
+          verified: true,
         },
       });
-      const reviewCount = Math.min(u.completed, 8);
-      const baseRating = Math.round(u.avgRating);
-      for (let i = 0; i < reviewCount; i++) {
-        const rating = i % 5 === 0 && u.avgRating < 4.9 ? Math.max(3, baseRating - 1) : baseRating;
-        await prisma.review.create({
-          data: { swapId: fakeSwap.id, reviewerId: user.id, reviewedId: user.id, rating },
+
+      await prisma.reputation.create({
+        data: { userId: user.id, completed, cancelled, noShow },
+      });
+
+      if (completed > 0) {
+        const fakeSwap = await prisma.swap.create({
+          data: {
+            userId: user.id, depotId, category: "work", status: "filled",
+            details: "Historical", posterName: fullName, date: new Date("2025-06-01"),
+          },
         });
+        const reviewCount = Math.min(completed, randInt(2, 8));
+        const baseRating = randInt(3, 5);
+        for (let i = 0; i < reviewCount; i++) {
+          const r = Math.max(3, baseRating + (Math.random() < 0.2 ? -1 : 0));
+          await prisma.review.create({
+            data: { swapId: fakeSwap.id, reviewerId: user.id, reviewedId: user.id, rating: r },
+          });
+        }
       }
-    }
 
-    // Give each user 3 invite codes
-    const codeCount = await prisma.inviteCode.count({ where: { createdBy: user.id } });
-    if (codeCount === 0) {
-      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      // Invite codes
       for (let i = 0; i < 3; i++) {
-        let code = "WMNY-";
-        for (let j = 0; j < 5; j++) code += chars[Math.floor(Math.random() * chars.length)];
-        await prisma.inviteCode.create({ data: { code, createdBy: user.id } });
+        await prisma.inviteCode.create({ data: { code: genCode(), createdBy: user.id } });
       }
+
+      createdUsers.push({ id: user.id, depotId, name: fullName });
+      created++;
+      if (created % 20 === 0) console.log(`  ${created}/${toCreate} users created...`);
+    } catch { /* skip duplicates */ }
+  }
+
+  console.log(`\nCreated ${created} new users. Total: ${createdUsers.length}`);
+
+  // Count existing live swaps
+  const existingSwaps = await prisma.swap.count({ where: { status: { in: ["open","pending"] }, details: { not: "Historical" } } });
+  console.log(`Existing active swaps: ${existingSwaps}`);
+
+  const swapTarget = 150;
+  const swapsToCreate = Math.max(0, swapTarget - existingSwaps);
+  console.log(`Creating ${swapsToCreate} new swaps...`);
+
+  const liveUsers = createdUsers.filter(u => u.depotId);
+  let swapCreated = 0;
+
+  for (let i = 0; i < swapsToCreate; i++) {
+    const u = rand(liveUsers);
+    const roll = Math.random();
+    const status = roll < 0.65 ? "open" : roll < 0.85 ? "pending" : "filled";
+
+    if (Math.random() < 0.45) {
+      // Work swap
+      const route = rand(ROUTES);
+      const runNum = `R${randInt(1,999).toString().padStart(3,"0")}`;
+      const startH = randInt(4, 20);
+      const clearH = startH + randInt(7, 9);
+      const hasSwing = Math.random() < 0.3;
+      const swingStartH = startH + randInt(2, 3);
+
+      await prisma.swap.create({
+        data: {
+          userId: u.id, depotId: u.depotId, category: "work", status,
+          posterName: u.name, details: rand(WORK_DETAILS),
+          run: runNum, route,
+          startTime: padTime(startH, [0,15,30,45][randInt(0,3)]),
+          clearTime: padTime(clearH % 24, [0,15,30,45][randInt(0,3)]),
+          swingStart: hasSwing ? padTime(swingStartH, 0) : null,
+          swingEnd: hasSwing ? padTime(swingStartH + 1, 30) : null,
+          contact: Math.random() < 0.6 ? `${rand(["718","347","929","646","212"])}-555-${randInt(1000,9999)}` : null,
+          date: futureDate(randInt(1, 30)),
+        },
+      });
+      swapCreated++;
+    } else if (Math.random() < 0.55) {
+      // Days off swap
+      const fromIdx = randInt(0, 6);
+      let toIdx = randInt(0, 6);
+      while (toIdx === fromIdx) toIdx = randInt(0, 6);
+      const fromDate = futureDate(randInt(2, 21));
+      const toDate = futureDate(randInt(2, 21));
+
+      await prisma.swap.create({
+        data: {
+          userId: u.id, depotId: u.depotId, category: "daysoff", status,
+          posterName: u.name, details: rand(DAYSOFF_DETAILS),
+          fromDay: DAYS[fromIdx], toDay: DAYS[toIdx],
+          fromDate, toDate, date: fromDate,
+        },
+      });
+      swapCreated++;
+    } else {
+      // Vacation swap
+      const haveWeek = randInt(1, 52);
+      let wantWeek = randInt(1, 52);
+      while (wantWeek === haveWeek) wantWeek = randInt(1, 52);
+
+      await prisma.swap.create({
+        data: {
+          userId: u.id, depotId: u.depotId, category: "vacation", status: "open",
+          posterName: u.name, details: rand(VACATION_DETAILS),
+          vacationHave: `Week ${haveWeek}`, vacationWant: `Week ${wantWeek}`,
+          date: new Date(),
+        },
+      });
+      swapCreated++;
     }
-
-    console.log(`  Created ${u.firstName} ${u.lastName} (${u.depotCode})`);
   }
 
-  console.log("Creating demo swaps...");
-  const allUsers = await prisma.user.findMany({
-    where: { email: { in: USERS.map(u => u.email) } },
-    include: { depot: true },
-  });
-
-  let swapIdx = 0;
-
-  // Work swaps
-  for (const ws of WORK_SWAPS) {
-    const user = allUsers[swapIdx % allUsers.length];
-    const daysFromNow = (swapIdx * 2) + 1;
-    const date = new Date();
-    date.setDate(date.getDate() + daysFromNow);
-    const status = swapIdx < 2 ? "open" : swapIdx < 5 ? "open" : swapIdx < 7 ? "pending" : "filled";
-    await prisma.swap.create({
-      data: {
-        userId: user.id,
-        depotId: user.depot!.id,
-        category: "work",
-        status,
-        posterName: `${user.firstName} ${user.lastName}`,
-        details: ws.details,
-        contact: ws.contact,
-        run: ws.run,
-        route: ws.route,
-        startTime: ws.startTime,
-        clearTime: ws.clearTime,
-        swingStart: ws.swingStart ?? null,
-        swingEnd: ws.swingEnd ?? null,
-        date,
-      },
-    });
-    swapIdx++;
-    console.log(`  Work swap: ${ws.route} (${status})`);
-  }
-
-  // Days off swaps
-  for (const ds of DAYSOFF_SWAPS) {
-    const user = allUsers[swapIdx % allUsers.length];
-    const status = swapIdx % 4 === 0 ? "pending" : "open";
-    await prisma.swap.create({
-      data: {
-        userId: user.id,
-        depotId: user.depot!.id,
-        category: "daysoff",
-        status,
-        posterName: `${user.firstName} ${user.lastName}`,
-        details: ds.details,
-        fromDay: ds.fromDay,
-        toDay: ds.toDay,
-        fromDate: new Date(ds.fromDate + "T12:00:00"),
-        toDate: new Date(ds.toDate + "T12:00:00"),
-        date: new Date(ds.fromDate + "T12:00:00"),
-      },
-    });
-    swapIdx++;
-    console.log(`  Days off swap: ${ds.fromDay} → ${ds.toDay} (${status})`);
-  }
-
-  // Vacation swaps
-  for (const vs of VACATION_SWAPS) {
-    const user = allUsers[swapIdx % allUsers.length];
-    await prisma.swap.create({
-      data: {
-        userId: user.id,
-        depotId: user.depot!.id,
-        category: "vacation",
-        status: "open",
-        posterName: `${user.firstName} ${user.lastName}`,
-        details: vs.details,
-        vacationHave: vs.vacationHave,
-        vacationWant: vs.vacationWant,
-        date: new Date(),
-      },
-    });
-    swapIdx++;
-    console.log(`  Vacation swap: ${vs.vacationHave} → ${vs.vacationWant}`);
-  }
-
-  console.log("\nDemo seed complete.");
-  console.log(`Created ${USERS.length} users and ${WORK_SWAPS.length + DAYSOFF_SWAPS.length + VACATION_SWAPS.length} swaps.`);
+  console.log(`\nCreated ${swapCreated} new swaps.`);
+  console.log("Demo seed complete.");
 }
 
 main()
