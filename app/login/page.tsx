@@ -104,14 +104,6 @@ export default function LoginPage() {
               <div><label style={lb}>First Name</label><input value={fn} onChange={e => { setFn(e.target.value); setErr(""); }} placeholder="John" /></div>
               <div><label style={lb}>Last Name</label><input value={ln} onChange={e => { setLn(e.target.value); setErr(""); }} placeholder="Williams" /></div>
             </div>
-            <div><label style={lb}>Email</label><input type="email" value={em} onChange={e => { setEm(e.target.value); setErr(""); }} placeholder="you@example.com" /></div>
-            <div><label style={lb}>Create Password</label><input type="password" value={pw} onChange={e => { setPw(e.target.value); setErr(""); }} placeholder="Min 6 chars" /></div>
-            <div><label style={lb}>Verify Password</label><input type="password" value={pw2} onChange={e => { setPw2(e.target.value); setErr(""); }} placeholder="Re-enter" /></div>
-            <div><label style={lb}>Invite Code</label><input value={invCode} onChange={e => { setInvCode(e.target.value.toUpperCase()); setErr(""); }} placeholder="e.g. WMNY-DEMO1" style={{ letterSpacing: 2, textTransform: "uppercase" }} /></div>
-            <div style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: "1px solid " + C.bd }}>
-              <div style={{ fontSize: 10, color: C.m, lineHeight: 1.6 }}>Need an invite code? Ask a fellow operator who already uses the app, or use a seed code: WMNY-2024A, WMNY-2024B, WMNY-2024C</div>
-            </div>
-
             <div>
               <label style={lb}>Home Depot</label>
               <select value={depotId} onChange={e => { setDepotId(e.target.value); setErr(""); }} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.bd}`, background: C.s, color: depotId ? C.white : C.m, fontSize: 14, cursor: "pointer" }}>
@@ -125,7 +117,13 @@ export default function LoginPage() {
                 ))}
               </select>
             </div>
-
+            <div><label style={lb}>Email</label><input type="email" value={em} onChange={e => { setEm(e.target.value); setErr(""); }} placeholder="you@example.com" /></div>
+            <div><label style={lb}>Create Password</label><input type="password" value={pw} onChange={e => { setPw(e.target.value); setErr(""); }} placeholder="Min 6 chars" /></div>
+            <div><label style={lb}>Verify Password</label><input type="password" value={pw2} onChange={e => { setPw2(e.target.value); setErr(""); }} placeholder="Re-enter" /></div>
+            <div><label style={lb}>Invite Code</label><input value={invCode} onChange={e => { setInvCode(e.target.value.toUpperCase()); setErr(""); }} placeholder="e.g. WMNY-DEMO1" style={{ letterSpacing: 2, textTransform: "uppercase" }} /></div>
+            <div style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: "1px solid " + C.bd }}>
+              <div style={{ fontSize: 10, color: C.m, lineHeight: 1.6 }}>Need an invite code? Ask a fellow operator who already uses the app, or use a seed code: WMNY-2024A, WMNY-2024B, WMNY-2024C</div>
+            </div>
             <button onClick={doRegister} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 16, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1 }}>
               {submitting ? "Creating account..." : "Create Account"}
             </button>
