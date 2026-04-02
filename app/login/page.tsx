@@ -37,8 +37,8 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    if (!loading && user) router.replace("/depots");
-  }, [user, loading, router]);
+    if (!loading && user && !showDisclaimer) router.replace("/depots");
+  }, [user, loading, router, showDisclaimer]);
 
   useEffect(() => {
     if (mode === "register" && depots.length === 0) {
