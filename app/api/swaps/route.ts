@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
 import { SwapCategory, SwapStatus } from "@prisma/client";
+import { calcScore } from "@/lib/reputation";
+import { notifyUser } from "@/lib/notifyUser";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -54,7 +56,28 @@ export async function GET(req: NextRequest) {
     include: { user: { select: { id: true, firstName: true, lastName: true } } },
   });
 
-  return ok(swaps);
+  // Batch-fetch reputation for all unique poster users
+  const userIds = [...new Set(swaps.map(s => s.userId))];
+  const [reps, reviews] = await Promise.all([
+    prisma.reputation.findMany({ where: { userId: { in: userIds } } }),
+    prisma.review.findMany({ where: { reviewedId: { in: userIds } }, select: { reviewedId: true, rating: true } }),
+  ]);
+
+  const repMap = Object.fromEntries(reps.map(r => [r.userId, r]));
+  const reviewMap: Record<string, number[]> = {};
+  reviews.forEach(r => { (reviewMap[r.reviewedId] ??= []).push(r.rating); });
+
+  const swapsWithRep = swaps.map(s => ({
+    ...s,
+    reputation: calcScore({
+      completed: repMap[s.userId]?.completed ?? 0,
+      cancelled: repMap[s.userId]?.cancelled ?? 0,
+      noShow: repMap[s.userId]?.noShow ?? 0,
+      reviews: reviewMap[s.userId] ?? [],
+    }),
+  }));
+
+  return ok(swapsWithRep);
 }
 
 export async function POST(req: NextRequest) {
@@ -105,6 +128,18 @@ export async function POST(req: NextRequest) {
       vacationWant: vacationWant ?? null,
     },
   });
+
+  // Notify all other users at this depot who have push subscriptions
+  const depotUsers = await prisma.user.findMany({
+    where: { depotId: dbUser.depotId, id: { not: user.userId }, pushSubscriptions: { some: {} } },
+    select: { id: true },
+  });
+  const categoryLabel = swap.category === "work" ? "Work" : swap.category === "daysoff" ? "Days Off" : "Vacation";
+  depotUsers.forEach(u => notifyUser(u.id, {
+    title: `New ${categoryLabel} swap posted`,
+    body: `${posterName} posted a new swap — check the board`,
+    url: `/depot/${dbUser.depotId}/swaps/${swap.id}`,
+  }));
 
   return ok(swap, 201);
 }

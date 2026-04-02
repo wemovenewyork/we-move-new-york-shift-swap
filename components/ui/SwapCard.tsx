@@ -2,6 +2,8 @@
 
 import { Swap, User } from "@/types";
 import { C, CM, STC, SWAP_TYPES } from "@/constants/colors";
+import { useAuth } from "@/lib/AuthContext";
+import { useT } from "@/lib/i18n";
 import Icon from "./Icon";
 import RepBadge from "./RepBadge";
 
@@ -35,11 +37,20 @@ interface Props {
 }
 
 export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onInterest, onEdit, onReport, onSaveTemplate, lastVisit, onClick }: Props) {
+  const { user: authUser } = useAuth();
+  const tr = useT(authUser?.language);
   const m = CM[s.category] ?? CM.work;
   const co = SWAP_TYPES.find(x => x.id === s.category);
   const own = user && s.userId === user.id;
   const st2 = STC[s.status] ?? STC.open;
   const isNew = lastVisit && new Date(s.createdAt).getTime() > lastVisit - 3600000;
+
+  const statusLabel: Record<string, string> = {
+    open: tr("status.open"),
+    pending: tr("status.pending"),
+    filled: tr("status.filled"),
+    expired: tr("status.expired"),
+  };
 
   return (
     <div
@@ -51,11 +62,11 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onIn
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: 10, fontWeight: 700, color: m.c, letterSpacing: 1, textTransform: "uppercase" }}>{co?.f}</span>
-          {isNew && <span style={{ padding: "1px 6px", borderRadius: 4, background: C.gold, color: C.bg, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>NEW</span>}
+          {isNew && <span style={{ padding: "1px 6px", borderRadius: 4, background: C.gold, color: C.bg, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>{tr("browse.new")}</span>}
         </div>
         <span style={{ padding: "4px 10px", borderRadius: 20, background: st2.bg, border: `1px solid ${st2.bd}`, fontSize: 9, fontWeight: 700, color: st2.c, textTransform: "uppercase", letterSpacing: 1, boxShadow: `0 0 8px ${st2.c}15`, display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{ width: 5, height: 5, borderRadius: "50%", background: st2.c, animation: s.status === "open" ? "pulseGlow 2s ease infinite" : "none" }} />
-          {s.status}
+          {statusLabel[s.status] ?? s.status}
         </span>
       </div>
 
@@ -67,48 +78,45 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onIn
 
       {s.category === "work" && (
         <div style={{ marginTop: 10, borderRadius: 12, background: C.blue + "0d", border: `1px solid ${C.blue}22`, padding: "10px 12px" }}>
-          {/* Run + Route */}
           {(s.run || s.route) && (
             <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
               {s.run && (
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 9, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>Run</div>
+                  <div style={{ fontSize: 9, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>{tr("detail.run")}</div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: C.white }}>{s.run}</div>
                 </div>
               )}
               {s.route && (
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 9, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>Route</div>
+                  <div style={{ fontSize: 9, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>{tr("detail.route")}</div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: C.white }}>{s.route}</div>
                 </div>
               )}
             </div>
           )}
-          {/* Start → Clear */}
           {(s.startTime || s.clearTime) && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: s.swingStart ? 8 : 0 }}>
               <div style={{ flex: 1, padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,.04)", border: `1px solid ${C.blue}22` }}>
-                <div style={{ fontSize: 9, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>Start</div>
+                <div style={{ fontSize: 9, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>{tr("detail.startTime")}</div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: C.white }}>{ft(s.startTime) || "—"}</div>
               </div>
               <Icon n="arr" s={14} c={C.m} />
               <div style={{ flex: 1, padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,.04)", border: `1px solid ${C.blue}22` }}>
-                <div style={{ fontSize: 9, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>Clear</div>
+                <div style={{ fontSize: 9, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>{tr("detail.clearTime")}</div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: C.white }}>{ft(s.clearTime) || "—"}</div>
               </div>
             </div>
           )}
-          {/* Swing times (only if present) */}
           {(s.swingStart || s.swingEnd) && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 8, borderTop: `1px solid ${C.blue}18` }}>
-              <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1, flexShrink: 0 }}>Swing</div>
+              <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1, flexShrink: 0 }}>{tr("detail.swingBreak")}</div>
               <div style={{ flex: 1, padding: "4px 8px", borderRadius: 6, background: "rgba(255,255,255,.03)", border: `1px solid ${C.blue}18`, textAlign: "center" }}>
-                <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1, marginBottom: 1 }}>In</div>
+                <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1, marginBottom: 1 }}>{tr("detail.swingIn")}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.8)" }}>{ft(s.swingStart) || "—"}</div>
               </div>
               <Icon n="arr" s={12} c={C.m} />
               <div style={{ flex: 1, padding: "4px 8px", borderRadius: 6, background: "rgba(255,255,255,.03)", border: `1px solid ${C.blue}18`, textAlign: "center" }}>
-                <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1, marginBottom: 1 }}>Out</div>
+                <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1, marginBottom: 1 }}>{tr("detail.swingOut")}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.8)" }}>{ft(s.swingEnd) || "—"}</div>
               </div>
             </div>
@@ -120,13 +128,13 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onIn
         <div style={{ marginTop: 8 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, alignItems: "center" }}>
             <div style={{ padding: "6px 10px", borderRadius: 8, background: C.gs }}>
-              <div style={{ fontSize: 8, color: C.gold, textTransform: "uppercase" }}>From</div>
+              <div style={{ fontSize: 8, color: C.gold, textTransform: "uppercase" }}>{tr("detail.swappingFrom")}</div>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.white }}>{s.fromDay}</div>
               {s.fromDate && <div style={{ fontSize: 10, color: C.m, marginTop: 2 }}>{new Date(s.fromDate + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>}
             </div>
             <Icon n="swap" s={14} c={C.m} />
             <div style={{ padding: "6px 10px", borderRadius: 8, background: C.blue + "12" }}>
-              <div style={{ fontSize: 8, color: C.blue, textTransform: "uppercase" }}>To</div>
+              <div style={{ fontSize: 8, color: C.blue, textTransform: "uppercase" }}>{tr("detail.swappingTo")}</div>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.white }}>{s.toDay}</div>
               {s.toDate && <div style={{ fontSize: 10, color: C.m, marginTop: 2 }}>{new Date(s.toDate + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>}
             </div>
@@ -137,12 +145,12 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onIn
       {s.category === "vacation" && (s.vacationHave || s.vacationWant) && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, marginTop: 8, alignItems: "center" }}>
           <div style={{ padding: "6px 10px", borderRadius: 8, background: "rgba(0,201,167,.08)" }}>
-            <div style={{ fontSize: 8, color: "#00C9A7", textTransform: "uppercase" }}>Have</div>
+            <div style={{ fontSize: 8, color: "#00C9A7", textTransform: "uppercase" }}>{tr("detail.haveWeek")}</div>
             <div style={{ fontSize: 12, fontWeight: 700, color: C.white }}>{s.vacationHave}</div>
           </div>
           <Icon n="swap" s={14} c={C.m} />
           <div style={{ padding: "6px 10px", borderRadius: 8, background: C.blue + "12" }}>
-            <div style={{ fontSize: 8, color: C.blue, textTransform: "uppercase" }}>Want</div>
+            <div style={{ fontSize: 8, color: C.blue, textTransform: "uppercase" }}>{tr("detail.wantWeek")}</div>
             <div style={{ fontSize: 12, fontWeight: 700, color: C.white }}>{s.vacationWant}</div>
           </div>
         </div>
@@ -157,28 +165,28 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onIn
                 <button onClick={() => onSaveTemplate(s)} title="Save as template" aria-label="Save as template" style={{ padding: "4px 8px", borderRadius: 8, border: `1px solid ${C.gold}33`, background: C.gs, cursor: "pointer", color: C.gold, display: "flex", alignItems: "center" }}><Icon n="clk" s={13} /></button>
               )}
               {onEdit && (
-                <button onClick={() => onEdit(s)} aria-label="Edit swap" style={{ padding: "4px 8px", borderRadius: 8, border: `1px solid ${C.blue}33`, background: C.blue + "12", cursor: "pointer", color: C.blue, display: "flex", alignItems: "center" }}><Icon n="edit" s={13} /></button>
+                <button onClick={() => onEdit(s)} aria-label={tr("action.edit")} style={{ padding: "4px 8px", borderRadius: 8, border: `1px solid ${C.blue}33`, background: C.blue + "12", cursor: "pointer", color: C.blue, display: "flex", alignItems: "center" }}><Icon n="edit" s={13} /></button>
               )}
               {onStatusChange && (
                 <select value={s.status} onChange={e => onStatusChange(s.id, e.target.value)} style={{ padding: "4px 8px", borderRadius: 8, fontSize: 10, fontWeight: 600, width: "auto", cursor: "pointer", appearance: "auto", background: C.s, border: `1px solid ${C.bd}`, color: C.white }}>
-                  <option value="open">Open</option>
-                  <option value="pending">Pending</option>
-                  <option value="filled">Filled</option>
-                  <option value="expired">Expired</option>
+                  <option value="open">{tr("status.open")}</option>
+                  <option value="pending">{tr("status.pending")}</option>
+                  <option value="filled">{tr("status.filled")}</option>
+                  <option value="expired">{tr("status.expired")}</option>
                 </select>
               )}
               {onDelete && (
-                <button onClick={() => onDelete(s.id)} aria-label="Delete swap" style={{ padding: "4px 8px", borderRadius: 8, border: `1px solid ${C.red}33`, background: C.red + "12", cursor: "pointer", color: C.red, display: "flex", alignItems: "center" }}><Icon n="del" s={13} /></button>
+                <button onClick={() => onDelete(s.id)} aria-label={tr("action.delete")} style={{ padding: "4px 8px", borderRadius: 8, border: `1px solid ${C.red}33`, background: C.red + "12", cursor: "pointer", color: C.red, display: "flex", alignItems: "center" }}><Icon n="del" s={13} /></button>
               )}
             </>
           ) : (
             <>
               {onReport && (
-                <button onClick={() => onReport(s)} title="Report" aria-label="Report this swap" style={{ padding: "4px 6px", borderRadius: 6, border: `1px solid ${C.bd}`, background: "transparent", cursor: "pointer", color: C.m, display: "flex", alignItems: "center", opacity: 0.5 }}><Icon n="inf" s={11} /></button>
+                <button onClick={() => onReport(s)} title={tr("action.report")} aria-label={tr("action.report")} style={{ padding: "4px 6px", borderRadius: 6, border: `1px solid ${C.bd}`, background: "transparent", cursor: "pointer", color: C.m, display: "flex", alignItems: "center", opacity: 0.5 }}><Icon n="inf" s={11} /></button>
               )}
               {s.status === "open" && onInterest && (
                 <button onClick={() => onInterest(s)} style={{ padding: "7px 16px", borderRadius: 8, border: `1px solid ${m.bd2}`, background: m.bg, cursor: "pointer", fontSize: 12, fontWeight: 600, color: m.c, display: "flex", alignItems: "center", gap: 4 }}>
-                  I&apos;m Interested <Icon n="arr" s={12} />
+                  {tr("action.interested")} <Icon n="arr" s={12} />
                 </button>
               )}
             </>
