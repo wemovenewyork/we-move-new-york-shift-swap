@@ -5,6 +5,9 @@ import { signAccessToken, signRefreshToken } from "@/lib/auth";
 import { ok, err } from "@/lib/apiResponse";
 import { rateLimit } from "@/lib/rateLimit";
 
+const MAX_ATTEMPTS = 10;
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
   if (!await rateLimit(`login:${ip}`, 10, 60_000)) return err("Too many attempts — try again in a minute", 429);
@@ -15,8 +18,33 @@ export async function POST(req: NextRequest) {
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (!user) return err("Invalid email or password", 401);
 
+  // Check account lockout
+  if (user.lockedUntil && user.lockedUntil > new Date()) {
+    const mins = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
+    return err(`Account locked — too many failed attempts. Try again in ${mins} minute${mins !== 1 ? "s" : ""}.`, 423);
+  }
+
   const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) return err("Invalid email or password", 401);
+
+  if (!valid) {
+    const attempts = user.loginAttempts + 1;
+    const locked = attempts >= MAX_ATTEMPTS;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        loginAttempts: attempts,
+        ...(locked ? { lockedUntil: new Date(Date.now() + LOCKOUT_MS) } : {}),
+      },
+    });
+    if (locked) return err("Account locked — too many failed attempts. Try again in 15 minutes.", 423);
+    return err("Invalid email or password", 401);
+  }
+
+  // Successful login — reset lockout counters
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { loginAttempts: 0, lockedUntil: null },
+  });
 
   const payload = { userId: user.id, email: user.email };
   return ok({
