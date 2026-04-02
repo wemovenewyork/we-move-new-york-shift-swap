@@ -1,15 +1,17 @@
 import webpush from "web-push";
 
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL ?? "mailto:admin@wemoveny.app",
-  process.env.VAPID_PUBLIC_KEY ?? "",
-  process.env.VAPID_PRIVATE_KEY ?? ""
-);
-
 export interface PushPayload {
   title: string;
   body: string;
   url?: string;
+}
+
+function initVapid() {
+  webpush.setVapidDetails(
+    process.env.VAPID_EMAIL ?? "mailto:admin@wemoveny.app",
+    process.env.VAPID_PUBLIC_KEY ?? "",
+    process.env.VAPID_PRIVATE_KEY ?? ""
+  );
 }
 
 export async function sendPush(
@@ -17,6 +19,7 @@ export async function sendPush(
   payload: PushPayload
 ): Promise<boolean> {
   try {
+    initVapid();
     await webpush.sendNotification(
       { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
       JSON.stringify(payload)

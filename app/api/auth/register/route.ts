@@ -6,9 +6,9 @@ import { genInviteCode } from "@/lib/inviteCode";
 import { ok, err } from "@/lib/apiResponse";
 
 export async function POST(req: NextRequest) {
-  const { firstName, lastName, email, password, inviteCode } = await req.json();
+  const { firstName, lastName, email, password, inviteCode, depotId } = await req.json();
 
-  if (!firstName || !lastName || !email || !password || !inviteCode) {
+  if (!firstName || !lastName || !email || !password || !inviteCode || !depotId) {
     return err("All fields are required", 400);
   }
   if (!email.includes("@")) return err("Invalid email", 400);
@@ -21,6 +21,10 @@ export async function POST(req: NextRequest) {
   const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (existing) return err("Email already registered", 409);
 
+  // Validate depot
+  const depot = await prisma.depot.findUnique({ where: { id: depotId } });
+  if (!depot) return err("Invalid depot selected", 400);
+
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
     data: {
@@ -28,6 +32,7 @@ export async function POST(req: NextRequest) {
       passwordHash,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
+      depotId: depot.id,
       verified: true,
       invitedBy: invite.createdBy,
     },
