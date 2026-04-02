@@ -40,14 +40,15 @@ export async function PATCH(req: NextRequest) {
   const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
   if (!dbUser || dbUser.role !== "admin") return err("Forbidden", 403);
 
-  const { userId, role } = await req.json();
+  const { userId, role, depotId } = await req.json();
   if (!userId || !["operator", "depotRep", "admin"].includes(role)) return err("Invalid request", 400);
   if (userId === user.userId) return err("Cannot change your own role", 400);
+  if (role === "depotRep" && !depotId) return err("Depot is required for depot rep role", 400);
 
   const updated = await prisma.user.update({
     where: { id: userId },
-    data: { role },
-    select: { id: true, firstName: true, lastName: true, role: true },
+    data: { role, ...(role === "depotRep" ? { depotId } : {}) },
+    select: { id: true, firstName: true, lastName: true, role: true, depot: { select: { name: true, code: true } } },
   });
 
   return ok(updated);

@@ -45,6 +45,8 @@ export default function AdminPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [userQ, setUserQ] = useState("");
+  const [depots, setDepots] = useState<{ id: string; name: string; code: string }[]>([]);
+  const [pendingDepot, setPendingDepot] = useState<Record<string, string>>({});
   const [invites, setInvites] = useState<InviteCode[]>([]);
   const [inviteCount, setInviteCount] = useState(5);
   const [busy, setBusy] = useState<string | null>(null);
@@ -63,6 +65,7 @@ export default function AdminPage() {
     if (!user || user.role !== "admin") return;
     api.get<Stats>("/admin/stats").then(setStats).catch(() => {});
     api.get<Report[]>("/admin/reports").then(setReports).catch(() => {});
+    api.get<{ id: string; name: string; code: string }[]>("/depots").then(setDepots).catch(() => {});
   }, [user]);
 
   useEffect(() => {
@@ -110,6 +113,14 @@ export default function AdminPage() {
   };
 
   const handleRoleChange = async (userId: string, role: string) => {
+    if (role === "depotRep") {
+      // Stage the role change — wait for depot selection before calling API
+      setPendingDepot(prev => ({ ...prev, [userId]: "" }));
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: role as AdminUser["role"] } : u));
+      return;
+    }
+    // Clear any pending depot selection if switching away from depotRep
+    setPendingDepot(prev => { const next = { ...prev }; delete next[userId]; return next; });
     setBusy(userId);
     try {
       await api.patch("/admin/users", { userId, role });
@@ -117,6 +128,20 @@ export default function AdminPage() {
       showToast("Role updated");
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Failed to update role");
+    } finally { setBusy(null); }
+  };
+
+  const handleDepotRepConfirm = async (userId: string) => {
+    const depotId = pendingDepot[userId];
+    if (!depotId) { showToast("Select a depot first"); return; }
+    setBusy(userId);
+    try {
+      const updated = await api.patch<AdminUser>("/admin/users", { userId, role: "depotRep", depotId });
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updated } : u));
+      setPendingDepot(prev => { const next = { ...prev }; delete next[userId]; return next; });
+      showToast("Depot rep assigned");
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Failed");
     } finally { setBusy(null); }
   };
 
@@ -234,16 +259,37 @@ export default function AdminPage() {
                       <div style={{ fontSize: 11, color: C.m, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</div>
                       {u.depot && <div style={{ fontSize: 10, color: C.gold, marginTop: 2 }}>{u.depot.name}</div>}
                     </div>
-                    <select
-                      value={u.role}
-                      disabled={isBusy}
-                      onChange={e => handleRoleChange(u.id, e.target.value)}
-                      style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${rc}44`, background: rc + "12", color: rc, fontSize: 12, fontWeight: 700, cursor: "pointer", appearance: "auto", opacity: isBusy ? 0.5 : 1 }}
-                    >
-                      <option value="operator">Operator</option>
-                      <option value="depotRep">Depot Rep</option>
-                      <option value="admin">Admin</option>
-                    </select>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                      <select
+                        value={u.role}
+                        disabled={isBusy}
+                        onChange={e => handleRoleChange(u.id, e.target.value)}
+                        style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${rc}44`, background: rc + "12", color: rc, fontSize: 12, fontWeight: 700, cursor: "pointer", appearance: "auto", opacity: isBusy ? 0.5 : 1 }}
+                      >
+                        <option value="operator">Operator</option>
+                        <option value="depotRep">Depot Rep</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      {pendingDepot[u.id] !== undefined && (
+                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          <select
+                            value={pendingDepot[u.id]}
+                            onChange={e => setPendingDepot(prev => ({ ...prev, [u.id]: e.target.value }))}
+                            style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.gold}44`, background: C.gold + "10", color: C.gold, fontSize: 12, cursor: "pointer", appearance: "auto" }}
+                          >
+                            <option value="">— Select depot —</option>
+                            {depots.map(d => <option key={d.id} value={d.id}>{d.name} ({d.code})</option>)}
+                          </select>
+                          <button
+                            onClick={() => handleDepotRepConfirm(u.id)}
+                            disabled={!pendingDepot[u.id] || isBusy}
+                            style={{ padding: "6px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: C.gold, color: C.bg, fontSize: 12, fontWeight: 700, opacity: !pendingDepot[u.id] || isBusy ? 0.5 : 1 }}
+                          >
+                            {isBusy ? "…" : "Confirm"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
