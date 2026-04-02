@@ -270,6 +270,9 @@ export default function AdminPage() {
                         <option value="depotRep">Depot Rep</option>
                         <option value="admin">Admin</option>
                       </select>
+                      {u.role === "depotRep" && u.depot && pendingDepot[u.id] === undefined && (
+                        <div style={{ fontSize: 10, fontWeight: 600, color: C.gold, textAlign: "right" }}>{u.depot.name} ({u.depot.code})</div>
+                      )}
                       {pendingDepot[u.id] !== undefined && (
                         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                           <select
