@@ -79,6 +79,21 @@ async function main() {
     });
   }
 
+  console.log("Seeding admin account...");
+  const adminHash = await bcrypt.hash("WeMoveNY-Admin2024!", 10);
+  await prisma.user.upsert({
+    where: { email: "admin@wemoveny.app" },
+    update: {},
+    create: {
+      email: "admin@wemoveny.app",
+      passwordHash: adminHash,
+      firstName: "Admin",
+      lastName: "WeMoveNY",
+      verified: true,
+      role: "admin",
+    },
+  });
+
   console.log("Seeding demo account...");
   const flatbush = await prisma.depot.findUnique({ where: { code: "FB" } });
   const demoHash = await bcrypt.hash("demo123", 10);
