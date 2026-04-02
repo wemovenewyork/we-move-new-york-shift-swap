@@ -41,9 +41,9 @@ export default function TermsPage() {
 
         <div style={s.section}>
           <h2 style={s.h2}>2. Who Can Use This App</h2>
-          <p style={s.p}>We Move New York is intended exclusively for active and retired NYC MTA bus operators. Access requires a valid invite code issued by an existing member. By registering, you confirm that:</p>
+          <p style={s.p}>We Move New York is intended exclusively for active NYC bus operators. Access requires a valid invite code issued by an existing member. By registering, you confirm that:</p>
           <ul style={{ listStyle: "disc", paddingLeft: 24, marginBottom: 12 }}>
-            <li style={s.li}>You are a current or former MTA bus operator.</li>
+            <li style={s.li}>You are a current bus operator.</li>
             <li style={s.li}>The information you provide is accurate and truthful.</li>
             <li style={s.li}>You will not share your account credentials with others.</li>
             <li style={s.li}>You are at least 18 years of age.</li>
@@ -106,7 +106,7 @@ export default function TermsPage() {
 
         <div style={s.section}>
           <h2 style={s.h2}>9. Contact</h2>
-          <p style={s.p}>For questions about these Terms, contact us through the app or reach out to your depot representative.</p>
+          <p style={s.p}>For questions about these Terms, contact us through the app.</p>
         </div>
       </main>
     </div>
