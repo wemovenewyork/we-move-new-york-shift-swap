@@ -68,6 +68,32 @@ a:focus-visible { outline: 2px solid #D1AD38; outline-offset: 2px; }
 @keyframes orbFloat { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(30px, -20px); } 50% { transform: translate(-20px, 30px); } 75% { transform: translate(20px, 20px); } }
 @keyframes shake { 0%,100% { transform: translateX(0); } 15% { transform: translateX(-8px); } 30% { transform: translateX(8px); } 45% { transform: translateX(-6px); } 60% { transform: translateX(6px); } 75% { transform: translateX(-3px); } 90% { transform: translateX(3px); } }
 
+@keyframes meshOrb1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%      { transform: translate(8vw,12vh) scale(1.15); }
+  66%      { transform: translate(-6vw,8vh) scale(.9); }
+}
+@keyframes meshOrb2 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  40%      { transform: translate(-10vw,15vh) scale(1.2); }
+  70%      { transform: translate(5vw,-8vh) scale(.85); }
+}
+@keyframes meshOrb3 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  25%      { transform: translate(12vw,-10vh) scale(1.1); }
+  60%      { transform: translate(-8vw,12vh) scale(.95); }
+}
+@keyframes meshOrb4 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  35%      { transform: translate(10vw,-12vh) scale(1.18); }
+  75%      { transform: translate(-5vw,6vh) scale(.88); }
+}
+@keyframes meshOrb5 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  45%      { transform: translate(-12vw,-10vh) scale(1.12); }
+  80%      { transform: translate(8vw,8vh) scale(.92); }
+}
+
 /* Page fade-in */
 .page-enter { animation: fadeIn .35s ease both; }
 
