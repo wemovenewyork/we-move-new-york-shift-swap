@@ -11,6 +11,8 @@ import Icon from "@/components/ui/Icon";
 import Footer from "@/components/ui/Footer";
 import TiltCard from "@/components/ui/TiltCard";
 import Onboarding from "@/components/screens/Onboarding";
+import NotifIcon from "@/components/ui/NotifIcon";
+import InboxIcon from "@/components/ui/InboxIcon";
 
 const BOROUGHS = ["All", "Bronx", "Brooklyn", "Manhattan", "Queens", "Staten Island"];
 
@@ -62,6 +64,8 @@ export default function DepotsPage() {
             <Icon n="shield" s={15} c="#C084FC" />
           </button>
         )}
+        <NotifIcon />
+        <InboxIcon />
         <button onClick={() => router.push("/profile")} aria-label="Profile" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.m, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon n="usr" s={15} />
         </button>
