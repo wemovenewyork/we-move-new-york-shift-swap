@@ -41,6 +41,7 @@ model User {
   agreementsAsA      SwapAgreement[]    @relation("AgreementUserA")
   agreementsAsB      SwapAgreement[]    @relation("AgreementUserB")
   announcements      Announcement[]
+  auditLogs          AuditLog[]
 
   @@map("users")
 }
@@ -248,4 +249,31 @@ enum AgreementStatus {
   userA_confirmed
   completed
   cancelled
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  adminId    String   @map("admin_id")
+  action     String
+  targetId   String?  @map("target_id")
+  targetType String?  @map("target_type")
+  detail     String?
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  admin User @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+enum AuditAction {
+  role_change
+  invite_revoke
+  invite_generate
+  report_dismiss
+  report_review
+  user_delete
+  account_delete
 }

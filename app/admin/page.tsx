@@ -40,7 +40,7 @@ const lb: React.CSSProperties = { display: "block", marginBottom: 6, fontSize: 1
 export default function AdminPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [tab, setTab] = useState<"reports" | "users" | "invites">("reports");
+  const [tab, setTab] = useState<"reports" | "users" | "invites" | "audit">("reports");
   const [stats, setStats] = useState<Stats | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -51,6 +51,7 @@ export default function AdminPage() {
   const [inviteCount, setInviteCount] = useState(5);
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [auditLogs, setAuditLogs] = useState<{ id: string; action: string; detail: string | null; createdAt: string; ip: string | null; admin: { firstName: string; lastName: string; email: string } }[]>([]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg); setTimeout(() => setToast(null), 2500);
@@ -76,6 +77,11 @@ export default function AdminPage() {
   useEffect(() => {
     if (tab !== "invites" || !user || user.role !== "admin") return;
     api.get<InviteCode[]>("/admin/invites").then(setInvites).catch(() => {});
+  }, [tab, user]);
+
+  useEffect(() => {
+    if (tab !== "audit" || !user || user.role !== "admin") return;
+    api.get<typeof auditLogs>("/admin/audit-log").then(setAuditLogs).catch(() => {});
   }, [tab, user]);
 
   const handleGenerate = async () => {
@@ -186,10 +192,10 @@ export default function AdminPage() {
         )}
 
         {/* Tabs */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, background: C.s, borderRadius: 12, padding: 4, marginBottom: 16 }}>
-          {(["reports", "users", "invites"] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{ padding: "10px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, background: tab === t ? PURPLE + "22" : "transparent", color: tab === t ? PURPLE : C.m, boxShadow: tab === t ? `inset 0 0 0 1px ${PURPLE}44` : "none" }}>
-              {t === "reports" ? `Reports${stats?.pendingReports ? ` (${stats.pendingReports})` : ""}` : t === "users" ? "Users" : "Invites"}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4, background: C.s, borderRadius: 12, padding: 4, marginBottom: 16 }}>
+          {(["reports", "users", "invites", "audit"] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)} style={{ padding: "10px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: tab === t ? PURPLE + "22" : "transparent", color: tab === t ? PURPLE : C.m, boxShadow: tab === t ? `inset 0 0 0 1px ${PURPLE}44` : "none" }}>
+              {t === "reports" ? `Reports${stats?.pendingReports ? ` (${stats.pendingReports})` : ""}` : t === "users" ? "Users" : t === "invites" ? "Invites" : "Audit"}
             </button>
           ))}
         </div>
@@ -353,6 +359,28 @@ export default function AdminPage() {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Audit Log tab */}
+        {tab === "audit" && (
+          <div style={{ display: "grid", gap: 8 }}>
+            {auditLogs.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "48px 20px", color: C.m }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.white }}>No audit logs yet</div>
+                <div style={{ fontSize: 12, color: C.m, marginTop: 6 }}>Admin actions will appear here.</div>
+              </div>
+            ) : auditLogs.map(log => (
+              <div key={log.id} style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(255,255,255,.02)", border: `1px solid ${C.bd}` }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: PURPLE, textTransform: "uppercase", letterSpacing: 1 }}>{log.action.replace(/_/g, " ")}</span>
+                  <span style={{ fontSize: 10, color: C.m }}>{new Date(log.createdAt).toLocaleString()}</span>
+                </div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,.7)", marginBottom: 4 }}>{log.detail}</div>
+                <div style={{ fontSize: 10, color: C.m }}>by {log.admin.firstName} {log.admin.lastName} ({log.admin.email}){log.ip ? ` · ${log.ip}` : ""}</div>
+              </div>
+            ))}
           </div>
         )}
       </main>

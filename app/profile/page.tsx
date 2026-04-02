@@ -20,6 +20,8 @@ export default function ProfilePage() {
   const [tab, setTab] = useState<"profile" | "security">("profile");
   const [fn, setFn] = useState(""); const [ln, setLn] = useState(""); const [email, setEmail] = useState(""); const [lang, setLang] = useState("en");
   const [curPw, setCurPw] = useState(""); const [newPw, setNewPw] = useState(""); const [newPw2, setNewPw2] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePw, setDeletePw] = useState(""); const [deleteErr, setDeleteErr] = useState(""); const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<string | null>(null); const [pwErr, setPwErr] = useState("");
   const [depots, setDepots] = useState<Depot[]>([]); const [saving, setSaving] = useState(false);
 
@@ -165,6 +167,43 @@ export default function ProfilePage() {
         <button onClick={handleLogout} style={{ marginTop: 20, padding: 16, borderRadius: 14, border: `1px solid ${C.red}33`, background: C.red + "12", cursor: "pointer", fontSize: 15, fontWeight: 600, color: C.red, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%" }}>
           <Icon n="out" s={16} c={C.red} /> Sign Out
         </button>
+
+        {/* Delete Account */}
+        <div style={{ marginTop: 32, padding: "16px", borderRadius: 14, border: `1px solid ${C.red}22`, background: C.red + "08" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.red, textTransform: "uppercase", letterSpacing: 2, marginBottom: 8 }}>Danger Zone</div>
+          {!showDeleteConfirm ? (
+            <button onClick={() => setShowDeleteConfirm(true)} style={{ padding: "12px 16px", borderRadius: 12, border: `1px solid ${C.red}44`, background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 600, color: C.red, width: "100%" }}>
+              Delete My Account
+            </button>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,.6)", lineHeight: 1.6, margin: 0 }}>
+                This will permanently anonymize your account. Your swap history remains but your name and email will be removed. This cannot be undone.
+              </p>
+              <input type="password" value={deletePw} onChange={e => { setDeletePw(e.target.value); setDeleteErr(""); }} placeholder="Enter your password to confirm" style={{ borderColor: C.red + "44" }} />
+              {deleteErr && <div style={{ fontSize: 12, color: C.red }}>{deleteErr}</div>}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <button onClick={() => { setShowDeleteConfirm(false); setDeletePw(""); setDeleteErr(""); }} style={{ padding: 12, borderRadius: 12, border: `1px solid ${C.bd}`, background: C.s, cursor: "pointer", fontSize: 13, color: C.m }}>Cancel</button>
+                <button
+                  disabled={deleting || !deletePw}
+                  onClick={async () => {
+                    setDeleting(true); setDeleteErr("");
+                    try {
+                      await api.post("/users/me/delete", { password: deletePw });
+                      logout();
+                      router.replace("/login");
+                    } catch (e: unknown) {
+                      setDeleteErr(e instanceof Error ? e.message : "Failed");
+                    } finally { setDeleting(false); }
+                  }}
+                  style={{ padding: 12, borderRadius: 12, border: "none", background: C.red, cursor: deleting || !deletePw ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 700, color: "#fff", opacity: deleting || !deletePw ? 0.6 : 1 }}
+                >
+                  {deleting ? "Deleting..." : "Delete Account"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
       {toast && <Toast message={toast} />}
     </div>
