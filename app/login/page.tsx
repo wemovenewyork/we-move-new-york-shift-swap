@@ -29,6 +29,8 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false); const [showPw2, setShowPw2] = useState(false);
   const [err, setErr] = useState(""); const [shaking, setShaking] = useState(false); const [submitting, setSubmitting] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
 
   const setErrWithShake = (msg: string) => {
     setErr(msg);
@@ -37,8 +39,8 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    if (!loading && user && !showDisclaimer) router.replace("/depots");
-  }, [user, loading, router, showDisclaimer]);
+    if (!loading && user && !showDisclaimer && !showTerms) router.replace("/depots");
+  }, [user, loading, router, showDisclaimer, showTerms]);
 
   useEffect(() => {
     if (mode === "register" && depots.length === 0) {
@@ -198,11 +200,72 @@ export default function LoginPage() {
             </div>
 
             <button
-              onClick={() => { window.location.href = "/depots"; }}
+              onClick={() => { setShowDisclaimer(false); setShowTerms(true); }}
               autoFocus
               style={{ width: "100%", padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}cc)`, fontSize: 16, fontWeight: 800, color: C.bg }}
             >
               I Understand
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showTerms && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="terms-title"
+          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(1,0,40,.97)", backdropFilter: "blur(24px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "28px 20px" }}
+        >
+          <div style={{ maxWidth: 440, width: "100%", display: "flex", flexDirection: "column", maxHeight: "90vh" }}>
+            <div style={{ textAlign: "center", marginBottom: 18 }}>
+              <div style={{ width: 48, height: 48, borderRadius: "50%", background: C.gold + "18", border: `1.5px solid ${C.gold}44`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 12h6M9 16h6M9 8h4M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" stroke={C.gold} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <h2 id="terms-title" style={{ fontSize: 20, fontWeight: 800, color: C.white, margin: 0 }}>Terms of Use</h2>
+              <p style={{ fontSize: 12, color: C.m, margin: "6px 0 0" }}>Please read and agree to continue</p>
+            </div>
+
+            {/* Scrollable terms body */}
+            <div style={{ flex: 1, overflowY: "auto", background: "rgba(255,255,255,.03)", border: `1px solid rgba(255,255,255,.08)`, borderRadius: 16, padding: "18px 16px", marginBottom: 18, fontSize: 12, color: "rgba(255,255,255,.7)", lineHeight: 1.75 }}>
+              {[
+                { title: "1. Acceptance of Terms", body: 'By accessing or using We Move New York ("WMNY"), you agree to be bound by these Terms of Use. If you do not agree, do not use the App.' },
+                { title: "2. Who Can Use This App", body: "WMNY is intended exclusively for active and retired NYC MTA bus operators. By registering you confirm you are a current or former MTA bus operator, the information you provide is accurate, you will not share your credentials, and you are at least 18 years of age." },
+                { title: "3. Shift Swap Coordination", body: "WMNY is a coordination tool only. It does not replace any MTA, TWU, or union collective bargaining agreements. All shift swaps must comply with your depot's official procedures and receive supervisor approval. WMNY makes no guarantee a swap will be approved by management." },
+                { title: "4. User Conduct", body: "You agree not to post false or fraudulent swap listings, harass or threaten other users, share others' personal information without consent, use the App for commercial gain, attempt unauthorized access, or post discriminatory content. Violations may result in immediate account suspension." },
+                { title: "5. Reputation System", body: "Reviews must be honest and based on actual swap experiences. Manipulating ratings — including self-reviewing or fake reviews — is prohibited and may result in account termination." },
+                { title: "6. Invite Codes", body: "You are responsible for who you invite. Do not share invite codes publicly or with non-MTA personnel. Misuse may result in suspension of your account and the invited account." },
+                { title: "7. Disclaimer of Liability", body: "WMNY is provided as-is without warranties. We are not responsible for disputes, missed shifts, denied swaps, or disciplinary actions arising from use of this platform." },
+                { title: "8. Changes to Terms", body: "We reserve the right to update these Terms at any time. Continued use after changes are posted constitutes acceptance of the revised terms." },
+              ].map(({ title, body }) => (
+                <div key={title} style={{ marginBottom: 14 }}>
+                  <div style={{ fontWeight: 700, color: C.gold, fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 4 }}>{title}</div>
+                  <p style={{ margin: 0 }}>{body}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Checkbox */}
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 16, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={termsChecked}
+                onChange={e => setTermsChecked(e.target.checked)}
+                style={{ marginTop: 2, width: 18, height: 18, accentColor: C.gold, cursor: "pointer", flexShrink: 0 }}
+              />
+              <span style={{ fontSize: 13, color: "rgba(255,255,255,.75)", lineHeight: 1.5 }}>
+                I have read and agree to the <strong style={{ color: C.white }}>Terms of Use</strong>
+              </span>
+            </label>
+
+            <button
+              onClick={() => { if (termsChecked) window.location.href = "/depots"; }}
+              disabled={!termsChecked}
+              style={{ width: "100%", padding: 16, borderRadius: 14, border: "none", cursor: termsChecked ? "pointer" : "not-allowed", background: termsChecked ? `linear-gradient(135deg,${C.gold},${C.gold}cc)` : "rgba(255,255,255,.08)", fontSize: 16, fontWeight: 800, color: termsChecked ? C.bg : C.m, transition: "all .2s" }}
+            >
+              I Agree
             </button>
           </div>
         </div>
