@@ -26,7 +26,13 @@ export default function LoginPage() {
   const [depotId, setDepotId] = useState("");
   const [depots, setDepots] = useState<Depot[]>([]);
   const [showPw, setShowPw] = useState(false); const [showPw2, setShowPw2] = useState(false);
-  const [err, setErr] = useState(""); const [submitting, setSubmitting] = useState(false);
+  const [err, setErr] = useState(""); const [shaking, setShaking] = useState(false); const [submitting, setSubmitting] = useState(false);
+
+  const setErrWithShake = (msg: string) => {
+    setErr(msg);
+    setShaking(true);
+    setTimeout(() => setShaking(false), 500);
+  };
 
   useEffect(() => {
     if (!loading && user) router.replace("/depots");
@@ -39,28 +45,28 @@ export default function LoginPage() {
   }, [mode, depots.length]);
 
   const doSignIn = async () => {
-    if (!em || !pw) { setErr("Fill in all fields"); return; }
+    if (!em || !pw) { setErrWithShake("Fill in all fields"); return; }
     setSubmitting(true); setErr("");
     try {
       const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; language: string } }>("/auth/login", { email: em, password: pw });
       login(data.accessToken, data.refreshToken, data.user as Parameters<typeof login>[2]);
       window.location.href = "/depots";
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Login failed");
+      setErrWithShake(e instanceof Error ? e.message : "Login failed");
     } finally { setSubmitting(false); }
   };
 
   const doRegister = async () => {
-    if (!fn || !ln || !em || !pw || !pw2 || !invCode) { setErr("Fill in all fields"); return; }
-    if (!depotId) { setErr("Please select your home depot"); return; }
-    if (pw !== pw2) { setErr("Passwords do not match"); return; }
+    if (!fn || !ln || !em || !pw || !pw2 || !invCode) { setErrWithShake("Fill in all fields"); return; }
+    if (!depotId) { setErrWithShake("Please select your home depot"); return; }
+    if (pw !== pw2) { setErrWithShake("Passwords do not match"); return; }
     setSubmitting(true); setErr("");
     try {
       const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; role: string; language: string; flexibleMode: boolean } }>("/auth/register", { firstName: fn, lastName: ln, email: em, password: pw, inviteCode: invCode, depotId });
       login(data.accessToken, data.refreshToken, data.user as Parameters<typeof login>[2]);
       window.location.href = "/depots";
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Registration failed");
+      setErrWithShake(e instanceof Error ? e.message : "Registration failed");
     } finally { setSubmitting(false); }
   };
 
@@ -72,8 +78,8 @@ export default function LoginPage() {
   if (showIntro) return <Intro onDone={() => { sessionStorage.setItem("intro-seen", "1"); setShowIntro(false); }} />;
 
   return (
-    <main id="main-content" style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 20px", overflowY: "auto" }}>
-      <div style={{ maxWidth: 400, width: "100%", background: "rgba(255,255,255,.02)", backdropFilter: "blur(16px)", borderRadius: 28, border: "1px solid rgba(255,255,255,.06)", padding: 32, boxShadow: "0 24px 80px rgba(0,0,0,.3)" }}>
+    <main id="main-content" className="page-enter" style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 20px", overflowY: "auto" }}>
+      <div className={shaking ? "shake" : ""} style={{ maxWidth: 400, width: "100%", background: "rgba(255,255,255,.02)", backdropFilter: "blur(16px)", borderRadius: 28, border: "1px solid rgba(255,255,255,.06)", padding: 32, boxShadow: "0 24px 80px rgba(0,0,0,.3)" }}>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div style={{ width: 64, height: 64, borderRadius: "50%", background: `conic-gradient(from 45deg,${C.navy},${C.blue},${C.navy})`, display: "inline-flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.gold}`, marginBottom: 14 }}>
             <div style={{ fontWeight: 800, fontSize: 11, color: C.gold, textAlign: "center", lineHeight: 1.1 }}>WM<br />NY</div>

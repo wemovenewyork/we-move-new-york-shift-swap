@@ -66,3 +66,24 @@ a:focus-visible { outline: 2px solid #D1AD38; outline-offset: 2px; }
 @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 @keyframes pulseGlow { 0%, 100% { opacity: .4; } 50% { opacity: .8; } }
 @keyframes orbFloat { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(30px, -20px); } 50% { transform: translate(-20px, 30px); } 75% { transform: translate(20px, 20px); } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 15% { transform: translateX(-8px); } 30% { transform: translateX(8px); } 45% { transform: translateX(-6px); } 60% { transform: translateX(6px); } 75% { transform: translateX(-3px); } 90% { transform: translateX(3px); } }
+
+/* Page fade-in */
+.page-enter { animation: fadeIn .35s ease both; }
+
+/* Staggered card entrance */
+.card-enter { opacity: 0; animation: fadeUp .4s ease forwards; }
+.card-enter:nth-child(1)  { animation-delay: .04s; }
+.card-enter:nth-child(2)  { animation-delay: .08s; }
+.card-enter:nth-child(3)  { animation-delay: .12s; }
+.card-enter:nth-child(4)  { animation-delay: .16s; }
+.card-enter:nth-child(5)  { animation-delay: .20s; }
+.card-enter:nth-child(6)  { animation-delay: .24s; }
+.card-enter:nth-child(7)  { animation-delay: .28s; }
+.card-enter:nth-child(8)  { animation-delay: .32s; }
+.card-enter:nth-child(9)  { animation-delay: .36s; }
+.card-enter:nth-child(10) { animation-delay: .40s; }
+.card-enter:nth-child(n+11) { animation-delay: .44s; }
+
+/* Form error shake */
+.shake { animation: shake .5s ease; }

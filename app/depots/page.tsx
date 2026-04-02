@@ -39,7 +39,7 @@ export default function DepotsPage() {
   }, [depots, q, bo]);
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg }}>
+    <div className="page-enter" style={{ minHeight: "100vh", background: C.bg }}>
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.8)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,.06)", padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 16, color: C.white, letterSpacing: 3, flex: 1 }}>WE MOVE NEW YORK</div>
         <button onClick={() => router.push("/profile")} aria-label="Profile" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.m, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -72,6 +72,7 @@ export default function DepotsPage() {
             <div style={{ display: "grid", gap: 6 }}>
               {grouped[bn].map(d => (
                 <button
+                  className="card-enter"
                   key={d.code}
                   onClick={() => router.push(`/depot/${d.code}`)}
                   onMouseEnter={() => setHovered(d.code)}
