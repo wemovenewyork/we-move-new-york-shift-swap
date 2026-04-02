@@ -5,7 +5,7 @@ import { C } from "@/constants/colors";
 import Icon from "@/components/ui/Icon";
 
 const s = {
-  page: { minHeight: "100vh", background: C.bg, color: C.white } as React.CSSProperties,
+  page: { minHeight: "100vh", color: C.white } as React.CSSProperties,
   header: { position: "sticky" as const, top: 0, zIndex: 100, background: "rgba(1,0,40,.85)", backdropFilter: "blur(24px)", borderBottom: `1px solid ${C.bd}`, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 },
   content: { maxWidth: 680, margin: "0 auto", padding: "32px 24px 80px" },
   h1: { fontSize: 26, fontWeight: 800, color: C.white, marginBottom: 6 },

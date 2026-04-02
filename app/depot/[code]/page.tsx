@@ -43,7 +43,7 @@ export default function ActionPage() {
   ];
 
   return (
-    <div className="page-enter" style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column" }}>
+    <div className="page-enter" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={{ background: "rgba(1,0,40,.75)", borderBottom: `1px solid ${C.bd}`, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={() => router.push("/depots")} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon n="back" s={16} />

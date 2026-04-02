@@ -78,7 +78,7 @@ export default function LoginPage() {
   if (showIntro) return <Intro onDone={() => { sessionStorage.setItem("intro-seen", "1"); setShowIntro(false); }} />;
 
   return (
-    <main id="main-content" className="page-enter" style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 20px", overflowY: "auto" }}>
+    <main id="main-content" className="page-enter" style={{ minHeight: "100vh", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 20px", overflowY: "auto" }}>
       <div className={shaking ? "shake" : ""} style={{ maxWidth: 400, width: "100%", background: "rgba(255,255,255,.02)", backdropFilter: "blur(16px)", borderRadius: 28, border: "1px solid rgba(255,255,255,.06)", padding: 32, boxShadow: "0 24px 80px rgba(0,0,0,.3)" }}>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div style={{ width: 64, height: 64, borderRadius: "50%", background: `conic-gradient(from 45deg,${C.navy},${C.blue},${C.navy})`, display: "inline-flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.gold}`, marginBottom: 14 }}>

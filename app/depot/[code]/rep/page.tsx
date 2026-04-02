@@ -56,7 +56,7 @@ export default function RepDashboardPage() {
 
   if (error) {
     return (
-      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ textAlign: "center" }}>
           <Icon n="shield" s={40} c={C.red} />
           <div style={{ fontSize: 16, fontWeight: 700, color: C.white, marginTop: 12 }}>{error}</div>
@@ -67,7 +67,7 @@ export default function RepDashboardPage() {
   }
 
   if (!data) {
-    return <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", color: C.m }}>Loading...</div>;
+    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: C.m }}>Loading...</div>;
   }
 
   // Build summary stats
@@ -80,7 +80,7 @@ export default function RepDashboardPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, paddingBottom: 40 }}>
+    <div style={{ minHeight: "100vh", paddingBottom: 40 }}>
       {/* Header */}
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.85)", backdropFilter: "blur(24px)", borderBottom: `1px solid ${C.bd}`, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={() => router.push(`/depot/${code}`)} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
