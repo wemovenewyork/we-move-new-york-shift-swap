@@ -1,17 +1,17 @@
-// Distributed rate limiter using Vercel KV (Redis).
-// Falls back to allowing the request if KV is unavailable (e.g. local dev without KV configured).
+// Distributed rate limiter using Upstash Redis.
+// Falls back to allowing the request if Redis is unavailable (e.g. local dev without Redis configured).
 
-let kv: typeof import("@vercel/kv").kv | null = null;
+import { Redis } from "@upstash/redis";
 
-async function getKv() {
-  if (kv) return kv;
-  try {
-    const mod = await import("@vercel/kv");
-    kv = mod.kv;
-    return kv;
-  } catch {
-    return null;
-  }
+let redis: Redis | null = null;
+
+function getRedis(): Redis | null {
+  if (redis) return redis;
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+  redis = new Redis({ url, token });
+  return redis;
 }
 
 /**
@@ -21,9 +21,9 @@ async function getKv() {
  * @param windowMs Window size in milliseconds
  */
 export async function rateLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
-  const store = await getKv();
+  const store = getRedis();
 
-  // Fallback: allow if KV not available (local dev)
+  // Fallback: allow if Redis not configured (local dev)
   if (!store) return true;
 
   try {
@@ -32,7 +32,7 @@ export async function rateLimit(key: string, limit: number, windowMs: number): P
     if (count === 1) await store.expire(key, windowSec);
     return count <= limit;
   } catch {
-    // Allow on KV error rather than block legitimate users
+    // Allow on Redis error rather than block legitimate users
     return true;
   }
 }
