@@ -55,6 +55,10 @@ async function request<T>(
   const res = await fetch(`${BASE}${path}`, { ...options, headers });
 
   if (res.status === 401 && retry) {
+    if (!getToken()) {
+      const body = await res.json().catch(() => ({ error: "Request failed" }));
+      throw new Error(body.error ?? "Request failed");
+    }
     const newToken = await refreshTokens();
     if (newToken) return request<T>(path, options, false);
     clearTokens();
