@@ -21,18 +21,15 @@ function getRedis(): Redis | null {
  * @param windowMs Window size in milliseconds
  */
 export async function rateLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
-  const store = getRedis();
-
-  // Fallback: allow if Redis not configured (local dev)
-  if (!store) return true;
-
   try {
+    const store = getRedis();
+    if (!store) return true;
     const windowSec = Math.ceil(windowMs / 1000);
     const count = await store.incr(key);
     if (count === 1) await store.expire(key, windowSec);
     return count <= limit;
   } catch {
-    // Allow on Redis error rather than block legitimate users
+    // Allow on any Redis error rather than block legitimate users
     return true;
   }
 }
