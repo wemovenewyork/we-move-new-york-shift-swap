@@ -18,6 +18,9 @@ export async function POST(req: NextRequest) {
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (!user) return err("Invalid email or password", 401);
 
+  // Check email verification
+  if (!user.verified) return err("Please verify your email before signing in. Check your inbox.", 403);
+
   // Check account lockout
   if (user.lockedUntil && user.lockedUntil > new Date()) {
     const mins = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);

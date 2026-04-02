@@ -27,6 +27,8 @@ export default function BrowsePage() {
 
   const [depot, setDepot] = useState<Depot | null>(null);
   const [swaps, setSwaps] = useState<Swap[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [flexibleOps, setFlexibleOps] = useState<FlexibleOperator[]>([]);
   const [toast, setToast] = useState<string | null>(null);
@@ -76,9 +78,29 @@ export default function BrowsePage() {
     if (dateTo) params.set("date_to", dateTo);
     params.set("sort", sortBy);
     try {
-      const data = await api.get<Swap[]>(`/swaps?${params}`);
-      setSwaps(data);
+      const data = await api.get<{ swaps: Swap[]; nextCursor: string | null }>(`/swaps?${params}`);
+      setSwaps(data.swaps);
+      setNextCursor(data.nextCursor);
     } catch (e) { console.error(e); }
+  };
+
+  const loadMore = async () => {
+    if (!user || !nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    const params = new URLSearchParams();
+    if (cat !== "all") params.set("category", cat);
+    if (sf !== "all") params.set("status", sf);
+    if (q) params.set("search", q);
+    if (dateFrom) params.set("date_from", dateFrom);
+    if (dateTo) params.set("date_to", dateTo);
+    params.set("sort", sortBy);
+    params.set("cursor", nextCursor);
+    try {
+      const data = await api.get<{ swaps: Swap[]; nextCursor: string | null }>(`/swaps?${params}`);
+      setSwaps(prev => [...prev, ...data.swaps]);
+      setNextCursor(data.nextCursor);
+    } catch (e) { console.error(e); }
+    setLoadingMore(false);
   };
 
   useEffect(() => { if (user) fetchSwaps(); }, [cat, sf, q, dateFrom, dateTo, sortBy]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -268,6 +290,15 @@ export default function BrowsePage() {
               />
             </div>
           ))}
+          {nextCursor && (
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              style={{ marginTop: 8, padding: "14px 0", borderRadius: 14, border: `1px solid ${C.bd}`, background: C.s, color: C.m, cursor: loadingMore ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 600, opacity: loadingMore ? 0.6 : 1 }}
+            >
+              {loadingMore ? "Loading…" : "Load More"}
+            </button>
+          )}
         </div>
         <Footer />
       </main>

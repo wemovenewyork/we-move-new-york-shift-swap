@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { sendPush, PushPayload } from "@/lib/pushNotify";
 
+export type { PushPayload };
+
 const BATCH_SIZE = 50;
 
 /**
@@ -15,6 +17,30 @@ export async function notifyUser(userId: string, payload: PushPayload): Promise<
   } catch {
     // Never let notification failure break the main request
   }
+}
+
+/**
+ * Send push notification to a user, with email fallback if no push subscriptions exist.
+ */
+export async function notifyUserWithEmailFallback(
+  userId: string,
+  payload: PushPayload,
+  emailSubject: string,
+  emailHtml: string
+): Promise<void> {
+  try {
+    const subs = await prisma.pushSubscription.findMany({ where: { userId } });
+    if (subs.length > 0) {
+      await Promise.allSettled(subs.map(sub => sendPush(sub, payload)));
+    } else {
+      // Fallback to email
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+      if (user?.email && !user.email.includes("@deleted.invalid")) {
+        const { sendEmail } = await import("@/lib/email");
+        await sendEmail(user.email, emailSubject, emailHtml).catch(() => {});
+      }
+    }
+  } catch { }
 }
 
 /**

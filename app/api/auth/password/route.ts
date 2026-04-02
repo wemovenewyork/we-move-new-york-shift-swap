@@ -12,6 +12,12 @@ export async function PUT(req: NextRequest) {
   if (!currentPassword || !newPassword) return err("Both fields required", 400);
   if (newPassword.length < 12) return err("Password must be at least 12 characters", 400);
 
+  // Reject passwords that are purely numeric or common patterns
+  const hasLetter = /[a-zA-Z]/.test(newPassword);
+  const hasNumber = /[0-9]/.test(newPassword);
+  const hasSpecialOrMixed = /[^a-zA-Z0-9]/.test(newPassword) || (hasLetter && hasNumber);
+  if (!hasSpecialOrMixed) return err("Password must contain letters and numbers", 400);
+
   const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
   if (!dbUser) return err("User not found", 404);
 

@@ -21,6 +21,9 @@ export async function GET(req: NextRequest) {
   const dateFrom = searchParams.get("date_from");
   const dateTo = searchParams.get("date_to");
   const sort = searchParams.get("sort") ?? "newest";
+  const cursor = searchParams.get("cursor") ?? undefined;
+  const limitParam = parseInt(searchParams.get("limit") ?? "20", 10);
+  const limit = Math.min(Math.max(limitParam, 1), 50);
 
   // Build where clause
   const andClauses: Record<string, unknown>[] = [{ depotId: dbUser.depotId }];
@@ -53,6 +56,8 @@ export async function GET(req: NextRequest) {
   const swaps = await prisma.swap.findMany({
     where: { AND: andClauses },
     orderBy,
+    take: limit,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: { user: { select: { id: true, firstName: true, lastName: true } } },
   });
 
@@ -77,7 +82,8 @@ export async function GET(req: NextRequest) {
     }),
   }));
 
-  return ok(swapsWithRep);
+  const nextCursor = swaps.length < limit ? null : swaps[swaps.length - 1].id;
+  return ok({ swaps: swapsWithRep, nextCursor });
 }
 
 export async function POST(req: NextRequest) {

@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
-import { notifyUser } from "@/lib/notifyUser";
+import { notifyUserWithEmailFallback } from "@/lib/notifyUser";
 
 export async function POST(
   req: NextRequest,
@@ -25,19 +25,35 @@ export async function POST(
   if (swap.userId === user.userId) return err("Cannot message yourself", 400);
   if (swap.status !== "open") return err("Swap is not open", 400);
 
-  const [message, sender] = await Promise.all([
+  const [message, sender, depot] = await Promise.all([
     prisma.message.create({
       data: { swapId: id, fromUserId: user.userId, toUserId: swap.userId, text: text.trim() },
     }),
     prisma.user.findUnique({ where: { id: user.userId }, select: { firstName: true, lastName: true } }),
+    prisma.depot.findUnique({ where: { id: swap.depotId }, select: { code: true } }),
   ]);
 
+  const senderName = sender ? `${sender.firstName} ${sender.lastName}` : "Someone";
+  const depotCode = depot?.code ?? swap.depotId;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://we-move-ny-shift-swap.vercel.app";
+
+  const emailHtml = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#010028;color:#fff;border-radius:16px">
+  <h2 style="font-size:18px;font-weight:800;margin-bottom:8px">New interest in your swap</h2>
+  <p style="color:rgba(255,255,255,.6);font-size:14px;line-height:1.6;margin-bottom:24px">${senderName} is interested in your swap — log in to respond.</p>
+  <a href="${appUrl}/depot/${depotCode}/swaps/${id}" style="display:inline-block;padding:14px 28px;border-radius:12px;background:#D1AD38;color:#010028;font-weight:700;font-size:15px;text-decoration:none">View Swap</a>
+</div>`;
+
   // Notify swap owner — fire and forget
-  notifyUser(swap.userId, {
-    title: "New interest in your swap",
-    body: `${sender?.firstName ?? "Someone"} is interested — "${text.trim().substring(0, 60)}"`,
-    url: `/depot/${swap.depotId}/swaps/${id}`,
-  });
+  notifyUserWithEmailFallback(
+    swap.userId,
+    {
+      title: "New interest in your swap",
+      body: `${senderName} is interested — "${text.trim().substring(0, 60)}"`,
+      url: `/depot/${depotCode}/swaps/${id}`,
+    },
+    "New interest in your swap",
+    emailHtml
+  );
 
   return ok(message, 201);
 }
