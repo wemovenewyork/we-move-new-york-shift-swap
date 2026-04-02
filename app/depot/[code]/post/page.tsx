@@ -9,6 +9,8 @@ import { C, CM, SWAP_TYPES } from "@/constants/colors";
 import DepotBadge from "@/components/ui/DepotBadge";
 import Icon from "@/components/ui/Icon";
 import Toast from "@/components/ui/Toast";
+import NotifIcon from "@/components/ui/NotifIcon";
+import InboxIcon from "@/components/ui/InboxIcon";
 
 const lb: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: 12, fontWeight: 600, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
 
@@ -148,6 +150,8 @@ export default function PostSwapPage() {
         <button onClick={() => router.push(`/depot/${code}`)} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="back" s={16} /></button>
         <DepotBadge depot={depot} size={38} />
         <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.white }}>{depot.name}</div>
+        <NotifIcon />
+        <InboxIcon />
       </div>
 
       <main id="main-content" style={{ maxWidth: 480, margin: "0 auto", padding: "24px 20px 50px" }}>
@@ -250,7 +254,7 @@ export default function PostSwapPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10, marginTop: 8 }}>
             <button onClick={() => router.push(`/depot/${code}`)} style={{ padding: 16, borderRadius: 14, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 15, fontWeight: 600 }}>Cancel</button>
             <button onClick={handleSubmit} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 15, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1 }}>
-              {submitting ? "Saving..." : editId ? "Save Changes" : "Publish Swap"}
+              {submitting ? "Saving..." : editId ? "Save Changes" : "Post Swap"}
             </button>
           </div>
         </div>

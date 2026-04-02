@@ -18,6 +18,8 @@ import Footer from "@/components/ui/Footer";
 import AnnouncementBanner from "@/components/ui/AnnouncementBanner";
 import FlexibleStrip from "@/components/ui/FlexibleStrip";
 import PostAnnouncementModal from "@/components/ui/PostAnnouncementModal";
+import NotifIcon from "@/components/ui/NotifIcon";
+import InboxIcon from "@/components/ui/InboxIcon";
 
 export default function BrowsePage() {
   const { user, loading } = useAuth();
@@ -149,10 +151,10 @@ export default function BrowsePage() {
 
   const handleSend = async (swap: Swap, text: string) => {
     try {
-      await api.post(`/swaps/${swap.id}/interest`, { text });
-      showToast("Message sent!");
+      await api.post(`/users/${swap.userId}/message`, { text });
+      setMsgModal(null);
+      router.push(`/depot/${code}/messages/${swap.userId}`);
     } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Send failed"); }
-    setMsgModal(null);
   };
 
   const handleFlexToggle = async () => {
@@ -197,6 +199,8 @@ export default function BrowsePage() {
         <button onClick={() => router.push(`/depot/${code}`)} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="back" s={16} /></button>
         <DepotBadge depot={depot} size={38} />
         <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.white }}>{depot.name}</div>
+        <NotifIcon />
+        <InboxIcon />
         {isRep && (
           <button onClick={() => setPostAnnModal(true)} title="Post Announcement" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.gold}44`, background: C.gs, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.gold, flexShrink: 0 }}>
             <Icon n="bell" s={15} c={C.gold} />

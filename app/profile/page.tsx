@@ -11,6 +11,8 @@ import RepBadge from "@/components/ui/RepBadge";
 import DepotBadge from "@/components/ui/DepotBadge";
 import Toast from "@/components/ui/Toast";
 import NotifToggle from "@/components/ui/NotifToggle";
+import InboxIcon from "@/components/ui/InboxIcon";
+import NotifIcon from "@/components/ui/NotifIcon";
 
 const lb: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: 12, fontWeight: 600, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
 
@@ -68,6 +70,8 @@ export default function ProfilePage() {
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.8)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,.06)", padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={() => router.back()} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="back" s={16} /></button>
         <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.white }}>My Profile</div>
+        <NotifIcon />
+        <InboxIcon />
       </div>
 
       <main id="main-content" style={{ maxWidth: 440, margin: "0 auto", padding: "24px 20px 80px" }}>

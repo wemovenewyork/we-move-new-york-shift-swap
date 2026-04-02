@@ -50,6 +50,7 @@ export default function AdminPage() {
   const [invites, setInvites] = useState<InviteCode[]>([]);
   const [inviteCount, setInviteCount] = useState(5);
   const [busy, setBusy] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [auditLogs, setAuditLogs] = useState<{ id: string; action: string; detail: string | null; createdAt: string; ip: string | null; admin: { firstName: string; lastName: string; email: string } }[]>([]);
 
@@ -148,6 +149,18 @@ export default function AdminPage() {
       showToast("Depot rep assigned");
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Failed");
+    } finally { setBusy(null); }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    setBusy(userId);
+    try {
+      await api.delete("/admin/users", { userId });
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      setDeleteConfirm(null);
+      showToast("User deleted");
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Delete failed");
     } finally { setBusy(null); }
   };
 
@@ -255,50 +268,79 @@ export default function AdminPage() {
               {users.map(u => {
                 const rc = ROLE_COLORS[u.role] ?? C.m;
                 const isBusy = busy === u.id;
+                const isConfirming = deleteConfirm === u.id;
+                const isSelf = u.id === user.id;
                 return (
-                  <div key={u.id} style={{ background: "rgba(255,255,255,.03)", borderRadius: 14, border: `1px solid ${C.bd}`, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: rc + "18", border: `1px solid ${rc}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: rc, flexShrink: 0 }}>
-                      {u.firstName[0]}{u.lastName[0]}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{u.firstName} {u.lastName}</div>
-                      <div style={{ fontSize: 11, color: C.m, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</div>
-                      {u.depot && <div style={{ fontSize: 10, color: C.gold, marginTop: 2 }}>{u.depot.name}</div>}
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-                      <select
-                        value={u.role}
-                        disabled={isBusy}
-                        onChange={e => handleRoleChange(u.id, e.target.value)}
-                        style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${rc}44`, background: rc + "12", color: rc, fontSize: 12, fontWeight: 700, cursor: "pointer", appearance: "auto", opacity: isBusy ? 0.5 : 1 }}
-                      >
-                        <option value="operator">Operator</option>
-                        <option value="depotRep">Depot Rep</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                      {u.role === "depotRep" && u.depot && pendingDepot[u.id] === undefined && (
-                        <div style={{ fontSize: 10, fontWeight: 600, color: C.gold, textAlign: "right" }}>{u.depot.name} ({u.depot.code})</div>
-                      )}
-                      {pendingDepot[u.id] !== undefined && (
-                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                          <select
-                            value={pendingDepot[u.id]}
-                            onChange={e => setPendingDepot(prev => ({ ...prev, [u.id]: e.target.value }))}
-                            style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.gold}44`, background: C.gold + "10", color: C.gold, fontSize: 12, cursor: "pointer", appearance: "auto" }}
-                          >
-                            <option value="">— Select depot —</option>
-                            {depots.map(d => <option key={d.id} value={d.id}>{d.name} ({d.code})</option>)}
-                          </select>
+                  <div key={u.id} style={{ background: isConfirming ? C.red + "08" : "rgba(255,255,255,.03)", borderRadius: 14, border: `1px solid ${isConfirming ? C.red + "33" : C.bd}`, padding: "14px 16px", transition: "all .2s" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: rc + "18", border: `1px solid ${rc}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: rc, flexShrink: 0 }}>
+                        {u.firstName[0]}{u.lastName[0]}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{u.firstName} {u.lastName}</div>
+                        <div style={{ fontSize: 11, color: C.m, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</div>
+                        {u.depot && <div style={{ fontSize: 10, color: C.gold, marginTop: 2 }}>{u.depot.name}</div>}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                        <select
+                          value={u.role}
+                          disabled={isBusy || isConfirming}
+                          onChange={e => handleRoleChange(u.id, e.target.value)}
+                          style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${rc}44`, background: rc + "12", color: rc, fontSize: 12, fontWeight: 700, cursor: "pointer", appearance: "auto", opacity: isBusy || isConfirming ? 0.5 : 1 }}
+                        >
+                          <option value="operator">Operator</option>
+                          <option value="depotRep">Depot Rep</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                        {u.role === "depotRep" && u.depot && pendingDepot[u.id] === undefined && (
+                          <div style={{ fontSize: 10, fontWeight: 600, color: C.gold, textAlign: "right" }}>{u.depot.name} ({u.depot.code})</div>
+                        )}
+                        {pendingDepot[u.id] !== undefined && (
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <select
+                              value={pendingDepot[u.id]}
+                              onChange={e => setPendingDepot(prev => ({ ...prev, [u.id]: e.target.value }))}
+                              style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.gold}44`, background: C.gold + "10", color: C.gold, fontSize: 12, cursor: "pointer", appearance: "auto" }}
+                            >
+                              <option value="">— Select depot —</option>
+                              {depots.map(d => <option key={d.id} value={d.id}>{d.name} ({d.code})</option>)}
+                            </select>
+                            <button
+                              onClick={() => handleDepotRepConfirm(u.id)}
+                              disabled={!pendingDepot[u.id] || isBusy}
+                              style={{ padding: "6px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: C.gold, color: C.bg, fontSize: 12, fontWeight: 700, opacity: !pendingDepot[u.id] || isBusy ? 0.5 : 1 }}
+                            >
+                              {isBusy ? "…" : "Confirm"}
+                            </button>
+                          </div>
+                        )}
+                        {!isSelf && !pendingDepot[u.id] !== undefined && (
                           <button
-                            onClick={() => handleDepotRepConfirm(u.id)}
-                            disabled={!pendingDepot[u.id] || isBusy}
-                            style={{ padding: "6px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: C.gold, color: C.bg, fontSize: 12, fontWeight: 700, opacity: !pendingDepot[u.id] || isBusy ? 0.5 : 1 }}
+                            onClick={() => setDeleteConfirm(isConfirming ? null : u.id)}
+                            disabled={isBusy}
+                            style={{ padding: "4px 10px", borderRadius: 8, border: `1px solid ${C.red}44`, background: isConfirming ? C.red + "20" : "transparent", color: C.red, cursor: "pointer", fontSize: 11, fontWeight: 600, opacity: isBusy ? 0.5 : 1 }}
                           >
-                            {isBusy ? "…" : "Confirm"}
+                            {isConfirming ? "Cancel" : "Delete"}
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
+
+                    {/* Inline delete confirmation */}
+                    {isConfirming && (
+                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.red}22`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                        <div style={{ fontSize: 12, color: "rgba(255,255,255,.6)", lineHeight: 1.5 }}>
+                          This will permanently anonymize <strong style={{ color: C.white }}>{u.firstName} {u.lastName}</strong>. Their swap history is preserved but name and email are removed. This cannot be undone.
+                        </div>
+                        <button
+                          onClick={() => handleDeleteUser(u.id)}
+                          disabled={isBusy}
+                          style={{ flexShrink: 0, padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", background: C.red, color: "#fff", fontSize: 13, fontWeight: 700, opacity: isBusy ? 0.6 : 1, whiteSpace: "nowrap" }}
+                        >
+                          {isBusy ? "Deleting…" : "Confirm Delete"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}

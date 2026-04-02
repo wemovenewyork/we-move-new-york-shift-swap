@@ -93,7 +93,10 @@ export async function POST(req: NextRequest) {
   if (!await rateLimit(`post:${user.userId}`, 5, 3_600_000)) return err("Rate limit: max 5 posts per hour", 429);
   if (!await rateLimit(`post30s:${user.userId}`, 2, 30_000)) return err("Please wait 30 seconds between posts", 429);
 
-  const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.userId },
+    include: { depot: { select: { code: true } } },
+  });
   if (!dbUser?.depotId) return err("Set your depot first", 400);
 
   const body = await req.json();
@@ -141,10 +144,10 @@ export async function POST(req: NextRequest) {
     select: { id: true },
   });
   const categoryLabel = swap.category === "work" ? "Work" : swap.category === "daysoff" ? "Days Off" : "Vacation";
-  notifyMany(depotUsers.map(u => u.id), {
+  await notifyMany(depotUsers.map(u => u.id), {
     title: `New ${categoryLabel} swap posted`,
     body: `${posterName} posted a new swap — check the board`,
-    url: `/depot/${dbUser.depotId}/swaps/${swap.id}`,
+    url: `/depot/${dbUser.depot!.code}/swaps/${swap.id}`,
   });
 
   return ok(swap, 201);

@@ -19,7 +19,12 @@ export default function BottomNav({ active, depotCode, lang }: Props) {
   const tr = useT(lang);
 
   useEffect(() => {
-    api.get<{ unreadCount: number }>("/messages").then(d => setUnread(d.unreadCount)).catch(() => {});
+    const fetch = () => api.get<{ unreadCount: number }>("/messages").then(d => setUnread(d.unreadCount)).catch(() => {});
+    fetch();
+    const interval = setInterval(fetch, 30_000);
+    const onVisible = () => { if (document.visibilityState === "visible") fetch(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { clearInterval(interval); document.removeEventListener("visibilitychange", onVisible); };
   }, []);
 
   const items = [

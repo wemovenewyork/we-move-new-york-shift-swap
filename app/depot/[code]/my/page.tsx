@@ -11,6 +11,8 @@ import DepotBadge from "@/components/ui/DepotBadge";
 import Icon from "@/components/ui/Icon";
 import BottomNav from "@/components/ui/BottomNav";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import NotifIcon from "@/components/ui/NotifIcon";
+import InboxIcon from "@/components/ui/InboxIcon";
 import Toast from "@/components/ui/Toast";
 import Footer from "@/components/ui/Footer";
 
@@ -72,6 +74,8 @@ export default function MyPostsPage() {
         <button onClick={() => router.push(`/depot/${code}`)} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="back" s={16} /></button>
         <DepotBadge depot={depot} size={38} />
         <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.white }}>My Posts</div>
+        <NotifIcon />
+        <InboxIcon />
       </div>
 
       <main id="main-content" style={{ maxWidth: 720, margin: "0 auto", padding: "16px 20px 50px" }}>

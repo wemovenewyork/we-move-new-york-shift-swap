@@ -162,11 +162,6 @@ export default function ThreadPage() {
                   lineHeight: 1.45,
                   wordBreak: "break-word",
                 }}>
-                  {msg.swap && !isMine && (
-                    <div style={{ fontSize: 10, fontWeight: 700, color: isMine ? C.bg + "99" : C.gold, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
-                      Re: {msg.swap.category} swap
-                    </div>
-                  )}
                   {msg.text}
                 </div>
               </div>

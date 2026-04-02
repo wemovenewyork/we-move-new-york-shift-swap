@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
+import { notifyUserWithEmailFallback } from "@/lib/notifyUser";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -30,9 +31,28 @@ export async function POST(req: NextRequest) {
   if (!swap) return err("Swap not found", 404);
   if (swap.userId === user.userId) return err("Cannot message yourself", 400);
 
-  const message = await prisma.message.create({
-    data: { swapId, fromUserId: user.userId, toUserId: swap.userId, text: text.trim() },
-  });
+  const [message, sender, depot] = await Promise.all([
+    prisma.message.create({
+      data: { swapId, fromUserId: user.userId, toUserId: swap.userId, text: text.trim() },
+    }),
+    prisma.user.findUnique({ where: { id: user.userId }, select: { firstName: true, lastName: true } }),
+    prisma.depot.findUnique({ where: { id: swap.depotId }, select: { code: true } }),
+  ]);
+
+  const senderName = sender ? `${sender.firstName} ${sender.lastName}` : "Someone";
+  await notifyUserWithEmailFallback(
+    swap.userId,
+    {
+      title: "New message",
+      body: `${senderName}: ${text.trim().slice(0, 100)}`,
+      url: depot ? `/depot/${depot.code}/messages` : "/",
+    },
+    `New message from ${senderName}`,
+    `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#010028;color:#fff;border-radius:16px">
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:8px">New message from ${senderName}</h2>
+      <p style="color:rgba(255,255,255,.7);font-size:14px;line-height:1.6">${text.trim().slice(0, 300)}</p>
+    </div>`
+  );
 
   return ok(message, 201);
 }

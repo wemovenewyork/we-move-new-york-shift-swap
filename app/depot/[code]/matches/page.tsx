@@ -8,6 +8,8 @@ import { C, CM, SWAP_TYPES } from "@/constants/colors";
 import Icon from "@/components/ui/Icon";
 import BottomNav from "@/components/ui/BottomNav";
 import RepBadge from "@/components/ui/RepBadge";
+import NotifIcon from "@/components/ui/NotifIcon";
+import InboxIcon from "@/components/ui/InboxIcon";
 import { Swap } from "@/types";
 
 interface MatchedSwap extends Swap {
@@ -49,6 +51,8 @@ export default function MatchesPage() {
           <div style={{ fontSize: 15, fontWeight: 800, color: C.white }}>Mutual Matches</div>
           <div style={{ fontSize: 10, color: C.gold, letterSpacing: 2, textTransform: "uppercase" }}>Swaps that fit yours perfectly</div>
         </div>
+        <NotifIcon />
+        <InboxIcon />
         <div style={{ width: 36, height: 36, borderRadius: 10, background: "#F59E0B18", border: "1px solid #F59E0B33", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon n="match" s={18} c="#F59E0B" />
         </div>

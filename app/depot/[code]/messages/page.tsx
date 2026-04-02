@@ -5,11 +5,12 @@ import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
 import { Depot } from "@/types";
-import { C, CM } from "@/constants/colors";
+import { C } from "@/constants/colors";
 import Icon from "@/components/ui/Icon";
 import DepotBadge from "@/components/ui/DepotBadge";
 import BottomNav from "@/components/ui/BottomNav";
 import Footer from "@/components/ui/Footer";
+import NotifIcon from "@/components/ui/NotifIcon";
 
 const timeAgo = (d: string) => {
   const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
@@ -72,6 +73,7 @@ export default function MessagesPage() {
           </div>
           <div style={{ fontSize: 10, color: C.m }}>Operator conversations</div>
         </div>
+        <NotifIcon />
       </div>
 
       <main id="main-content" style={{ maxWidth: 520, margin: "0 auto", padding: "16px 20px 90px" }}>
@@ -81,15 +83,13 @@ export default function MessagesPage() {
               <Icon n="msg" s={28} c={C.m} />
             </div>
             <div style={{ fontSize: 16, fontWeight: 700, color: C.white, marginBottom: 8 }}>No messages yet</div>
-            <div style={{ fontSize: 13, color: C.m }}>When someone messages you about a swap, it&apos;ll show up here.</div>
+            <div style={{ fontSize: 13, color: C.m }}>Your direct messages with other operators will appear here.</div>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 8 }}>
             {convos.map((conv, idx) => {
               const isReceived = conv.latestMessage.toUserId === user?.id;
-              const catColors = conv.latestMessage.swap
-                ? CM[conv.latestMessage.swap.category as keyof typeof CM] ?? CM.work
-                : CM.work;
+              const hasUnread = conv.unreadCount > 0;
               const initials = conv.counterpart.firstName[0] + conv.counterpart.lastName[0];
               const preview = (isReceived ? "" : "You: ") + conv.latestMessage.text;
 
@@ -100,19 +100,18 @@ export default function MessagesPage() {
                   style={{
                     width: "100%", textAlign: "left", border: "none", cursor: "pointer",
                     animation: `fadeUp .4s cubic-bezier(.4,0,.2,1) ${idx * 0.05}s both`,
-                    background: conv.unreadCount > 0 ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.025)",
+                    background: hasUnread ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.025)",
                     backdropFilter: "blur(8px)", borderRadius: 14, padding: "14px 16px",
-                    boxShadow: conv.unreadCount > 0
-                      ? `inset 0 0 0 1px ${catColors.c}33`
+                    boxShadow: hasUnread
+                      ? `inset 0 0 0 1px ${C.gold}33`
                       : "inset 0 0 0 1px rgba(255,255,255,.06)",
                     transition: "all .2s",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    {/* Avatar */}
-                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg,${C.navy},${C.blue})`, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${conv.unreadCount > 0 ? catColors.c + "55" : C.bd}`, flexShrink: 0, position: "relative" }}>
+                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg,${C.navy},${C.blue})`, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${hasUnread ? C.gold + "55" : C.bd}`, flexShrink: 0, position: "relative" }}>
                       <span style={{ fontSize: 14, fontWeight: 800, color: C.gold }}>{initials}</span>
-                      {conv.unreadCount > 0 && (
+                      {hasUnread && (
                         <span style={{ position: "absolute", top: -2, right: -2, width: 16, height: 16, borderRadius: "50%", background: C.red, border: "2px solid #010028", fontSize: 9, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           {conv.unreadCount > 9 ? "9+" : conv.unreadCount}
                         </span>
@@ -121,24 +120,19 @@ export default function MessagesPage() {
 
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-                        <span style={{ fontSize: 14, fontWeight: conv.unreadCount > 0 ? 700 : 600, color: C.white }}>
+                        <span style={{ fontSize: 14, fontWeight: hasUnread ? 700 : 600, color: C.white }}>
                           {conv.counterpart.firstName} {conv.counterpart.lastName}
                         </span>
                         <span style={{ fontSize: 11, color: C.m, flexShrink: 0, marginLeft: 8 }}>
                           {timeAgo(conv.latestMessage.createdAt)}
                         </span>
                       </div>
-                      {conv.latestMessage.swap && (
-                        <div style={{ fontSize: 10, color: catColors.c, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>
-                          {conv.latestMessage.swap.category}
-                        </div>
-                      )}
-                      <p style={{ fontSize: 12, color: conv.unreadCount > 0 ? "rgba(255,255,255,.75)" : C.m, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <p style={{ fontSize: 12, color: hasUnread ? "rgba(255,255,255,.75)" : C.m, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {preview}
                       </p>
                     </div>
 
-                    <Icon n="chev" s={14} c={C.m} />
+                    <Icon n="chev" s={14} c={hasUnread ? C.gold : C.m} />
                   </div>
                 </button>
               );

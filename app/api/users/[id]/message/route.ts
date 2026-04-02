@@ -23,19 +23,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!text?.trim()) return err("Message text is required", 400);
   if (text.length > 500) return err("Message must be 500 characters or fewer", 400);
 
-  const [message, sender] = await Promise.all([
+  const [message, sender, depot] = await Promise.all([
     prisma.message.create({
       data: { fromUserId: user.userId, toUserId, text: text.trim(), swapId: null },
       include: { fromUser: { select: { id: true, firstName: true, lastName: true } } },
     }),
     prisma.user.findUnique({ where: { id: user.userId }, select: { firstName: true, lastName: true } }),
+    toUser.depotId ? prisma.depot.findUnique({ where: { id: toUser.depotId }, select: { code: true } }) : null,
   ]);
 
-  // Notify recipient — fire and forget
+  const threadUrl = depot?.code
+    ? `/depot/${depot.code}/messages/${user.userId}`
+    : `/inbox`;
+
   notifyUser(toUserId, {
     title: `Message from ${sender?.firstName ?? "an operator"}`,
     body: text.trim().substring(0, 80),
-    url: `/depot/${toUser.depotId ?? ""}/messages/${user.userId}`,
+    url: threadUrl,
   });
 
   return ok(message, 201);

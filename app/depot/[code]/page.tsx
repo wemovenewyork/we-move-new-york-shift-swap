@@ -8,6 +8,8 @@ import { Depot } from "@/types";
 import { C } from "@/constants/colors";
 import DepotBadge from "@/components/ui/DepotBadge";
 import Icon from "@/components/ui/Icon";
+import InboxIcon from "@/components/ui/InboxIcon";
+import NotifIcon from "@/components/ui/NotifIcon";
 
 export default function ActionPage() {
   const { user, loading } = useAuth();
@@ -53,6 +55,8 @@ export default function ActionPage() {
           <div style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{depot.name}</div>
           <div style={{ fontSize: 10, color: C.m }}>{depot.operator}</div>
         </div>
+        <NotifIcon />
+        <InboxIcon />
         <button onClick={() => router.push("/profile")} aria-label="Profile" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.m, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon n="usr" s={15} />
         </button>

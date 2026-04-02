@@ -8,6 +8,8 @@ import { Swap } from "@/types";
 import { C, CM, STC, SWAP_TYPES } from "@/constants/colors";
 import Icon from "@/components/ui/Icon";
 import BottomNav from "@/components/ui/BottomNav";
+import NotifIcon from "@/components/ui/NotifIcon";
+import InboxIcon from "@/components/ui/InboxIcon";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -73,6 +75,8 @@ export default function HistoryPage() {
           <div style={{ fontSize: 15, fontWeight: 800, color: C.white }}>My Swap History</div>
           <div style={{ fontSize: 10, color: C.gold, letterSpacing: 2, textTransform: "uppercase" }}>{swaps.length} total swaps</div>
         </div>
+        <NotifIcon />
+        <InboxIcon />
         {/* View toggle */}
         <div style={{ display: "flex", gap: 4, background: C.s, borderRadius: 10, padding: 3 }}>
           {(["list", "calendar"] as const).map(v => (

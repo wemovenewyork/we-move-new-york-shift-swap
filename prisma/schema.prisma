@@ -46,6 +46,7 @@ model User {
   agreementsAsB      SwapAgreement[]    @relation("AgreementUserB")
   announcements      Announcement[]
   auditLogs          AuditLog[]
+  notifications      Notification[]
 
   @@map("users")
 }
@@ -270,6 +271,23 @@ model AuditLog {
   @@index([adminId])
   @@index([createdAt(sort: Desc)])
   @@map("audit_logs")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String
+  title     String
+  body      String
+  url       String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
 }
 
 enum AuditAction {
