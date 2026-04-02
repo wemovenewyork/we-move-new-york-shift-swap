@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       depotId: depot.id,
-      verified: false,
+      verified: true, // TODO: set to false once Resend domain is verified
       emailVerifyToken: verifyToken,
       emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
       invitedBy: invite.createdBy,
