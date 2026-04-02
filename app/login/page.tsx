@@ -100,12 +100,12 @@ export default function LoginPage() {
 
         {mode === "signin" ? (
           <div style={{ display: "grid", gap: 14 }}>
-            <div><label style={lb}>Email</label><input type="email" value={em} onChange={e => { setEm(e.target.value); setErr(""); }} placeholder="you@example.com" /></div>
+            <div><label htmlFor="signin-email" style={lb}>Email</label><input id="signin-email" type="email" value={em} onChange={e => { setEm(e.target.value); setErr(""); }} placeholder="you@example.com" /></div>
             <div>
-              <label style={lb}>Password</label>
+              <label htmlFor="signin-pw" style={lb}>Password</label>
               <div style={{ position: "relative" }}>
-                <input type={showPw ? "text" : "password"} value={pw} onChange={e => { setPw(e.target.value); setErr(""); }} placeholder="Your password" onKeyDown={e => e.key === "Enter" && doSignIn()} style={{ paddingRight: 44 }} />
-                <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, fontWeight: 600, padding: "4px 6px" }}>{showPw ? "Hide" : "Show"}</button>
+                <input id="signin-pw" type={showPw ? "text" : "password"} value={pw} onChange={e => { setPw(e.target.value); setErr(""); }} placeholder="Your password" onKeyDown={e => e.key === "Enter" && doSignIn()} style={{ paddingRight: 44 }} />
+                <button type="button" aria-label={showPw ? "Hide password" : "Show password"} onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, fontWeight: 600, padding: "4px 6px" }}>{showPw ? "Hide" : "Show"}</button>
               </div>
             </div>
             <MagneticButton onClick={doSignIn} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 16, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1, width: "100%" }}>
@@ -115,12 +115,12 @@ export default function LoginPage() {
         ) : (
           <div style={{ display: "grid", gap: 14 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div><label style={lb}>First Name</label><input value={fn} onChange={e => { setFn(e.target.value); setErr(""); }} placeholder="John" /></div>
-              <div><label style={lb}>Last Name</label><input value={ln} onChange={e => { setLn(e.target.value); setErr(""); }} placeholder="Williams" /></div>
+              <div><label htmlFor="reg-fn" style={lb}>First Name</label><input id="reg-fn" value={fn} onChange={e => { setFn(e.target.value); setErr(""); }} placeholder="John" /></div>
+              <div><label htmlFor="reg-ln" style={lb}>Last Name</label><input id="reg-ln" value={ln} onChange={e => { setLn(e.target.value); setErr(""); }} placeholder="Williams" /></div>
             </div>
             <div>
-              <label style={lb}>Home Depot</label>
-              <select value={depotId} onChange={e => { setDepotId(e.target.value); setErr(""); }} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.bd}`, background: C.s, color: depotId ? C.white : C.m, fontSize: 14, cursor: "pointer" }}>
+              <label htmlFor="reg-depot" style={lb}>Home Depot</label>
+              <select id="reg-depot" value={depotId} onChange={e => { setDepotId(e.target.value); setErr(""); }} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.bd}`, background: C.s, color: depotId ? C.white : C.m, fontSize: 14, cursor: "pointer" }}>
                 <option value="">— Select your home depot —</option>
                 {groupedDepots.map(({ borough, depots: bd }) => (
                   <optgroup key={borough} label={borough}>
@@ -131,22 +131,22 @@ export default function LoginPage() {
                 ))}
               </select>
             </div>
-            <div><label style={lb}>Email</label><input type="email" value={em} onChange={e => { setEm(e.target.value); setErr(""); }} placeholder="you@example.com" /></div>
+            <div><label htmlFor="reg-email" style={lb}>Email</label><input id="reg-email" type="email" value={em} onChange={e => { setEm(e.target.value); setErr(""); }} placeholder="you@example.com" /></div>
             <div>
-              <label style={lb}>Create Password</label>
+              <label htmlFor="reg-pw" style={lb}>Create Password</label>
               <div style={{ position: "relative" }}>
-                <input type={showPw ? "text" : "password"} value={pw} onChange={e => { setPw(e.target.value); setErr(""); }} placeholder="Min 6 chars" style={{ paddingRight: 44 }} />
-                <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, fontWeight: 600, padding: "4px 6px" }}>{showPw ? "Hide" : "Show"}</button>
+                <input id="reg-pw" type={showPw ? "text" : "password"} value={pw} onChange={e => { setPw(e.target.value); setErr(""); }} placeholder="Min 12 chars" style={{ paddingRight: 44 }} />
+                <button type="button" aria-label={showPw ? "Hide password" : "Show password"} onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, fontWeight: 600, padding: "4px 6px" }}>{showPw ? "Hide" : "Show"}</button>
               </div>
             </div>
             <div>
-              <label style={lb}>Verify Password</label>
+              <label htmlFor="reg-pw2" style={lb}>Verify Password</label>
               <div style={{ position: "relative" }}>
-                <input type={showPw2 ? "text" : "password"} value={pw2} onChange={e => { setPw2(e.target.value); setErr(""); }} placeholder="Re-enter" style={{ paddingRight: 44 }} />
-                <button type="button" onClick={() => setShowPw2(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, fontWeight: 600, padding: "4px 6px" }}>{showPw2 ? "Hide" : "Show"}</button>
+                <input id="reg-pw2" type={showPw2 ? "text" : "password"} value={pw2} onChange={e => { setPw2(e.target.value); setErr(""); }} placeholder="Re-enter" style={{ paddingRight: 44 }} />
+                <button type="button" aria-label={showPw2 ? "Hide password" : "Show password"} onClick={() => setShowPw2(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, fontWeight: 600, padding: "4px 6px" }}>{showPw2 ? "Hide" : "Show"}</button>
               </div>
             </div>
-            <div><label style={lb}>Invite Code</label><input value={invCode} onChange={e => { setInvCode(e.target.value.toUpperCase()); setErr(""); }} placeholder="e.g. WMNY-DEMO1" style={{ letterSpacing: 2, textTransform: "uppercase" }} /></div>
+            <div><label htmlFor="reg-invite" style={lb}>Invite Code</label><input id="reg-invite" value={invCode} onChange={e => { setInvCode(e.target.value.toUpperCase()); setErr(""); }} placeholder="e.g. WMNY-DEMO1" style={{ letterSpacing: 2, textTransform: "uppercase" }} /></div>
             <div style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: "1px solid " + C.bd }}>
               <div style={{ fontSize: 10, color: C.m, lineHeight: 1.6 }}>Need an invite code? Ask a fellow operator who already uses the app, or use a seed code: WMNY-2024A, WMNY-2024B, WMNY-2024C</div>
             </div>

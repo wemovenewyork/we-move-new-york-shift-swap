@@ -47,7 +47,7 @@ export default function ProfilePage() {
   const changePassword = async () => {
     setPwErr("");
     if (!curPw || !newPw || !newPw2) { setPwErr("Fill in all fields"); return; }
-    if (newPw.length < 6) { setPwErr("Min 6 characters"); return; }
+    if (newPw.length < 12) { setPwErr("Min 12 characters"); return; }
     if (newPw !== newPw2) { setPwErr("Passwords do not match"); return; }
     try {
       await api.put("/auth/password", { currentPassword: curPw, newPassword: newPw });
@@ -97,13 +97,13 @@ export default function ProfilePage() {
         {tab === "profile" ? (
           <div style={{ display: "grid", gap: 16 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div><label style={lb}>First Name</label><input value={fn} onChange={e => setFn(e.target.value)} /></div>
-              <div><label style={lb}>Last Name</label><input value={ln} onChange={e => setLn(e.target.value)} /></div>
+              <div><label htmlFor="prof-fn" style={lb}>First Name</label><input id="prof-fn" value={fn} onChange={e => setFn(e.target.value)} /></div>
+              <div><label htmlFor="prof-ln" style={lb}>Last Name</label><input id="prof-ln" value={ln} onChange={e => setLn(e.target.value)} /></div>
             </div>
-            <div><label style={lb}>Email Address</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
+            <div><label htmlFor="prof-email" style={lb}>Email Address</label><input id="prof-email" type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
             <div>
-              <label style={lb}>Language</label>
-              <select value={lang} onChange={e => setLang(e.target.value)} style={{ appearance: "auto", cursor: "pointer" }}>
+              <label htmlFor="prof-lang" style={lb}>Language</label>
+              <select id="prof-lang" value={lang} onChange={e => setLang(e.target.value)} style={{ appearance: "auto", cursor: "pointer" }}>
                 <option value="en">English</option>
                 <option value="es">Español</option>
                 <option value="ht">Kreyòl Ayisyen</option>
@@ -154,10 +154,10 @@ export default function ProfilePage() {
           </div>
         ) : (
           <div style={{ display: "grid", gap: 16 }}>
-            <div><label style={lb}>Current Password</label><input type="password" value={curPw} onChange={e => { setCurPw(e.target.value); setPwErr(""); }} placeholder="Enter current password" /></div>
-            <div><label style={lb}>New Password</label><input type="password" value={newPw} onChange={e => { setNewPw(e.target.value); setPwErr(""); }} placeholder="Min 6 characters" /></div>
-            <div><label style={lb}>Confirm New Password</label><input type="password" value={newPw2} onChange={e => { setNewPw2(e.target.value); setPwErr(""); }} placeholder="Re-enter new password" /></div>
-            {pwErr && <div style={{ padding: "10px 14px", borderRadius: 12, background: C.red + "15", border: `1px solid ${C.red}33`, fontSize: 13, color: C.red }}>{pwErr}</div>}
+            <div><label htmlFor="sec-curpw" style={lb}>Current Password</label><input id="sec-curpw" type="password" value={curPw} onChange={e => { setCurPw(e.target.value); setPwErr(""); }} placeholder="Enter current password" /></div>
+            <div><label htmlFor="sec-newpw" style={lb}>New Password</label><input id="sec-newpw" type="password" value={newPw} onChange={e => { setNewPw(e.target.value); setPwErr(""); }} placeholder="Min 12 characters" /></div>
+            <div><label htmlFor="sec-newpw2" style={lb}>Confirm New Password</label><input id="sec-newpw2" type="password" value={newPw2} onChange={e => { setNewPw2(e.target.value); setPwErr(""); }} placeholder="Re-enter new password" /></div>
+            {pwErr && <div role="alert" aria-live="assertive" style={{ padding: "10px 14px", borderRadius: 12, background: C.red + "15", border: `1px solid ${C.red}33`, fontSize: 13, color: C.red }}>{pwErr}</div>}
             <button onClick={changePassword} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 15, fontWeight: 700, color: C.bg }}>Update Password</button>
           </div>
         )}

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     return err("All fields are required", 400);
   }
   if (!email.includes("@")) return err("Invalid email", 400);
-  if (password.length < 6) return err("Password must be at least 6 characters", 400);
+  if (password.length < 12) return err("Password must be at least 12 characters", 400);
 
   const codeUpper = inviteCode.trim().toUpperCase();
   const invite = await prisma.inviteCode.findUnique({ where: { code: codeUpper } });

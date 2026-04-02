@@ -183,8 +183,8 @@ export default function AdminPage() {
         {tab === "users" && (
           <div>
             <div style={{ marginBottom: 12 }}>
-              <label style={lb}>Search Users</label>
-              <input value={userQ} onChange={e => setUserQ(e.target.value)} placeholder="Name or email..." style={{ height: 44 }} />
+              <label htmlFor="admin-user-search" style={lb}>Search Users</label>
+              <input id="admin-user-search" value={userQ} onChange={e => setUserQ(e.target.value)} placeholder="Name or email..." style={{ height: 44 }} />
             </div>
             <div style={{ display: "grid", gap: 8 }}>
               {users.map(u => {

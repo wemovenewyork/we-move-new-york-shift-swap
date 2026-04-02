@@ -29,20 +29,20 @@ interface FormState {
   vacationHave: string; vacationWant: string;
 }
 
-function ShiftFields({ f, sF }: { f: FormState; sF: (v: FormState) => void }) {
+function ShiftFields({ f, sF, idPrefix = "sf" }: { f: FormState; sF: (v: FormState) => void; idPrefix?: string }) {
   return (
     <div style={{ display: "grid", gap: 10 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10 }}>
-        <div><label style={lb}>Run</label><input value={f.run} onChange={e => sF({ ...f, run: e.target.value })} placeholder="401" /></div>
-        <div><label style={lb}>Route</label><input value={f.route} onChange={e => sF({ ...f, route: e.target.value })} placeholder="Bx1" /></div>
+        <div><label htmlFor={`${idPrefix}-run`} style={lb}>Run</label><input id={`${idPrefix}-run`} value={f.run} onChange={e => sF({ ...f, run: e.target.value })} placeholder="401" /></div>
+        <div><label htmlFor={`${idPrefix}-route`} style={lb}>Route</label><input id={`${idPrefix}-route`} value={f.route} onChange={e => sF({ ...f, route: e.target.value })} placeholder="Bx1" /></div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <div><label style={lb}>Start Time</label><input type="time" value={f.startTime} onChange={e => sF({ ...f, startTime: e.target.value })} style={{ fontSize: 15 }} /></div>
-        <div><label style={lb}>Clear Time</label><input type="time" value={f.clearTime} onChange={e => sF({ ...f, clearTime: e.target.value })} style={{ fontSize: 15 }} /></div>
+        <div><label htmlFor={`${idPrefix}-start`} style={lb}>Start Time</label><input id={`${idPrefix}-start`} type="time" value={f.startTime} onChange={e => sF({ ...f, startTime: e.target.value })} style={{ fontSize: 15 }} /></div>
+        <div><label htmlFor={`${idPrefix}-clear`} style={lb}>Clear Time</label><input id={`${idPrefix}-clear`} type="time" value={f.clearTime} onChange={e => sF({ ...f, clearTime: e.target.value })} style={{ fontSize: 15 }} /></div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <div><label style={lb}>Swing Start</label><input type="time" value={f.swingStart} onChange={e => sF({ ...f, swingStart: e.target.value })} style={{ fontSize: 15 }} /></div>
-        <div><label style={lb}>Swing End</label><input type="time" value={f.swingEnd} onChange={e => sF({ ...f, swingEnd: e.target.value })} style={{ fontSize: 15 }} /></div>
+        <div><label htmlFor={`${idPrefix}-swingS`} style={lb}>Swing Start</label><input id={`${idPrefix}-swingS`} type="time" value={f.swingStart} onChange={e => sF({ ...f, swingStart: e.target.value })} style={{ fontSize: 15 }} /></div>
+        <div><label htmlFor={`${idPrefix}-swingE`} style={lb}>Swing End</label><input id={`${idPrefix}-swingE`} type="time" value={f.swingEnd} onChange={e => sF({ ...f, swingEnd: e.target.value })} style={{ fontSize: 15 }} /></div>
       </div>
     </div>
   );
@@ -177,12 +177,12 @@ export default function PostSwapPage() {
           {f.category === "work" && (
             <>
               <div>
-                <label style={lb}>Date {showErrors && !f.date && <span style={{ color: C.red, fontSize: 10 }}>Required</span>}</label>
-                <input type="date" value={f.date} onChange={e => sF({ ...f, date: e.target.value })} style={showErrors && !f.date ? { borderColor: C.red + "66" } : {}} />
+                <label htmlFor="work-date" style={lb}>Date {showErrors && !f.date && <span style={{ color: C.red, fontSize: 10 }}>Required</span>}</label>
+                <input id="work-date" type="date" value={f.date} onChange={e => sF({ ...f, date: e.target.value })} style={showErrors && !f.date ? { borderColor: C.red + "66" } : {}} />
               </div>
               <div style={{ background: "rgba(2,73,181,.04)", borderRadius: 16, border: "1px solid rgba(2,73,181,.12)", padding: 18 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: C.blue, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Shift Details</div>
-                <ShiftFields f={f} sF={sF} />
+                <ShiftFields f={f} sF={sF} idPrefix="work" />
               </div>
             </>
           )}
@@ -195,18 +195,18 @@ export default function PostSwapPage() {
                   Swapping From (Day You Are Working)
                 </div>
                 <div style={{ marginBottom: 12 }}>
-                  <label style={lb}>Date {showErrors && !f.fromDate && <span style={{ color: C.red, fontSize: 10 }}>Required</span>}</label>
-                  <input type="date" value={f.fromDate} onChange={e => sF({ ...f, fromDate: e.target.value })} style={showErrors && !f.fromDate ? { borderColor: C.red + "66" } : {}} />
+                  <label htmlFor="doff-fromDate" style={lb}>Date {showErrors && !f.fromDate && <span style={{ color: C.red, fontSize: 10 }}>Required</span>}</label>
+                  <input id="doff-fromDate" type="date" value={f.fromDate} onChange={e => sF({ ...f, fromDate: e.target.value })} style={showErrors && !f.fromDate ? { borderColor: C.red + "66" } : {}} />
                   {fromDay && <div style={{ fontSize: 12, color: C.gold, marginTop: 6, fontWeight: 600 }}>📅 {fromDay}</div>}
                 </div>
-                <ShiftFields f={f} sF={sF} />
+                <ShiftFields f={f} sF={sF} idPrefix="doff" />
               </div>
               <div style={{ background: "rgba(2,73,181,.04)", borderRadius: 16, border: "1px solid rgba(2,73,181,.12)", padding: 18 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: C.blue, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>
                   Swapping To (Day You Want To Work)
                 </div>
-                <label style={lb}>Date</label>
-                <input type="date" value={f.toDate} onChange={e => sF({ ...f, toDate: e.target.value })} />
+                <label htmlFor="doff-toDate" style={lb}>Date</label>
+                <input id="doff-toDate" type="date" value={f.toDate} onChange={e => sF({ ...f, toDate: e.target.value })} />
                 {toDay && <div style={{ fontSize: 12, color: C.blue, marginTop: 6, fontWeight: 600 }}>📅 {toDay}</div>}
               </div>
             </>
@@ -234,17 +234,17 @@ export default function PostSwapPage() {
 
           {/* Details */}
           <div>
-            <label style={lb}>
+            <label htmlFor="post-details" style={lb}>
               Details {showErrors && !f.details.trim() && <span style={{ color: C.red, fontSize: 10 }}>Required</span>}
             </label>
-            <textarea value={f.details} onChange={e => sF({ ...f, details: e.target.value })} placeholder="Details about this swap..." rows={3} style={{ resize: "vertical", ...(showErrors && !f.details.trim() ? { borderColor: C.red + "66" } : {}) }} maxLength={500} />
+            <textarea id="post-details" value={f.details} onChange={e => sF({ ...f, details: e.target.value })} placeholder="Details about this swap..." rows={3} style={{ resize: "vertical", ...(showErrors && !f.details.trim() ? { borderColor: C.red + "66" } : {}) }} maxLength={500} />
             <div style={{ fontSize: 10, color: f.details.length > 450 ? C.red : C.m, textAlign: "right", marginTop: 4 }}>{f.details.length}/500</div>
           </div>
 
           {/* Contact */}
           <div>
-            <label style={lb}>Contact (optional)</label>
-            <input value={f.contact} onChange={e => sF({ ...f, contact: e.target.value })} placeholder="Phone or see dispatcher" />
+            <label htmlFor="post-contact" style={lb}>Contact (optional)</label>
+            <input id="post-contact" value={f.contact} onChange={e => sF({ ...f, contact: e.target.value })} placeholder="Phone or see dispatcher" />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10, marginTop: 8 }}>

@@ -125,7 +125,7 @@ export default function AgreementPanel({ swapId, agreement, isOwner, currentUser
         </div>
       )}
 
-      {error && <div style={{ padding: "8px 12px", borderRadius: 10, background: "#EF444415", border: "1px solid #EF444433", fontSize: 12, color: "#EF4444", marginBottom: 10 }}>{error}</div>}
+      {error && <div role="alert" aria-live="assertive" style={{ padding: "8px 12px", borderRadius: 10, background: "#EF444415", border: "1px solid #EF444433", fontSize: 12, color: "#EF4444", marginBottom: 10 }}>{error}</div>}
 
       {isActive && canConfirm && (
         <div style={{ display: "grid", gap: 8 }}>
