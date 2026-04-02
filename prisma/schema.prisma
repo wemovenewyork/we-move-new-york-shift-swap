@@ -7,19 +7,21 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  firstName    String   @map("first_name")
-  lastName     String   @map("last_name")
-  depotId      String?  @map("depot_id")
-  role         UserRole @default(operator)
-  language     String   @default("en")
-  avatarUrl    String?  @map("avatar_url")
-  verified     Boolean  @default(false)
-  invitedBy    String?  @map("invited_by")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(uuid())
+  email          String   @unique
+  passwordHash   String   @map("password_hash")
+  firstName      String   @map("first_name")
+  lastName       String   @map("last_name")
+  depotId        String?  @map("depot_id")
+  role           UserRole @default(operator)
+  language       String   @default("en")
+  avatarUrl      String?  @map("avatar_url")
+  verified       Boolean  @default(false)
+  flexibleMode   Boolean  @default(false) @map("flexible_mode")
+  flexibleSince  DateTime? @map("flexible_since")
+  invitedBy      String?  @map("invited_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   depot              Depot?             @relation(fields: [depotId], references: [id])
   inviter            User?              @relation("Invites", fields: [invitedBy], references: [id])
@@ -36,6 +38,7 @@ model User {
   pushSubscriptions  PushSubscription[]
   agreementsAsA      SwapAgreement[]    @relation("AgreementUserA")
   agreementsAsB      SwapAgreement[]    @relation("AgreementUserB")
+  announcements      Announcement[]
 
   @@map("users")
 }
@@ -48,10 +51,27 @@ model Depot {
   operator String
   logoUrl  String? @map("logo_url")
 
-  users User[]
-  swaps Swap[]
+  users         User[]
+  swaps         Swap[]
+  announcements Announcement[]
 
   @@map("depots")
+}
+
+model Announcement {
+  id        String    @id @default(uuid())
+  depotId   String    @map("depot_id")
+  authorId  String    @map("author_id")
+  body      String    @db.VarChar(600)
+  pinned    Boolean   @default(false)
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  depot  Depot @relation(fields: [depotId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id])
+
+  @@map("announcements")
 }
 
 model Swap {
@@ -91,16 +111,16 @@ model Swap {
 
 model Message {
   id         String   @id @default(uuid())
-  swapId     String   @map("swap_id")
+  swapId     String?  @map("swap_id")
   fromUserId String   @map("from_user_id")
   toUserId   String   @map("to_user_id")
   text       String
   read       Boolean  @default(false)
   createdAt  DateTime @default(now()) @map("created_at")
 
-  swap     Swap @relation(fields: [swapId], references: [id], onDelete: Cascade)
-  fromUser User @relation("SentMessages", fields: [fromUserId], references: [id])
-  toUser   User @relation("ReceivedMessages", fields: [toUserId], references: [id])
+  swap     Swap? @relation(fields: [swapId], references: [id], onDelete: Cascade)
+  fromUser User  @relation("SentMessages", fields: [fromUserId], references: [id])
+  toUser   User  @relation("ReceivedMessages", fields: [toUserId], references: [id])
 
   @@map("messages")
 }

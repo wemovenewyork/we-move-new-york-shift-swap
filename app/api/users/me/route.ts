@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
     role: dbUser.role,
     language: dbUser.language,
     avatarUrl: dbUser.avatarUrl,
+    flexibleMode: dbUser.flexibleMode,
     reputation,
     inviteCodes,
   });

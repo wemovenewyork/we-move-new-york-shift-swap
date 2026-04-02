@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
-import { Depot, Swap } from "@/types";
+import { Depot, Swap, Announcement, FlexibleOperator } from "@/types";
 import { C, CM, SWAP_TYPES } from "@/constants/colors";
 import SwapCard from "@/components/ui/SwapCard";
 import DepotBadge from "@/components/ui/DepotBadge";
@@ -15,6 +15,9 @@ import FAB from "@/components/ui/FAB";
 import Toast from "@/components/ui/Toast";
 import Icon from "@/components/ui/Icon";
 import Footer from "@/components/ui/Footer";
+import AnnouncementBanner from "@/components/ui/AnnouncementBanner";
+import FlexibleStrip from "@/components/ui/FlexibleStrip";
+import PostAnnouncementModal from "@/components/ui/PostAnnouncementModal";
 
 export default function BrowsePage() {
   const { user, loading } = useAuth();
@@ -24,10 +27,17 @@ export default function BrowsePage() {
 
   const [depot, setDepot] = useState<Depot | null>(null);
   const [swaps, setSwaps] = useState<Swap[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [flexibleOps, setFlexibleOps] = useState<FlexibleOperator[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [msgModal, setMsgModal] = useState<Swap | null>(null);
+  const [dmTarget, setDmTarget] = useState<FlexibleOperator | null>(null);
+  const [dmText, setDmText] = useState("");
+  const [dmBusy, setDmBusy] = useState(false);
+  const [postAnnModal, setPostAnnModal] = useState(false);
   const [confirm, setConfirm] = useState<{ title: string; text: string; action: () => void } | null>(null);
   const [lastVisit] = useState(() => Date.now());
+  const isRep = user?.role === "depotRep" || user?.role === "admin";
 
   const [cat, setCat] = useState("all");
   const [q, setQ] = useState("");
@@ -50,6 +60,8 @@ export default function BrowsePage() {
   useEffect(() => {
     if (!code || !user) return;
     api.get<Depot>(`/depots/${code}`).then(setDepot).catch(() => router.replace("/depots"));
+    api.get<Announcement[]>(`/depots/${code}/announcements`).then(setAnnouncements).catch(() => {});
+    api.get<FlexibleOperator[]>(`/depots/${code}/flexible`).then(setFlexibleOps).catch(() => {});
     fetchSwaps();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, user]);
@@ -121,6 +133,40 @@ export default function BrowsePage() {
     setMsgModal(null);
   };
 
+  const handleFlexToggle = async () => {
+    try {
+      const { flexibleMode } = await api.post<{ flexibleMode: boolean }>("/users/me/flexible", {});
+      if (flexibleMode) {
+        // add self to list optimistically — re-fetch to get real data
+        api.get<FlexibleOperator[]>(`/depots/${code}/flexible`).then(setFlexibleOps).catch(() => {});
+        showToast("You're now in \"I'll Take Anything\" mode!");
+      } else {
+        setFlexibleOps(prev => prev.filter(op => op.id !== user?.id));
+        showToast("Flexible mode off");
+      }
+    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Toggle failed"); }
+  };
+
+  const handleDmSend = async () => {
+    if (!dmTarget || !dmText.trim()) return;
+    setDmBusy(true);
+    try {
+      await api.post(`/users/${dmTarget.id}/message`, { text: dmText.trim() });
+      showToast(`Message sent to ${dmTarget.firstName}!`);
+      setDmTarget(null);
+      setDmText("");
+    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Send failed"); }
+    setDmBusy(false);
+  };
+
+  const handleDeleteAnn = async (id: string) => {
+    try {
+      await api.del(`/depots/${code}/announcements/${id}`);
+      setAnnouncements(prev => prev.filter(a => a.id !== id));
+      showToast("Announcement removed");
+    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed"); }
+  };
+
   if (!depot) return null;
 
   return (
@@ -129,11 +175,32 @@ export default function BrowsePage() {
         <button onClick={() => router.push(`/depot/${code}`)} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="back" s={16} /></button>
         <DepotBadge depot={depot} size={38} />
         <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.white }}>{depot.name}</div>
+        {isRep && (
+          <button onClick={() => setPostAnnModal(true)} title="Post Announcement" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.gold}44`, background: C.gs, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.gold, flexShrink: 0 }}>
+            <Icon n="bell" s={15} c={C.gold} />
+          </button>
+        )}
         <button onClick={() => router.push(`/depot/${code}/post`)} style={{ padding: "8px 18px", borderRadius: 10, border: "none", cursor: "pointer", background: "#D1AD38", fontSize: 13, fontWeight: 700, color: "#010028", flexShrink: 0 }}>+ Post</button>
       </div>
 
       <main id="main-content" style={{ maxWidth: 720, margin: "0 auto", padding: "0 20px" }}>
         <h2 style={{ fontSize: 22, fontWeight: 800, background: `linear-gradient(135deg,${C.white},${C.gold}88)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", padding: "18px 0 8px" }}>Available Swaps</h2>
+
+        {/* Announcements */}
+        <AnnouncementBanner
+          announcements={announcements}
+          isRep={!!isRep}
+          onDelete={handleDeleteAnn}
+        />
+
+        {/* I'll Take Anything strip */}
+        <FlexibleStrip
+          operators={flexibleOps}
+          onMessage={setDmTarget}
+          currentUserId={user?.id ?? ""}
+          isFlexible={user?.flexibleMode ?? false}
+          onToggle={handleFlexToggle}
+        />
 
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search..." style={{ height: 40, fontSize: 13, flex: 1 }} />
@@ -201,10 +268,43 @@ export default function BrowsePage() {
       </main>
 
       <FAB onClick={() => router.push(`/depot/${code}/post`)} />
-      <BottomNav active="browse" depotCode={code} />
+      <BottomNav active="browse" depotCode={code} lang={user?.language} />
       {msgModal && <MsgModal swap={msgModal} onSend={handleSend} onClose={() => setMsgModal(null)} />}
       {confirm && <ConfirmModal title={confirm.title} text={confirm.text} onConfirm={confirm.action} onCancel={() => setConfirm(null)} />}
       {toast && <Toast message={toast} />}
+
+      {/* Post Announcement modal (reps only) */}
+      {postAnnModal && (
+        <PostAnnouncementModal
+          depotCode={code}
+          onPosted={ann => { setAnnouncements(prev => [ann, ...prev]); setPostAnnModal(false); showToast("Announcement posted!"); }}
+          onClose={() => setPostAnnModal(false)}
+        />
+      )}
+
+      {/* DM modal for flexible operator */}
+      {dmTarget && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.75)", display: "flex", alignItems: "flex-end", zIndex: 300 }} onClick={() => { setDmTarget(null); setDmText(""); }}>
+          <div style={{ width: "100%", background: "rgb(6,5,52)", borderRadius: "20px 20px 0 0", padding: "24px 20px 44px", maxWidth: 520, margin: "0 auto" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: C.white, marginBottom: 2 }}>Message {dmTarget.firstName} {dmTarget.lastName}</div>
+            <div style={{ fontSize: 11, color: C.m, marginBottom: 16 }}>They&apos;re open to any swap — introduce yourself and share what you have.</div>
+            <textarea
+              value={dmText}
+              onChange={e => setDmText(e.target.value)}
+              placeholder={`Hi ${dmTarget.firstName}, I'm interested in swapping. I have…`}
+              maxLength={500}
+              rows={4}
+              style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.04)", color: C.white, fontSize: 14, resize: "none", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 14 }}
+            />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}>
+              <button onClick={() => { setDmTarget(null); setDmText(""); }} style={{ padding: 14, borderRadius: 14, border: `1px solid ${C.bd}`, background: "transparent", cursor: "pointer", fontSize: 14, fontWeight: 600, color: C.m }}>Cancel</button>
+              <button onClick={handleDmSend} disabled={dmBusy || !dmText.trim()} style={{ padding: 14, borderRadius: 14, border: "none", background: "linear-gradient(135deg,#22C55E,#22C55Ecc)", cursor: "pointer", fontSize: 14, fontWeight: 700, color: "#fff", opacity: dmBusy || !dmText.trim() ? 0.6 : 1 }}>
+                {dmBusy ? "Sending..." : "Send Message"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

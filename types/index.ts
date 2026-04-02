@@ -60,8 +60,30 @@ export interface User {
   role: UserRole;
   language: string;
   avatarUrl?: string | null;
+  flexibleMode: boolean;
   reputation?: RepScore;
   inviteCodes?: { code: string; isValid: boolean }[];
+}
+
+export interface Announcement {
+  id: string;
+  depotId: string;
+  authorId: string;
+  body: string;
+  pinned: boolean;
+  expiresAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  author?: { id: string; firstName: string; lastName: string };
+}
+
+export interface FlexibleOperator {
+  id: string;
+  firstName: string;
+  lastName: string;
+  depotId: string;
+  flexibleSince: string;
+  reputation?: RepScore;
 }
 
 export interface SwapAgreement {
