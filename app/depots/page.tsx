@@ -21,7 +21,7 @@ export default function DepotsPage() {
   const [hovered, setHovered] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user && !localStorage.getItem("accessToken")) router.replace("/login");
   }, [user, loading, router]);
 
   useEffect(() => {

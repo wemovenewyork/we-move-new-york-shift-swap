@@ -43,7 +43,7 @@ export default function LoginPage() {
     try {
       const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; language: string } }>("/auth/login", { email: em, password: pw });
       login(data.accessToken, data.refreshToken, data.user as Parameters<typeof login>[2]);
-      router.replace("/depots");
+      window.location.href = "/depots";
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Login failed");
     } finally { setSubmitting(false); }
@@ -57,7 +57,7 @@ export default function LoginPage() {
     try {
       const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; role: string; language: string; flexibleMode: boolean } }>("/auth/register", { firstName: fn, lastName: ln, email: em, password: pw, inviteCode: invCode, depotId });
       login(data.accessToken, data.refreshToken, data.user as Parameters<typeof login>[2]);
-      router.replace("/depots");
+      window.location.href = "/depots";
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Registration failed");
     } finally { setSubmitting(false); }

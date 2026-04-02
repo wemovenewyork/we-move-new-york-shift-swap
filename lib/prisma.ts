@@ -12,7 +12,7 @@ export function getPrisma(): PrismaClient {
     adapter,
     log: process.env.NODE_ENV === "development" ? ["error"] : [],
   });
-  if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = client;
+  globalForPrisma.prisma = client;
   return client;
 }
 

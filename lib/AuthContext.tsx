@@ -24,7 +24,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await api.get<User>("/users/me");
       setUser(data);
     } catch {
-      setUser(null);
+      // Retry once after a short delay before giving up (handles cold starts)
+      await new Promise(r => setTimeout(r, 1500));
+      try {
+        const data = await api.get<User>("/users/me");
+        setUser(data);
+      } catch {
+        setUser(null);
+      }
     }
   }, []);
 
