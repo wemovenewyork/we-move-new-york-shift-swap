@@ -8,6 +8,50 @@ import { C, CM, STC, SWAP_TYPES } from "@/constants/colors";
 import Icon from "@/components/ui/Icon";
 import RepBadge from "@/components/ui/RepBadge";
 
+interface DayData { date: string; posted: number; agreements: number; }
+
+function ActivityChart({ data }: { data: DayData[] }) {
+  const maxVal = Math.max(...data.map(d => Math.max(d.posted, d.agreements)), 1);
+  const W = 300; const H = 60; const padB = 18;
+  const x = (i: number) => (i / (data.length - 1)) * W;
+  const y = (v: number) => (1 - v / maxVal) * (H - padB);
+
+  const linePath = (key: "posted" | "agreements") =>
+    data.map((d, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(d[key]).toFixed(1)}`).join(" ");
+
+  const areaPath = (key: "posted" | "agreements") =>
+    `${linePath(key)} L${W},${H - padB} L0,${H - padB} Z`;
+
+  // Show every 7th label
+  const labelIdxs = [0, 7, 14, 21, 29];
+  const fmt = (d: string) => { const dt = new Date(d + "T12:00"); return `${dt.getMonth() + 1}/${dt.getDate()}`; };
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: 72 }} aria-label="30-day activity chart" role="img">
+      <defs>
+        <linearGradient id="rc-gold" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#D1AD38" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#D1AD38" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="rc-teal" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#00C9A7" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#00C9A7" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath("posted")} fill="url(#rc-gold)" />
+      <path d={areaPath("agreements")} fill="url(#rc-teal)" />
+      <path d={linePath("posted")} fill="none" stroke="#D1AD38" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d={linePath("agreements")} fill="none" stroke="#00C9A7" strokeWidth="1.5" strokeLinejoin="round" strokeDasharray="4 2" />
+      <line x1="0" y1={H - padB} x2={W} y2={H - padB} stroke="rgba(255,255,255,.06)" strokeWidth="1" />
+      {labelIdxs.map(i => data[i] ? (
+        <text key={i} x={x(i)} y={H - 4} textAnchor={i === 0 ? "start" : i === 29 ? "end" : "middle"} fontSize="7" fill="rgba(255,255,255,.3)">
+          {fmt(data[i].date)}
+        </text>
+      ) : null)}
+    </svg>
+  );
+}
+
 interface DashData {
   depot: { name: string; code: string; operator: string };
   swapCounts: { status: string; category: string; _count: number }[];
@@ -35,6 +79,7 @@ export default function RepDashboardPage() {
   const params = useParams<{ code: string }>();
   const code = params.code;
   const [data, setData] = useState<DashData | null>(null);
+  const [analytics, setAnalytics] = useState<DayData[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -50,6 +95,9 @@ export default function RepDashboardPage() {
     api.get<DashData>(`/depots/${code}/rep-dashboard`)
       .then(setData)
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "Failed to load"));
+    api.get<DayData[]>(`/depots/${code}/rep-dashboard/analytics`)
+      .then(setAnalytics)
+      .catch(() => {});
   }, [user, code]);
 
   if (!user) return null;
@@ -96,6 +144,40 @@ export default function RepDashboardPage() {
       </div>
 
       <main id="main-content" style={{ maxWidth: 560, margin: "0 auto", padding: "20px 16px" }}>
+        {/* 30-day activity chart */}
+        {analytics.length > 0 && (
+          <div style={{ background: "rgba(255,255,255,.03)", borderRadius: 14, padding: 16, border: `1px solid ${C.bd}`, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: "uppercase", letterSpacing: 2 }}>30-Day Activity</div>
+              <div style={{ display: "flex", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <div style={{ width: 12, height: 2, background: C.gold, borderRadius: 1 }} />
+                  <span style={{ fontSize: 9, color: C.m }}>Posted</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <div style={{ width: 12, height: 2, background: "#00C9A7", borderRadius: 1, borderTop: "1px dashed #00C9A7" }} />
+                  <span style={{ fontSize: 9, color: C.m }}>Agreements</span>
+                </div>
+              </div>
+            </div>
+            <ActivityChart data={analytics} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
+              <div style={{ padding: "8px 12px", borderRadius: 10, background: C.gold + "08", border: `1px solid ${C.gold}22` }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: C.gold }}>
+                  {analytics.reduce((s, d) => s + d.posted, 0)}
+                </div>
+                <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1 }}>Swaps posted</div>
+              </div>
+              <div style={{ padding: "8px 12px", borderRadius: 10, background: "#00C9A708", border: "1px solid #00C9A722" }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#00C9A7" }}>
+                  {analytics.reduce((s, d) => s + d.agreements, 0)}
+                </div>
+                <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1 }}>Agreements</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Summary stats */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
           {[

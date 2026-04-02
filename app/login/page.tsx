@@ -111,6 +111,9 @@ export default function LoginPage() {
             <MagneticButton onClick={doSignIn} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 16, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1, width: "100%" }}>
               {submitting ? "Signing in..." : "Sign In"}
             </MagneticButton>
+            <button type="button" onClick={() => router.push("/forgot-password")} style={{ background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, textAlign: "center", padding: "4px 0" }}>
+              Forgot password?
+            </button>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 14 }}>

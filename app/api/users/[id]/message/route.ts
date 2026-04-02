@@ -3,9 +3,9 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
+import { notifyUser } from "@/lib/notifyUser";
 
 // POST /api/users/:id/message → send a direct message to any operator (not tied to a swap)
-// Used by the "I'll Take Anything" feature to initiate contact.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
@@ -23,16 +23,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!text?.trim()) return err("Message text is required", 400);
   if (text.length > 500) return err("Message must be 500 characters or fewer", 400);
 
-  const message = await prisma.message.create({
-    data: {
-      fromUserId: user.userId,
-      toUserId,
-      text: text.trim(),
-      swapId: null,
-    },
-    include: {
-      fromUser: { select: { id: true, firstName: true, lastName: true } },
-    },
+  const [message, sender] = await Promise.all([
+    prisma.message.create({
+      data: { fromUserId: user.userId, toUserId, text: text.trim(), swapId: null },
+      include: { fromUser: { select: { id: true, firstName: true, lastName: true } } },
+    }),
+    prisma.user.findUnique({ where: { id: user.userId }, select: { firstName: true, lastName: true } }),
+  ]);
+
+  // Notify recipient — fire and forget
+  notifyUser(toUserId, {
+    title: `Message from ${sender?.firstName ?? "an operator"}`,
+    body: text.trim().substring(0, 80),
+    url: `/depot/${toUser.depotId ?? ""}/messages/${user.userId}`,
   });
 
   return ok(message, 201);

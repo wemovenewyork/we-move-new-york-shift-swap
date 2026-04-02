@@ -50,3 +50,13 @@ export function requireUser(req: NextRequest): TokenPayload {
   if (!user) throw new Error("UNAUTHORIZED");
   return user;
 }
+
+export function signResetToken(userId: string): string {
+  return jwt.sign({ userId, type: "reset" }, ACCESS_SECRET!, { expiresIn: "1h" });
+}
+
+export function verifyResetToken(token: string): { userId: string } {
+  const payload = jwt.verify(token, ACCESS_SECRET!) as { userId: string; type: string };
+  if (payload.type !== "reset") throw new Error("Invalid token type");
+  return { userId: payload.userId };
+}

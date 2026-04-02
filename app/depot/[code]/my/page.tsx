@@ -75,6 +75,17 @@ export default function MyPostsPage() {
       </div>
 
       <main id="main-content" style={{ maxWidth: 720, margin: "0 auto", padding: "16px 20px 50px" }}>
+        {swaps.some(s => s.status === "expired") && (
+          <div role="status" style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px", borderRadius: 14, background: "rgba(136,136,136,.08)", border: "1px solid rgba(136,136,136,.2)", marginBottom: 12 }}>
+            <Icon n="clk" s={16} c="#888" />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.white }}>
+                {swaps.filter(s => s.status === "expired").length} swap{swaps.filter(s => s.status === "expired").length !== 1 ? "s" : ""} expired
+              </div>
+              <div style={{ fontSize: 11, color: C.m, marginTop: 2 }}>Tap Edit on any expired swap to repost it.</div>
+            </div>
+          </div>
+        )}
         <div style={{ display: "grid", gap: 8 }}>
           {swaps.length === 0 ? (
             <div style={{ textAlign: "center", padding: 40, color: C.m }}>
