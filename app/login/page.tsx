@@ -25,6 +25,7 @@ export default function LoginPage() {
   const [fn, setFn] = useState(""); const [ln, setLn] = useState(""); const [pw2, setPw2] = useState(""); const [invCode, setInvCode] = useState("");
   const [depotId, setDepotId] = useState("");
   const [depots, setDepots] = useState<Depot[]>([]);
+  const [showPw, setShowPw] = useState(false); const [showPw2, setShowPw2] = useState(false);
   const [err, setErr] = useState(""); const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -93,7 +94,13 @@ export default function LoginPage() {
         {mode === "signin" ? (
           <div style={{ display: "grid", gap: 14 }}>
             <div><label style={lb}>Email</label><input type="email" value={em} onChange={e => { setEm(e.target.value); setErr(""); }} placeholder="you@example.com" /></div>
-            <div><label style={lb}>Password</label><input type="password" value={pw} onChange={e => { setPw(e.target.value); setErr(""); }} placeholder="Your password" onKeyDown={e => e.key === "Enter" && doSignIn()} /></div>
+            <div>
+              <label style={lb}>Password</label>
+              <div style={{ position: "relative" }}>
+                <input type={showPw ? "text" : "password"} value={pw} onChange={e => { setPw(e.target.value); setErr(""); }} placeholder="Your password" onKeyDown={e => e.key === "Enter" && doSignIn()} style={{ paddingRight: 44 }} />
+                <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, fontWeight: 600, padding: "4px 6px" }}>{showPw ? "Hide" : "Show"}</button>
+              </div>
+            </div>
             <button onClick={doSignIn} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 16, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1 }}>
               {submitting ? "Signing in..." : "Sign In"}
             </button>
@@ -118,8 +125,20 @@ export default function LoginPage() {
               </select>
             </div>
             <div><label style={lb}>Email</label><input type="email" value={em} onChange={e => { setEm(e.target.value); setErr(""); }} placeholder="you@example.com" /></div>
-            <div><label style={lb}>Create Password</label><input type="password" value={pw} onChange={e => { setPw(e.target.value); setErr(""); }} placeholder="Min 6 chars" /></div>
-            <div><label style={lb}>Verify Password</label><input type="password" value={pw2} onChange={e => { setPw2(e.target.value); setErr(""); }} placeholder="Re-enter" /></div>
+            <div>
+              <label style={lb}>Create Password</label>
+              <div style={{ position: "relative" }}>
+                <input type={showPw ? "text" : "password"} value={pw} onChange={e => { setPw(e.target.value); setErr(""); }} placeholder="Min 6 chars" style={{ paddingRight: 44 }} />
+                <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, fontWeight: 600, padding: "4px 6px" }}>{showPw ? "Hide" : "Show"}</button>
+              </div>
+            </div>
+            <div>
+              <label style={lb}>Verify Password</label>
+              <div style={{ position: "relative" }}>
+                <input type={showPw2 ? "text" : "password"} value={pw2} onChange={e => { setPw2(e.target.value); setErr(""); }} placeholder="Re-enter" style={{ paddingRight: 44 }} />
+                <button type="button" onClick={() => setShowPw2(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, fontWeight: 600, padding: "4px 6px" }}>{showPw2 ? "Hide" : "Show"}</button>
+              </div>
+            </div>
             <div><label style={lb}>Invite Code</label><input value={invCode} onChange={e => { setInvCode(e.target.value.toUpperCase()); setErr(""); }} placeholder="e.g. WMNY-DEMO1" style={{ letterSpacing: 2, textTransform: "uppercase" }} /></div>
             <div style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: "1px solid " + C.bd }}>
               <div style={{ fontSize: 10, color: C.m, lineHeight: 1.6 }}>Need an invite code? Ask a fellow operator who already uses the app, or use a seed code: WMNY-2024A, WMNY-2024B, WMNY-2024C</div>
