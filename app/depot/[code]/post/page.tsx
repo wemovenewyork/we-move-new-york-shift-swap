@@ -31,13 +31,19 @@ interface FormState {
 
 function ShiftFields({ f, sF }: { f: FormState; sF: (v: FormState) => void }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-      <div><label style={lb}>Run</label><input value={f.run} onChange={e => sF({ ...f, run: e.target.value })} placeholder="401" /></div>
-      <div><label style={lb}>Route</label><input value={f.route} onChange={e => sF({ ...f, route: e.target.value })} placeholder="Bx1" /></div>
-      <div><label style={lb}>Start Time</label><input type="time" value={f.startTime} onChange={e => sF({ ...f, startTime: e.target.value })} /></div>
-      <div><label style={lb}>Clear Time</label><input type="time" value={f.clearTime} onChange={e => sF({ ...f, clearTime: e.target.value })} /></div>
-      <div><label style={lb}>Swing Start</label><input type="time" value={f.swingStart} onChange={e => sF({ ...f, swingStart: e.target.value })} /></div>
-      <div><label style={lb}>Swing End</label><input type="time" value={f.swingEnd} onChange={e => sF({ ...f, swingEnd: e.target.value })} /></div>
+    <div style={{ display: "grid", gap: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10 }}>
+        <div><label style={lb}>Run</label><input value={f.run} onChange={e => sF({ ...f, run: e.target.value })} placeholder="401" /></div>
+        <div><label style={lb}>Route</label><input value={f.route} onChange={e => sF({ ...f, route: e.target.value })} placeholder="Bx1" /></div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div><label style={lb}>Start Time</label><input type="time" value={f.startTime} onChange={e => sF({ ...f, startTime: e.target.value })} style={{ fontSize: 15 }} /></div>
+        <div><label style={lb}>Clear Time</label><input type="time" value={f.clearTime} onChange={e => sF({ ...f, clearTime: e.target.value })} style={{ fontSize: 15 }} /></div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div><label style={lb}>Swing Start</label><input type="time" value={f.swingStart} onChange={e => sF({ ...f, swingStart: e.target.value })} style={{ fontSize: 15 }} /></div>
+        <div><label style={lb}>Swing End</label><input type="time" value={f.swingEnd} onChange={e => sF({ ...f, swingEnd: e.target.value })} style={{ fontSize: 15 }} /></div>
+      </div>
     </div>
   );
 }
