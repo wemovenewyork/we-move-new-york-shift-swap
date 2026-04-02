@@ -18,7 +18,7 @@ export default function ProfilePage() {
   const { user, logout, updateUser, loading } = useAuth();
   const router = useRouter();
   const [tab, setTab] = useState<"profile" | "security">("profile");
-  const [fn, setFn] = useState(""); const [ln, setLn] = useState(""); const [email, setEmail] = useState(""); const [lang, setLang] = useState("en");
+  const [fn, setFn] = useState(""); const [ln, setLn] = useState(""); const [email, setEmail] = useState(""); const [lang, setLang] = useState("en"); const [depotId, setDepotId] = useState("");
   const [curPw, setCurPw] = useState(""); const [newPw, setNewPw] = useState(""); const [newPw2, setNewPw2] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePw, setDeletePw] = useState(""); const [deleteErr, setDeleteErr] = useState(""); const [deleting, setDeleting] = useState(false);
@@ -32,14 +32,14 @@ export default function ProfilePage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (user) { setFn(user.firstName); setLn(user.lastName); setEmail(user.email); setLang(user.language); }
+    if (user) { setFn(user.firstName); setLn(user.lastName); setEmail(user.email); setLang(user.language); setDepotId(user.depotId ?? ""); }
     api.get<Depot[]>("/depots").then(setDepots).catch(() => {});
   }, [user]);
 
   const saveProfile = async () => {
     setSaving(true);
     try {
-      const data = await api.put("/users/me", { firstName: fn, lastName: ln, email, language: lang });
+      const data = await api.put("/users/me", { firstName: fn, lastName: ln, email, language: lang, depotId });
       updateUser(data as Parameters<typeof updateUser>[0]);
       showToast("Saved!");
     } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Save failed"); }
@@ -111,18 +111,26 @@ export default function ProfilePage() {
                 <option value="ht">Kreyòl Ayisyen</option>
               </select>
             </div>
-            {depot && (
-              <div>
-                <label style={lb}>Home Depot</label>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 14, background: C.s, border: `1px solid ${C.bd}` }}>
-                  <DepotBadge depot={depot} size={32} />
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: C.white }}>{depot.name}</div>
-                    <div style={{ fontSize: 11, color: C.m }}>{depot.operator} · {depot.borough}</div>
-                  </div>
-                </div>
-              </div>
-            )}
+            <div>
+              <label htmlFor="prof-depot" style={lb}>Home Depot</label>
+              <select
+                id="prof-depot"
+                value={depotId}
+                onChange={e => setDepotId(e.target.value)}
+                style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.bd}`, background: C.s, color: depotId ? C.white : C.m, fontSize: 14, cursor: "pointer", appearance: "auto" }}
+              >
+                <option value="">— Select your home depot —</option>
+                {["Manhattan","Brooklyn","Bronx","Queens","Staten Island"].map(borough => {
+                  const bd = depots.filter(d => d.borough === borough);
+                  if (!bd.length) return null;
+                  return (
+                    <optgroup key={borough} label={borough}>
+                      {bd.map(d => <option key={d.id} value={d.id}>{d.name} ({d.code})</option>)}
+                    </optgroup>
+                  );
+                })}
+              </select>
+            </div>
             <button onClick={saveProfile} disabled={saving} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 15, fontWeight: 700, color: C.bg }}>
               {saving ? "Saving..." : "Save Changes"}
             </button>
