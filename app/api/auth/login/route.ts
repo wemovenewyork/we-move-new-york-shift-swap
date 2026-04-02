@@ -3,8 +3,12 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signAccessToken, signRefreshToken } from "@/lib/auth";
 import { ok, err } from "@/lib/apiResponse";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!rateLimit(`login:${ip}`, 10, 60_000)) return err("Too many attempts — try again in a minute", 429);
+
   const { email, password } = await req.json();
   if (!email || !password) return err("Email and password required", 400);
 

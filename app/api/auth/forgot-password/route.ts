@@ -3,10 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { signResetToken } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { ok, err } from "@/lib/apiResponse";
+import { rateLimit } from "@/lib/rateLimit";
 
 // POST /api/auth/forgot-password
 // Accepts { email } — sends reset link if account exists. Always returns 200 to prevent enumeration.
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!rateLimit(`forgot:${ip}`, 5, 60_000)) return err("Too many attempts — try again in a minute", 429);
+
   const { email } = await req.json();
   if (!email || typeof email !== "string") return err("Email required", 400);
 
