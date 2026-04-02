@@ -5,7 +5,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
 import { SwapCategory, SwapStatus } from "@prisma/client";
 import { calcScore } from "@/lib/reputation";
-import { notifyUser } from "@/lib/notifyUser";
+import { notifyMany } from "@/lib/notifyUser";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -84,8 +84,8 @@ export async function POST(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
-  if (!rateLimit(`post:${user.userId}`, 5, 3_600_000)) return err("Rate limit: max 5 posts per hour", 429);
-  if (!rateLimit(`post30s:${user.userId}`, 2, 30_000)) return err("Please wait 30 seconds between posts", 429);
+  if (!await rateLimit(`post:${user.userId}`, 5, 3_600_000)) return err("Rate limit: max 5 posts per hour", 429);
+  if (!await rateLimit(`post30s:${user.userId}`, 2, 30_000)) return err("Please wait 30 seconds between posts", 429);
 
   const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
   if (!dbUser?.depotId) return err("Set your depot first", 400);
@@ -135,11 +135,11 @@ export async function POST(req: NextRequest) {
     select: { id: true },
   });
   const categoryLabel = swap.category === "work" ? "Work" : swap.category === "daysoff" ? "Days Off" : "Vacation";
-  depotUsers.forEach(u => notifyUser(u.id, {
+  notifyMany(depotUsers.map(u => u.id), {
     title: `New ${categoryLabel} swap posted`,
     body: `${posterName} posted a new swap — check the board`,
     url: `/depot/${dbUser.depotId}/swaps/${swap.id}`,
-  }));
+  });
 
   return ok(swap, 201);
 }

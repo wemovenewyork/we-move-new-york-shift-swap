@@ -106,6 +106,7 @@ model Swap {
   reports    Report[]
   agreements SwapAgreement[]
 
+  @@index([depotId, status, createdAt(sort: Desc)])
   @@map("swaps")
 }
 

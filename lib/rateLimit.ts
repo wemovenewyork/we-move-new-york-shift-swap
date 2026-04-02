@@ -1,21 +1,47 @@
-// In-memory sliding window rate limiter (sufficient for single-instance; swap for Redis in multi-instance prod)
-const store = new Map<string, number[]>();
+// Distributed rate limiter using Vercel KV (Redis).
+// Falls back to allowing the request if KV is unavailable (e.g. local dev without KV configured).
 
-export function rateLimit(key: string, maxRequests: number, windowMs: number): boolean {
-  const now = Date.now();
-  const timestamps = (store.get(key) ?? []).filter((t) => now - t < windowMs);
-  if (timestamps.length >= maxRequests) return false;
-  timestamps.push(now);
-  store.set(key, timestamps);
-  return true;
+let kv: typeof import("@vercel/kv").kv | null = null;
+
+async function getKv() {
+  if (kv) return kv;
+  try {
+    const mod = await import("@vercel/kv");
+    kv = mod.kv;
+    return kv;
+  } catch {
+    return null;
+  }
 }
 
-// Cleanup old entries every 5 minutes to prevent memory leak
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, timestamps] of store.entries()) {
-    const fresh = timestamps.filter((t) => now - t < 3_600_000);
-    if (fresh.length === 0) store.delete(key);
-    else store.set(key, fresh);
+/**
+ * Returns true if the request is allowed, false if rate limited.
+ * @param key      Unique key (e.g. "login:1.2.3.4")
+ * @param limit    Max requests allowed in the window
+ * @param windowMs Window size in milliseconds
+ */
+export async function rateLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
+  const store = await getKv();
+
+  // Fallback: allow if KV not available (local dev)
+  if (!store) return true;
+
+  try {
+    const windowSec = Math.ceil(windowMs / 1000);
+    const count = await store.incr(key);
+    if (count === 1) await store.expire(key, windowSec);
+    return count <= limit;
+  } catch {
+    // Allow on KV error rather than block legitimate users
+    return true;
   }
-}, 300_000);
+}
+
+/** Extract the real client IP from a Next.js request */
+export function clientIp(req: Request): string {
+  return (
+    (req.headers as Headers).get("x-forwarded-for")?.split(",")[0].trim() ??
+    (req.headers as Headers).get("x-real-ip") ??
+    "unknown"
+  );
+}

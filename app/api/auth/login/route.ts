@@ -7,7 +7,7 @@ import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!rateLimit(`login:${ip}`, 10, 60_000)) return err("Too many attempts — try again in a minute", 429);
+  if (!await rateLimit(`login:${ip}`, 10, 60_000)) return err("Too many attempts — try again in a minute", 429);
 
   const { email, password } = await req.json();
   if (!email || !password) return err("Email and password required", 400);

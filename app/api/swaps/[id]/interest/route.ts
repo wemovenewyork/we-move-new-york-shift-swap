@@ -13,7 +13,7 @@ export async function POST(
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
   const { id } = await params;
 
-  if (!rateLimit(`msg:${user.userId}`, 5, 60_000)) {
+  if (!await rateLimit(`msg:${user.userId}`, 5, 60_000)) {
     return err("Slow down! Max 5 messages per minute", 429);
   }
 
