@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { SwapAgreement } from "@/types";
 import { C } from "@/constants/colors";
 import Icon from "./Icon";
+import Confetti from "./Confetti";
 
 interface Props {
   swapId: string;
@@ -33,12 +34,14 @@ export default function AgreementPanel({ swapId, agreement, isOwner, currentUser
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const act = async (action: "confirm" | "cancel") => {
     setBusy(true);
     setError("");
     try {
       const updated = await api.patch<SwapAgreement>(`/swaps/${swapId}/agreement`, { action, note: note || undefined });
+      if (updated.status === "completed") setShowConfetti(true);
       onUpdate(updated);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Action failed");
@@ -70,6 +73,7 @@ export default function AgreementPanel({ swapId, agreement, isOwner, currentUser
 
   return (
     <div style={{ marginTop: 16, background: "rgba(255,255,255,.03)", borderRadius: 16, padding: 18, border: `1px solid ${color}22` }}>
+      {showConfetti && <Confetti onDone={() => setShowConfetti(false)} />}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <Icon n="shield" s={16} c={color} />
         <span style={{ fontSize: 12, fontWeight: 700, color: color, textTransform: "uppercase", letterSpacing: 1 }}>Formal Agreement</span>

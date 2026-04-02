@@ -246,7 +246,12 @@ export default function BrowsePage() {
         </div>
 
         <div style={{ display: "grid", gap: 8, paddingBottom: 80 }}>
-          {filtered.length === 0 ? (
+          {swaps.length === 0 && (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="skeleton" style={{ height: 90, borderRadius: 16 }} />
+            ))
+          )}
+          {swaps.length > 0 && filtered.length === 0 ? (
             <div style={{ textAlign: "center", padding: 40, color: C.m }}>No swaps found</div>
           ) : filtered.map((s, idx) => (
             <div key={s.id} style={{ animation: `fadeUp .5s cubic-bezier(.4,0,.2,1) ${idx * 0.06}s both` }}>

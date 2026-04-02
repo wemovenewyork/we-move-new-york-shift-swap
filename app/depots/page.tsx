@@ -9,6 +9,7 @@ import { C, OC } from "@/constants/colors";
 import DepotBadge from "@/components/ui/DepotBadge";
 import Icon from "@/components/ui/Icon";
 import Footer from "@/components/ui/Footer";
+import TiltCard from "@/components/ui/TiltCard";
 
 const BOROUGHS = ["All", "Bronx", "Brooklyn", "Manhattan", "Queens", "Staten Island"];
 
@@ -66,32 +67,40 @@ export default function DepotsPage() {
           </div>
         </div>
 
+        {depots.length === 0 && (
+          <div style={{ display: "grid", gap: 6 }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="skeleton" style={{ height: 66, borderRadius: 14 }} />
+            ))}
+          </div>
+        )}
+
         {Object.keys(grouped).sort().map(bn => (
           <div key={bn} style={{ marginBottom: 28 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: C.gold, letterSpacing: 4, textTransform: "uppercase", marginBottom: 10 }}>{bn}</div>
             <div style={{ display: "grid", gap: 6 }}>
               {grouped[bn].map(d => (
-                <button
-                  className="card-enter"
-                  key={d.code}
-                  onClick={() => router.push(`/depot/${d.code}`)}
-                  onMouseEnter={() => setHovered(d.code)}
-                  onMouseLeave={() => setHovered(null)}
-                  style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", padding: "12px 16px", borderRadius: 14, border: "none", cursor: "pointer", textAlign: "left", transition: "all .25s", background: hovered === d.code ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.025)", backdropFilter: "blur(8px)", borderLeft: hovered === d.code ? `3px solid ${C.gold}` : "3px solid transparent", boxShadow: hovered === d.code ? `0 8px 32px rgba(0,0,0,.2), inset 0 0 0 1px rgba(209,173,56,.15)` : `inset 0 0 0 1px rgba(255,255,255,.05)`, transform: hovered === d.code ? "translateX(4px)" : "none" }}
-                >
-                  <DepotBadge depot={d} size={42} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: C.white }}>{d.name}</div>
-                    <div style={{ display: "flex", gap: 8, marginTop: 3 }}>
-                      <span style={{ padding: "2px 8px", borderRadius: 6, background: (OC[d.operator] || C.blue) + "18", fontSize: 10, fontWeight: 600, color: OC[d.operator] || C.blue }}>{d.operator}</span>
-                      <span style={{ fontSize: 11, color: C.m }}>{d.borough}</span>
+                <TiltCard key={d.code} className="card-enter" intensity={6}>
+                  <button
+                    onClick={() => router.push(`/depot/${d.code}`)}
+                    onMouseEnter={() => setHovered(d.code)}
+                    onMouseLeave={() => setHovered(null)}
+                    style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", padding: "12px 16px", borderRadius: 14, border: "none", cursor: "pointer", textAlign: "left", transition: "background .25s, box-shadow .25s", background: hovered === d.code ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.025)", backdropFilter: "blur(8px)", borderLeft: hovered === d.code ? `3px solid ${C.gold}` : "3px solid transparent", boxShadow: hovered === d.code ? `0 8px 32px rgba(0,0,0,.2), inset 0 0 0 1px rgba(209,173,56,.15)` : `inset 0 0 0 1px rgba(255,255,255,.05)` }}
+                  >
+                    <DepotBadge depot={d} size={42} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: C.white }}>{d.name}</div>
+                      <div style={{ display: "flex", gap: 8, marginTop: 3 }}>
+                        <span style={{ padding: "2px 8px", borderRadius: 6, background: (OC[d.operator] || C.blue) + "18", fontSize: 10, fontWeight: 600, color: OC[d.operator] || C.blue }}>{d.operator}</span>
+                        <span style={{ fontSize: 11, color: C.m }}>{d.borough}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ background: C.gold + "18", color: C.gold, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 8 }}>{d.openSwaps ?? 0} swaps</span>
-                    <Icon n="chev" s={16} c={C.gold} />
-                  </div>
-                </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ background: C.gold + "18", color: C.gold, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 8 }}>{d.openSwaps ?? 0} swaps</span>
+                      <Icon n="chev" s={16} c={C.gold} />
+                    </div>
+                  </button>
+                </TiltCard>
               ))}
             </div>
           </div>

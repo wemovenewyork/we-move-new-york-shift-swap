@@ -8,6 +8,7 @@ import { C } from "@/constants/colors";
 import { Depot } from "@/types";
 import Footer from "@/components/ui/Footer";
 import Intro from "@/components/screens/Intro";
+import MagneticButton from "@/components/ui/MagneticButton";
 
 const lb: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: 12, fontWeight: 600, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
 
@@ -107,9 +108,9 @@ export default function LoginPage() {
                 <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, fontWeight: 600, padding: "4px 6px" }}>{showPw ? "Hide" : "Show"}</button>
               </div>
             </div>
-            <button onClick={doSignIn} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 16, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1 }}>
+            <MagneticButton onClick={doSignIn} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 16, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1, width: "100%" }}>
               {submitting ? "Signing in..." : "Sign In"}
-            </button>
+            </MagneticButton>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 14 }}>
@@ -149,9 +150,9 @@ export default function LoginPage() {
             <div style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: "1px solid " + C.bd }}>
               <div style={{ fontSize: 10, color: C.m, lineHeight: 1.6 }}>Need an invite code? Ask a fellow operator who already uses the app, or use a seed code: WMNY-2024A, WMNY-2024B, WMNY-2024C</div>
             </div>
-            <button onClick={doRegister} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 16, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1 }}>
+            <MagneticButton onClick={doRegister} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 16, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1, width: "100%" }}>
               {submitting ? "Creating account..." : "Create Account"}
-            </button>
+            </MagneticButton>
           </div>
         )}
 
