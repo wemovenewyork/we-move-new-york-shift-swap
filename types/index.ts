@@ -61,6 +61,7 @@ export interface User {
   language: string;
   avatarUrl?: string | null;
   flexibleMode: boolean;
+  termsVersion?: string | null;
   reputation?: RepScore;
   inviteCodes?: { code: string; isValid: boolean }[];
 }

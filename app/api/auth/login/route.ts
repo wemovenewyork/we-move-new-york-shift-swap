@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
       depotId: user.depotId,
       role: user.role,
       language: user.language,
+      termsVersion: user.termsVersion,
     },
   });
 }

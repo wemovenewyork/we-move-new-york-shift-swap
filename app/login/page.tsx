@@ -31,6 +31,8 @@ export default function LoginPage() {
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
+  const [acceptingTerms, setAcceptingTerms] = useState(false);
+  const CURRENT_TERMS_VERSION = "2026-04-02";
 
   const setErrWithShake = (msg: string) => {
     setErr(msg);
@@ -39,7 +41,13 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    if (!loading && user && !showDisclaimer && !showTerms) router.replace("/depots");
+    if (!loading && user && !showDisclaimer && !showTerms) {
+      if (user.termsVersion !== CURRENT_TERMS_VERSION) {
+        setShowTerms(true);
+      } else {
+        router.replace("/depots");
+      }
+    }
   }, [user, loading, router, showDisclaimer, showTerms]);
 
   useEffect(() => {
@@ -261,11 +269,18 @@ export default function LoginPage() {
             </label>
 
             <button
-              onClick={() => { if (termsChecked) window.location.href = "/depots"; }}
-              disabled={!termsChecked}
+              onClick={async () => {
+                if (!termsChecked || acceptingTerms) return;
+                setAcceptingTerms(true);
+                try {
+                  await api.post("/auth/accept-terms", { version: CURRENT_TERMS_VERSION });
+                } catch { /* non-fatal — proceed anyway */ }
+                window.location.href = "/depots";
+              }}
+              disabled={!termsChecked || acceptingTerms}
               style={{ width: "100%", padding: 16, borderRadius: 14, border: "none", cursor: termsChecked ? "pointer" : "not-allowed", background: termsChecked ? `linear-gradient(135deg,${C.gold},${C.gold}cc)` : "rgba(255,255,255,.08)", fontSize: 16, fontWeight: 800, color: termsChecked ? C.bg : C.m, transition: "all .2s" }}
             >
-              I Agree
+              {acceptingTerms ? "Saving..." : "I Agree"}
             </button>
           </div>
         </div>
