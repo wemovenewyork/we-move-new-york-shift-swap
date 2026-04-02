@@ -28,6 +28,7 @@ export default function LoginPage() {
   const [depots, setDepots] = useState<Depot[]>([]);
   const [showPw, setShowPw] = useState(false); const [showPw2, setShowPw2] = useState(false);
   const [err, setErr] = useState(""); const [shaking, setShaking] = useState(false); const [submitting, setSubmitting] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
 
   const setErrWithShake = (msg: string) => {
     setErr(msg);
@@ -51,7 +52,7 @@ export default function LoginPage() {
     try {
       const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; language: string } }>("/auth/login", { email: em, password: pw });
       login(data.accessToken, data.refreshToken, data.user as Parameters<typeof login>[2]);
-      window.location.href = "/depots";
+      setShowDisclaimer(true);
     } catch (e: unknown) {
       setErrWithShake(e instanceof Error ? e.message : "Login failed");
     } finally { setSubmitting(false); }
@@ -161,6 +162,51 @@ export default function LoginPage() {
 
         <Footer />
       </div>
+
+      {showDisclaimer && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="disclaimer-title"
+          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(1,0,40,.97)", backdropFilter: "blur(24px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 28px" }}
+        >
+          <div style={{ maxWidth: 400, width: "100%" }}>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: C.gold + "18", border: `1.5px solid ${C.gold}44`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7L12 2z" stroke={C.gold} strokeWidth="1.8" strokeLinejoin="round"/>
+                <path d="M12 8v4M12 16h.01" stroke={C.gold} strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
+            </div>
+
+            <h2 id="disclaimer-title" style={{ fontSize: 22, fontWeight: 800, color: C.white, textAlign: "center", marginBottom: 16 }}>
+              Before You Continue
+            </h2>
+
+            <div style={{ background: "rgba(255,255,255,.04)", border: `1px solid rgba(255,255,255,.08)`, borderRadius: 16, padding: "20px 18px", marginBottom: 24, fontSize: 13, color: C.m, lineHeight: 1.75 }}>
+              <p style={{ margin: "0 0 12px" }}>
+                <strong style={{ color: C.white }}>We Move NY</strong> is an unofficial peer-to-peer tool for MTA bus operators to coordinate shift swaps among themselves.
+              </p>
+              <p style={{ margin: "0 0 12px" }}>
+                This platform is <strong style={{ color: C.white }}>not affiliated with, endorsed by, or operated by the MTA</strong>, any transit agency, or any labor union.
+              </p>
+              <p style={{ margin: "0 0 12px" }}>
+                All swap agreements are <strong style={{ color: C.white }}>between operators only</strong>. It is your responsibility to ensure any swap complies with your collective bargaining agreement, depot rules, and all applicable MTA policies before submitting to your dispatcher.
+              </p>
+              <p style={{ margin: 0 }}>
+                By continuing, you confirm you are an authorized MTA bus operator and agree to use this app in accordance with your employment obligations.
+              </p>
+            </div>
+
+            <button
+              onClick={() => { window.location.href = "/depots"; }}
+              autoFocus
+              style={{ width: "100%", padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}cc)`, fontSize: 16, fontWeight: 800, color: C.bg }}
+            >
+              I Understand
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
