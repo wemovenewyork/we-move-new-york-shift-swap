@@ -4,8 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { signAccessToken, signRefreshToken } from "@/lib/auth";
 import { genInviteCode } from "@/lib/inviteCode";
 import { ok, err } from "@/lib/apiResponse";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!await rateLimit(`register:${ip}`, 5, 3_600_000)) return err("Too many registration attempts — try again in an hour", 429);
+
   const { firstName, lastName, email, password, inviteCode, depotId } = await req.json();
 
   if (!firstName || !lastName || !email || !password || !inviteCode || !depotId) {
