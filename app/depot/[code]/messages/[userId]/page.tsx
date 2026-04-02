@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useId } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
@@ -38,6 +38,8 @@ export default function ThreadPage() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -105,6 +107,17 @@ export default function ThreadPage() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
+  const deleteMessage = async (id: string) => {
+    setDeleting(true);
+    try {
+      await api.delete(`/messages/${id}`, {});
+      setMessages(prev => prev.filter(m => m.id !== id));
+      setDeleteTarget(null);
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Delete failed");
+    } finally { setDeleting(false); }
+  };
+
   const counterpartName = counterpart
     ? `${counterpart.firstName}${counterpart.lastName ? " " + counterpart.lastName : ""}`
     : "Loading…";
@@ -140,6 +153,7 @@ export default function ThreadPage() {
         {messages.map((msg, idx) => {
           const isMine = msg.fromUserId === user?.id;
           const showTime = idx === 0 || (new Date(msg.createdAt).getTime() - new Date(messages[idx - 1].createdAt).getTime()) > 5 * 60 * 1000;
+          const isTargeted = deleteTarget === msg.id;
 
           return (
             <div key={msg.id}>
@@ -148,22 +162,47 @@ export default function ThreadPage() {
                   {formatTime(msg.createdAt)}
                 </div>
               )}
-              <div style={{ display: "flex", justifyContent: isMine ? "flex-end" : "flex-start" }}>
-                <div style={{
-                  maxWidth: "72%",
-                  padding: "10px 14px",
-                  borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                  background: isMine
-                    ? `linear-gradient(135deg,${C.gold},${C.gold}cc)`
-                    : "rgba(255,255,255,.08)",
-                  border: isMine ? "none" : `1px solid ${C.bd}`,
-                  fontSize: 14,
-                  color: isMine ? C.bg : C.white,
-                  lineHeight: 1.45,
-                  wordBreak: "break-word",
-                }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start", gap: 4 }}>
+                <div
+                  onClick={() => isMine && setDeleteTarget(isTargeted ? null : msg.id)}
+                  style={{
+                    maxWidth: "72%",
+                    padding: "10px 14px",
+                    borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                    background: isTargeted
+                      ? C.red + "22"
+                      : isMine
+                        ? `linear-gradient(135deg,${C.gold},${C.gold}cc)`
+                        : "rgba(255,255,255,.08)",
+                    border: isTargeted ? `1px solid ${C.red}55` : isMine ? "none" : `1px solid ${C.bd}`,
+                    fontSize: 14,
+                    color: isTargeted ? C.white : isMine ? C.bg : C.white,
+                    lineHeight: 1.45,
+                    wordBreak: "break-word",
+                    cursor: isMine ? "pointer" : "default",
+                    transition: "all .15s",
+                  }}
+                >
                   {msg.text}
                 </div>
+
+                {isTargeted && (
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <button
+                      onClick={() => setDeleteTarget(null)}
+                      style={{ padding: "4px 12px", borderRadius: 8, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 11, fontWeight: 600 }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => deleteMessage(msg.id)}
+                      disabled={deleting}
+                      style={{ padding: "4px 12px", borderRadius: 8, border: "none", background: C.red, color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700, opacity: deleting ? 0.6 : 1 }}
+                    >
+                      {deleting ? "Deleting…" : "Delete"}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );
