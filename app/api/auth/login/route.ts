@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const { email, password } = await req.json();
     if (!email || !password) return err("Email and password required", 400);
 
-    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() }, include: { depot: true } });
     if (!user) return err("Invalid email or password", 401);
 
     // Check email verification
@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
         lastName: user.lastName,
         email: user.email,
         depotId: user.depotId,
+        depot: user.depot,
         role: user.role,
         language: user.language,
         termsVersion: user.termsVersion,
