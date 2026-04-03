@@ -12,6 +12,8 @@ import Toast from "@/components/ui/Toast";
 import NotifIcon from "@/components/ui/NotifIcon";
 import InboxIcon from "@/components/ui/InboxIcon";
 import { playClick, playSuccess } from "@/lib/sound";
+import FirstSwapCelebration from "@/components/ui/FirstSwapCelebration";
+import { markChecklistItem } from "@/components/ui/OnboardingChecklist";
 
 const lb: React.CSSProperties = {
   display: "block", marginBottom: 6, fontSize: 11, fontWeight: 600,
@@ -215,6 +217,7 @@ export default function PostSwapPage() {
   const [showErrors, setShowErrors] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [templates, setTemplates] = useState<(Swap & { templateName: string })[]>([]);
   const [f, sF] = useState<FormState>({
@@ -344,10 +347,17 @@ export default function PostSwapPage() {
       } else {
         await api.post("/swaps", payload);
         showToast("Swap posted!");
+        if (user && !localStorage.getItem("first-swap-done")) {
+          localStorage.setItem("first-swap-done", "1");
+          if (user) markChecklistItem(user.id, "posted");
+          setShowCelebration(true);
+        } else if (user) {
+          markChecklistItem(user.id, "posted");
+        }
       }
       playSuccess();
       setSubmitted(true);
-      setTimeout(() => router.push(`/depot/${code}/swaps`), 600);
+      setTimeout(() => router.push(`/depot/${code}/swaps`), showCelebration ? 4500 : 600);
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Failed to post swap");
     } finally { setSubmitting(false); }
@@ -365,6 +375,7 @@ export default function PostSwapPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg }}>
+      {showCelebration && <FirstSwapCelebration onDismiss={() => setShowCelebration(false)} />}
       <style>{`
         @keyframes rippleOut { from { transform: scale(0); opacity: 0.6; } to { transform: scale(2.5); opacity: 0; } }
       `}</style>

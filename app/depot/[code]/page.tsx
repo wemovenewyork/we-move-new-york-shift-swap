@@ -15,6 +15,8 @@ import { playClick, isMuted, toggleMute } from "@/lib/sound";
 import OfflineBanner from "@/components/ui/OfflineBanner";
 import FeedbackButton from "@/components/ui/FeedbackButton";
 import { t } from "@/lib/i18n";
+import Onboarding from "@/components/screens/Onboarding";
+import OnboardingChecklist from "@/components/ui/OnboardingChecklist";
 
 export default function ActionPage() {
   const { user, loading } = useAuth();
@@ -27,7 +29,7 @@ export default function ActionPage() {
   const [stats, setStats] = useState<{ completed: number; active: number } | null>(null);
   const [logoSpin, setLogoSpin] = useState(false);
   const [muted, setMuted] = useState(() => typeof window !== "undefined" ? isMuted() : false);
-  const [showTip, setShowTip] = useState(() => typeof window !== "undefined" && !localStorage.getItem("depot-action-seen"));
+  const [showTip, setShowTip] = useState(() => typeof window !== "undefined" && !localStorage.getItem("onboarding-done"));
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -108,18 +110,14 @@ export default function ActionPage() {
         </button>
       </div>
 
+      {showTip && (
+        <Onboarding onDone={() => {
+          localStorage.setItem("onboarding-done", "1");
+          setShowTip(false);
+        }} />
+      )}
       <main id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "24px 20px", maxWidth: 480, margin: "0 auto", width: "100%" }}>
         <PushBanner />
-        {showTip && (
-          <div style={{ background: "rgba(209,173,56,.08)", border: "1px solid rgba(209,173,56,.2)", borderRadius: 16, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 12 }}>
-            <div style={{ fontSize: 20, flexShrink: 0 }}>👋</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: C.white, marginBottom: 4 }}>Welcome to your depot!</div>
-              <div style={{ fontSize: 12, color: C.m, lineHeight: 1.6 }}>Start by browsing available swaps or post one of your own. Use Mutual Matches to find swaps that fit your schedule automatically.</div>
-            </div>
-            <button onClick={() => { localStorage.setItem("depot-action-seen", "1"); setShowTip(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 18, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
-          </div>
-        )}
         {stats && (
           <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: 12, marginBottom: 16 }}>
             <div style={{ background: "rgba(255,255,255,.04)", border: `1px solid ${C.bd}`, borderRadius: 20, padding: "6px 14px", fontSize: 11, color: C.m, fontWeight: 600 }}>
@@ -156,6 +154,7 @@ export default function ActionPage() {
           ))}
         </div>
       </main>
+      {user && <OnboardingChecklist userId={user.id} depotCode={code} />}
       <FeedbackButton />
     </div>
   );

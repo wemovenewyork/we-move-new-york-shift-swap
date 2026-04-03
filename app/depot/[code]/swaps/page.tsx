@@ -23,6 +23,7 @@ import CountUp from "@/components/ui/CountUp";
 import OfflineBanner from "@/components/ui/OfflineBanner";
 import FeedbackButton from "@/components/ui/FeedbackButton";
 import { playClick } from "@/lib/sound";
+import { markChecklistItem } from "@/components/ui/OnboardingChecklist";
 
 export default function BrowsePage() {
   const { user, loading } = useAuth();
@@ -82,6 +83,7 @@ export default function BrowsePage() {
     if (!loading && !user) router.replace("/login");
     if (!loading && user && !user.depotId) router.replace("/setup-profile");
     if (!loading && user?.depot && user.depot.code !== code && user.role !== "admin" && user.role !== "subAdmin") router.replace(`/depot/${user.depot.code}/swaps`);
+    if (!loading && user) markChecklistItem(user.id, "browsed");
   }, [user, loading, router, code]);
 
   useEffect(() => {

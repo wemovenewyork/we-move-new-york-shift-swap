@@ -10,7 +10,6 @@ import DepotBadge from "@/components/ui/DepotBadge";
 import Icon from "@/components/ui/Icon";
 import Footer from "@/components/ui/Footer";
 import TiltCard from "@/components/ui/TiltCard";
-import Onboarding from "@/components/screens/Onboarding";
 import NotifIcon from "@/components/ui/NotifIcon";
 import InboxIcon from "@/components/ui/InboxIcon";
 
@@ -23,14 +22,6 @@ export default function DepotsPage() {
   const [q, setQ] = useState("");
   const [bo, setBo] = useState("All");
   const [hovered, setHovered] = useState<string | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && !localStorage.getItem("onboarding-done")) {
-      setShowOnboarding(true);
-    }
-  }, []);
-
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
     if (!loading && user && !user.depotId) router.replace("/setup-profile");
@@ -52,12 +43,6 @@ export default function DepotsPage() {
 
   return (
     <div className="page-enter" style={{ minHeight: "100vh", background: C.bg }}>
-      {showOnboarding && (
-        <Onboarding onDone={() => {
-          localStorage.setItem("onboarding-done", "1");
-          setShowOnboarding(false);
-        }} />
-      )}
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.8)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,.06)", padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 16, color: C.white, letterSpacing: 3, flex: 1 }}>WE MOVE NEW YORK</div>
         {user?.role === "admin" && (

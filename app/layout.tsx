@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
 import MeshBackground from "@/components/ui/MeshBackground";
 import OfflineBanner from "@/components/ui/OfflineBanner";
+import AnalyticsProvider from "@/components/ui/AnalyticsProvider";
 
 export const metadata: Metadata = {
   title: "We Move New York — Shift Swap",
@@ -28,9 +29,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a href="#main-content" className="skip-link">Skip to main content</a>
         <OfflineBanner />
         <AuthProvider>
-          <div style={{ position: "relative", zIndex: 1 }}>
-            {children}
-          </div>
+          <AnalyticsProvider>
+            <div style={{ position: "relative", zIndex: 1 }}>
+              {children}
+            </div>
+          </AnalyticsProvider>
         </AuthProvider>
       </body>
     </html>
