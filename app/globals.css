@@ -25,6 +25,11 @@ input, textarea, select {
   outline: none;
   transition: all .25s ease;
 }
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 10px;
+}
 select {
   appearance: none;
   -webkit-appearance: none;
