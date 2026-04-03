@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
@@ -20,6 +20,7 @@ import NotifIcon from "@/components/ui/NotifIcon";
 import InboxIcon from "@/components/ui/InboxIcon";
 import FirstSwapBanner from "@/components/ui/FirstSwapBanner";
 import CountUp from "@/components/ui/CountUp";
+import OfflineBanner from "@/components/ui/OfflineBanner";
 import { playClick } from "@/lib/sound";
 
 export default function BrowsePage() {
@@ -45,6 +46,9 @@ export default function BrowsePage() {
   const [lastVisit] = useState(() => Date.now());
   const scrollKey = `swaps-scroll-${code}`;
   const mainRef = useRef<HTMLDivElement>(null);
+  const [pulling, setPulling] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const touchStartY = useRef<number>(0);
 
   // Restore scroll position when returning from a swap detail
   useEffect(() => {
@@ -216,10 +220,43 @@ export default function BrowsePage() {
     } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed", "error"); }
   };
 
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (window.scrollY > 0) return;
+    const delta = e.touches[0].clientY - touchStartY.current;
+    if (delta > 70) {
+      setPulling(true);
+    } else {
+      setPulling(false);
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pulling) {
+      setPulling(false);
+      setRefreshing(true);
+      await fetchSwaps();
+      setRefreshing(false);
+    }
+  };
+
   if (!depot) return null;
 
   return (
-    <div className="page-enter" style={{ minHeight: "100vh", background: C.bg }}>
+    <div className="page-enter" style={{ minHeight: "100vh", background: C.bg }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <OfflineBanner />
+      <div style={{ textAlign: "center", fontSize: 12, color: C.m, padding: "8px 0", opacity: pulling || refreshing ? 1 : 0, transition: "opacity 0.2s", pointerEvents: "none" }}>
+        {refreshing ? (
+          <span style={{ display: "inline-block", width: 14, height: 14, border: `2px solid ${C.m}`, borderTopColor: "transparent", borderRadius: "50%", animation: "rotateLogo 0.6s linear infinite", verticalAlign: "middle" }} />
+        ) : "↓ Pull to refresh"}
+      </div>
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.75)", borderBottom: `1px solid ${C.bd}`, padding: "12px 12px", display: "flex", alignItems: "center", gap: 6 }}>
         <button onClick={() => router.push(`/depot/${code}`)} aria-label="Go back" style={{ width: 32, height: 32, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon n="back" s={15} /></button>
         <DepotBadge depot={depot} size={32} />

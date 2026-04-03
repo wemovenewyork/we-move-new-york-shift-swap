@@ -57,6 +57,7 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
   const activeLabel = activeAgo(s.posterLastActive);
   const st2 = STC[s.status] ?? STC.open;
   const isNew = lastVisit && new Date(s.createdAt).getTime() > lastVisit - 3600000;
+  const isRecentlyNew = Date.now() - new Date(s.createdAt).getTime() < 2 * 60 * 60 * 1000;
   const [tapped, setTapped] = useState(false);
   const tappedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -92,10 +93,15 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
           <span style={{ fontSize: 10, fontWeight: 700, color: m.c, letterSpacing: 1, textTransform: "uppercase" }}>{co?.f}</span>
           {isNew && <span style={{ padding: "1px 6px", borderRadius: 4, background: C.gold, color: C.bg, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>{tr("browse.new")}</span>}
         </div>
-        <span style={{ padding: "4px 10px", borderRadius: 20, background: st2.bg, border: `1px solid ${st2.bd}`, fontSize: 9, fontWeight: 700, color: st2.c, textTransform: "uppercase", letterSpacing: 1, boxShadow: `0 0 8px ${st2.c}15`, display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 5, height: 5, borderRadius: "50%", background: st2.c, animation: s.status === "open" ? "pulseGlow 2s ease infinite" : "none" }} />
-          {statusLabel[s.status] ?? s.status}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {isRecentlyNew && (
+            <span style={{ background: "rgba(46,213,115,.15)", border: "1px solid rgba(46,213,115,.3)", color: "#2ED573", fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 8, letterSpacing: 1 }}>NEW</span>
+          )}
+          <span style={{ padding: "4px 10px", borderRadius: 20, background: st2.bg, border: `1px solid ${st2.bd}`, fontSize: 9, fontWeight: 700, color: st2.c, textTransform: "uppercase", letterSpacing: 1, boxShadow: `0 0 8px ${st2.c}15`, display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: st2.c, animation: s.status === "open" ? "pulseGlow 2s ease infinite" : "none" }} />
+            {statusLabel[s.status] ?? s.status}
+          </span>
+        </div>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>

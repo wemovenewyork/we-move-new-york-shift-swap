@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/expire-swaps",
-      "schedule": "0 5 * * *"
+      "schedule": "0 * * * *"
     },
     {
       "path": "/api/cron/expiring-soon",

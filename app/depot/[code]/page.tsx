@@ -11,7 +11,9 @@ import Icon from "@/components/ui/Icon";
 import InboxIcon from "@/components/ui/InboxIcon";
 import NotifIcon from "@/components/ui/NotifIcon";
 import PushBanner from "@/components/ui/PushBanner";
-import { playClick } from "@/lib/sound";
+import { playClick, isMuted, toggleMute } from "@/lib/sound";
+import OfflineBanner from "@/components/ui/OfflineBanner";
+import { t } from "@/lib/i18n";
 
 export default function ActionPage() {
   const { user, loading } = useAuth();
@@ -22,6 +24,8 @@ export default function ActionPage() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [unread, setUnread] = useState(0);
   const [logoSpin, setLogoSpin] = useState(false);
+  const [muted, setMuted] = useState(() => typeof window !== "undefined" ? isMuted() : false);
+  const [showTip, setShowTip] = useState(() => typeof window !== "undefined" && !localStorage.getItem("depot-action-seen"));
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -37,21 +41,23 @@ export default function ActionPage() {
 
   if (!depot) return null;
 
+  const lang = user?.language ?? "en";
   const options = [
-    { k: "browse", ic: "list", t: "View Available Swaps", cl: C.blue, href: `/depot/${code}/swaps`, count: depot.openSwaps ?? 0 },
-    { k: "post", ic: "edit", t: "Post a Swap", cl: C.gold, href: `/depot/${code}/post` },
-    { k: "my", ic: "usr", t: "My Posts", cl: "#00C9A7", href: `/depot/${code}/my` },
-    { k: "messages", ic: "msg", t: "Messages", cl: "#C084FC", href: `/depot/${code}/messages`, badge: unread },
-    { k: "saved", ic: "saved", t: "Saved Swaps", cl: C.gold, href: `/depot/${code}/saved` },
-    { k: "matches", ic: "match", t: "Mutual Matches", cl: "#F59E0B", href: `/depot/${code}/matches` },
-    { k: "history", ic: "clk", t: "My Swap History", cl: "#60A5FA", href: `/depot/${code}/history` },
+    { k: "browse", ic: "list", label: t("browse", lang) || "View Available Swaps", cl: C.blue, href: `/depot/${code}/swaps`, count: depot.openSwaps ?? 0 },
+    { k: "post", ic: "edit", label: t("post", lang) || "Post a Swap", cl: C.gold, href: `/depot/${code}/post` },
+    { k: "my", ic: "usr", label: t("my", lang) || "My Posts", cl: "#00C9A7", href: `/depot/${code}/my` },
+    { k: "messages", ic: "msg", label: t("messages", lang) || "Messages", cl: "#C084FC", href: `/depot/${code}/messages`, badge: unread },
+    { k: "saved", ic: "saved", label: t("saved", lang) || "Saved Swaps", cl: C.gold, href: `/depot/${code}/saved` },
+    { k: "matches", ic: "match", label: t("matches", lang) || "Mutual Matches", cl: "#F59E0B", href: `/depot/${code}/matches` },
+    { k: "history", ic: "clk", label: t("history", lang) || "My Swap History", cl: "#60A5FA", href: `/depot/${code}/history` },
     ...(user?.role === "depotRep" || user?.role === "admin"
-      ? [{ k: "rep", ic: "shield", t: "Rep Dashboard", cl: "#C084FC", href: `/depot/${code}/rep` }]
+      ? [{ k: "rep", ic: "shield", label: "Rep Dashboard", cl: "#C084FC", href: `/depot/${code}/rep` }]
       : []),
   ];
 
   return (
     <div className="page-enter" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <OfflineBanner />
       <style>{`
         @keyframes rotateLogo { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes rotateFast { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -75,6 +81,25 @@ export default function ActionPage() {
         </div>
         <NotifIcon />
         <InboxIcon />
+        <button
+          onClick={() => { const next = toggleMute(); setMuted(next); }}
+          aria-label={muted ? "Unmute sounds" : "Mute sounds"}
+          style={{ width: 32, height: 32, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: muted ? C.m : C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+        >
+          {muted ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <line x1="23" y1="9" x2="17" y2="15"/>
+              <line x1="17" y1="9" x2="23" y2="15"/>
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 010 7.07"/>
+              <path d="M19.07 4.93a10 10 0 010 14.14"/>
+            </svg>
+          )}
+        </button>
         <button onClick={() => router.push("/profile")} aria-label="Profile" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.m, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon n="usr" s={15} />
         </button>
@@ -82,6 +107,16 @@ export default function ActionPage() {
 
       <main id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "24px 20px", maxWidth: 480, margin: "0 auto", width: "100%" }}>
         <PushBanner />
+        {showTip && (
+          <div style={{ background: "rgba(209,173,56,.08)", border: "1px solid rgba(209,173,56,.2)", borderRadius: 16, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 12 }}>
+            <div style={{ fontSize: 20, flexShrink: 0 }}>👋</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: C.white, marginBottom: 4 }}>Welcome to your depot!</div>
+              <div style={{ fontSize: 12, color: C.m, lineHeight: 1.6 }}>Start by browsing available swaps or post one of your own. Use Mutual Matches to find swaps that fit your schedule automatically.</div>
+            </div>
+            <button onClick={() => { localStorage.setItem("depot-action-seen", "1"); setShowTip(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 18, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
+          </div>
+        )}
         <div style={{ display: "grid", gap: 10, width: "100%" }}>
           {options.map(o => (
             <button
@@ -95,7 +130,7 @@ export default function ActionPage() {
                 <Icon n={o.ic} s={20} />
               </div>
               <div style={{ flex: 1, fontSize: 15, fontWeight: 700, color: C.white, display: "flex", alignItems: "center", gap: 8 }}>
-                {o.t}
+                {o.label}
                 {(o.badge ?? 0) > 0 && (
                   <span role="status" aria-label={o.badge + " notifications"} style={{ background: C.red, color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 10, minWidth: 20, textAlign: "center" }}>{o.badge}</span>
                 )}

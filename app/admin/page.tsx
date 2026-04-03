@@ -23,6 +23,7 @@ interface Report {
 interface AdminUser {
   id: string; firstName: string; lastName: string; email: string;
   role: "operator" | "depotRep" | "subAdmin" | "admin"; createdAt: string;
+  lastActiveAt: string | null; suspendedUntil: string | null;
   depot: { name: string; code: string } | null;
 }
 
@@ -236,6 +237,18 @@ export default function AdminPage() {
     } finally { setBusy(null); }
   };
 
+  const handleSuspend = async (userId: string) => {
+    setBusy(userId + "_suspend");
+    try {
+      const suspendedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      await api.patch("/admin/users", { userId, suspendedUntil });
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, suspendedUntil } : u));
+      showToast("User suspended for 7 days");
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Suspend failed");
+    } finally { setBusy(null); }
+  };
+
   const isSubAdmin = user?.role === "subAdmin";
   if (!user || !["admin", "subAdmin"].includes(user.role)) return null;
 
@@ -397,9 +410,19 @@ export default function AdminPage() {
                           {u.firstName[0]}{u.lastName[0]}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{u.firstName} {u.lastName}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{u.firstName} {u.lastName}</span>
+                            {u.suspendedUntil && new Date(u.suspendedUntil) > new Date() && (
+                              <span style={{ fontSize: 9, fontWeight: 700, color: C.red, background: C.red + "18", border: `1px solid ${C.red}33`, padding: "2px 6px", borderRadius: 6, textTransform: "uppercase", letterSpacing: 1 }}>Suspended</span>
+                            )}
+                          </div>
                           {!isSubAdmin && u.email && <div style={{ fontSize: 11, color: C.m, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</div>}
                           {u.depot && <div style={{ fontSize: 10, color: C.gold, marginTop: 2 }}>{u.depot.name}</div>}
+                          {u.lastActiveAt && (
+                            <div style={{ fontSize: 10, color: C.m, marginTop: 2 }}>
+                              Active {Math.floor((Date.now() - new Date(u.lastActiveAt).getTime()) / 86400000)} days ago
+                            </div>
+                          )}
                         </div>
                       </button>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
@@ -440,6 +463,15 @@ export default function AdminPage() {
                               {isBusy ? "…" : "Confirm"}
                             </button>
                           </div>
+                        )}
+                        {!isSubAdmin && !isSelf && pendingDepot[u.id] === undefined && (
+                          <button
+                            onClick={() => handleSuspend(u.id)}
+                            disabled={busy === u.id + "_suspend" || isConfirming || !!(u.suspendedUntil && new Date(u.suspendedUntil) > new Date())}
+                            style={{ padding: "4px 10px", borderRadius: 8, border: `1px solid ${C.gold}44`, background: "transparent", color: C.gold, cursor: "pointer", fontSize: 11, fontWeight: 600, opacity: (busy === u.id + "_suspend" || !!(u.suspendedUntil && new Date(u.suspendedUntil) > new Date())) ? 0.4 : 1 }}
+                          >
+                            {u.suspendedUntil && new Date(u.suspendedUntil) > new Date() ? "Suspended" : "Suspend"}
+                          </button>
                         )}
                         {!isSubAdmin && !isSelf && !pendingDepot[u.id] !== undefined && (
                           <button

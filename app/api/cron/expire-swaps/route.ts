@@ -7,17 +7,33 @@ export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-cron-secret");
   if (secret !== process.env.CRON_SECRET) return err("Unauthorized", 401);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
 
-  // Fetch first so we can notify owners
+  // Fetch work swaps (have a `date`) that are past, so we can notify owners
   const toExpire = await prisma.swap.findMany({
-    where: { status: "open", date: { lt: today } },
+    where: {
+      status: { in: ["open", "pending"] },
+      date: { lt: now, not: null },
+    },
     select: { id: true, userId: true, depotId: true, details: true },
   });
 
+  // Mark work swaps as expired: open/pending swaps whose date is in the past
   const result = await prisma.swap.updateMany({
-    where: { status: "open", date: { lt: today } },
+    where: {
+      status: { in: ["open", "pending"] },
+      date: { lt: now, not: null },
+    },
+    data: { status: "expired" },
+  });
+
+  // Also expire daysoff swaps where fromDate is in the past
+  const result2 = await prisma.swap.updateMany({
+    where: {
+      status: { in: ["open", "pending"] },
+      fromDate: { lt: now, not: null },
+      date: null,
+    },
     data: { status: "expired" },
   });
 
@@ -30,5 +46,5 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  return ok({ expired: result.count });
+  return ok({ expired: result.count + result2.count });
 }

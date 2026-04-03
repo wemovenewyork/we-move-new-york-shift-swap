@@ -1,4 +1,4 @@
-export type Lang = "en" | "es" | "ht";
+export type Lang = "en" | "es" | "ht" | "zh";
 
 const translations: Record<Lang, Record<string, string>> = {
   en: {
@@ -159,6 +159,17 @@ const translations: Record<Lang, Record<string, string>> = {
     "notif.disable": "Desactivar Notificaciones",
     "notif.enabled": "Notificaciones activadas",
     "notif.blocked": "Notificaciones bloqueadas por el navegador",
+    // Depot action menu keys
+    "browse": "Ver Turnos Disponibles",
+    "post": "Publicar un Turno",
+    "my": "Mis Publicaciones",
+    "messages": "Mensajes",
+    "saved": "Turnos Guardados",
+    "matches": "Coincidencias Mutuas",
+    "history": "Mi Historial",
+    "welcome": "Bienvenido de vuelta",
+    "no_swaps": "Aún no hay turnos publicados",
+    "post_first": "¡Sé el primero en publicar!",
   },
   ht: {
     "nav.swaps": "Chanjman",
@@ -233,13 +244,115 @@ const translations: Record<Lang, Record<string, string>> = {
     "notif.enabled": "Notifikasyon aktive",
     "notif.blocked": "Notifikasyon bloke pa navigatè",
   },
+  zh: {
+    "nav.swaps": "班次交换",
+    "nav.post": "发布",
+    "nav.messages": "消息",
+    "nav.profile": "个人资料",
+    "browse.title": "班次交换板",
+    "browse.search": "搜索班次...",
+    "browse.empty": "未找到班次",
+    "browse.new": "新",
+    "cat.work": "工作班次交换",
+    "cat.daysoff": "休息日交换",
+    "cat.vacation": "假期交换",
+    "cat.all": "所有班次",
+    "status.open": "开放",
+    "status.pending": "待处理",
+    "status.filled": "已填满",
+    "status.expired": "已过期",
+    "action.interested": "我感兴趣",
+    "action.send": "发送",
+    "action.cancel": "取消",
+    "action.confirm": "确认",
+    "action.back": "返回",
+    "action.delete": "删除",
+    "action.edit": "编辑",
+    "action.report": "举报",
+    "action.post": "发布班次",
+    "detail.shiftDetails": "班次详情",
+    "detail.run": "运行编号",
+    "detail.route": "路线",
+    "detail.startTime": "开始时间",
+    "detail.clearTime": "结束时间",
+    "detail.swingBreak": "中间休息",
+    "detail.swingIn": "摆班进",
+    "detail.swingOut": "摆班出",
+    "detail.swappingFrom": "交换自",
+    "detail.swappingTo": "交换至",
+    "detail.haveWeek": "您拥有的周",
+    "detail.wantWeek": "您想要的周",
+    "detail.contact": "联系方式",
+    "detail.posted": "发布于",
+    "agree.title": "交换协议",
+    "agree.propose": "提出交换",
+    "agree.pending": "等待所有者确认",
+    "agree.confirm": "确认协议",
+    "agree.completed": "协议已完成",
+    "agree.cancelled": "协议已取消",
+    "agree.note": "添加备注（可选）",
+    "matches.title": "互相匹配",
+    "matches.empty": "暂无匹配。发布班次以查找匹配。",
+    "matches.why": "为什么匹配",
+    "history.title": "我的交换历史",
+    "history.empty": "暂无交换历史。",
+    "messages.title": "消息",
+    "messages.empty": "暂无消息。",
+    "messages.placeholder": "写消息...",
+    "profile.title": "我的资料",
+    "profile.language": "语言",
+    "profile.depot": "站点",
+    "profile.reputation": "声誉",
+    "auth.signIn": "登录",
+    "auth.register": "创建账户",
+    "auth.email": "邮箱",
+    "auth.password": "密码",
+    "auth.firstName": "名",
+    "auth.lastName": "姓",
+    "auth.inviteCode": "邀请码",
+    "auth.signInBtn": "登录",
+    "auth.registerBtn": "创建账户",
+    "notif.enable": "启用通知",
+    "notif.disable": "禁用通知",
+    "notif.enabled": "通知已启用",
+    "notif.blocked": "通知被浏览器阻止",
+    // Depot action menu keys
+    "browse": "查看可用班次",
+    "post": "发布班次",
+    "my": "我的发布",
+    "messages": "消息",
+    "saved": "已保存",
+    "matches": "互相匹配",
+    "history": "历史记录",
+    "welcome": "欢迎回来",
+    "no_swaps": "暂无班次发布",
+    "post_first": "成为第一个发布者！",
+  },
 };
 
-export function t(lang: Lang, key: string): string {
+export function t(langOrKey: Lang | string, keyOrLang?: string): string {
+  // Support two call signatures:
+  //   t(lang, key)  — original signature
+  //   t(key, lang)  — new signature for depot page (t("browse", user?.language))
+  if (keyOrLang === undefined) {
+    // t(key) — no lang, default to en
+    const key = langOrKey;
+    return translations.en[key] ?? key;
+  }
+  // Detect which arg is which: if the second arg looks like a lang code, it's t(key, lang)
+  const knownLangs: string[] = ["en", "es", "ht", "zh"];
+  if (knownLangs.includes(keyOrLang)) {
+    const key = langOrKey;
+    const lang = (keyOrLang as Lang);
+    return translations[lang]?.[key] ?? translations.en[key] ?? key;
+  }
+  // Otherwise it's t(lang, key)
+  const lang = (langOrKey as Lang);
+  const key = keyOrLang;
   return translations[lang]?.[key] ?? translations.en[key] ?? key;
 }
 
 export function useT(lang: string | undefined): (key: string) => string {
-  const l = (lang === "es" || lang === "ht" ? lang : "en") as Lang;
-  return (key: string) => t(l, key);
+  const l = (lang === "es" || lang === "ht" || lang === "zh" ? lang : "en") as Lang;
+  return (key: string) => translations[l]?.[key] ?? translations.en[key] ?? key;
 }

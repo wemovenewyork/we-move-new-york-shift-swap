@@ -40,12 +40,13 @@ export async function POST(req: NextRequest) {
   ]);
 
   const senderName = sender ? `${sender.firstName} ${sender.lastName}` : "Someone";
+  const threadUrl = depot ? `/depot/${depot.code}/messages/${user.userId}` : "/";
   await notifyUserWithEmailFallback(
     swap.userId,
     {
-      title: "New message",
+      title: "Someone is interested in your swap",
       body: `${senderName}: ${text.trim().slice(0, 100)}`,
-      url: depot ? `/depot/${depot.code}/messages` : "/",
+      url: threadUrl,
     },
     `New message from ${senderName}`,
     `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#010028;color:#fff;border-radius:16px">
@@ -53,6 +54,20 @@ export async function POST(req: NextRequest) {
       <p style="color:rgba(255,255,255,.7);font-size:14px;line-height:1.6">${text.trim().slice(0, 300)}</p>
     </div>`
   );
+
+  // Create a dedicated swap_interest notification for the poster
+  try {
+    await prisma.notification.create({
+      data: {
+        id: crypto.randomUUID(),
+        userId: swap.userId,
+        type: "swap_interest",
+        title: "Someone is interested in your swap",
+        body: `A new message about your swap: "${swap.details.slice(0, 60)}${swap.details.length > 60 ? "…" : ""}"`,
+        url: depot ? `/depot/${depot.code}/swaps/${swapId}` : "/",
+      },
+    });
+  } catch { /* non-fatal */ }
 
   return ok(message, 201);
 }

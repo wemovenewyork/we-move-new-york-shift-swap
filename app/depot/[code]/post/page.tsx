@@ -215,6 +215,8 @@ export default function PostSwapPage() {
   const [showErrors, setShowErrors] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [templates, setTemplates] = useState<(Swap & { templateName: string })[]>([]);
   const [f, sF] = useState<FormState>({
     category: "work", details: "", contact: "",
     date: "", run: "", route: "",
@@ -225,6 +227,11 @@ export default function PostSwapPage() {
 
   const showToast = useCallback((msg: string) => {
     setToast(msg); setTimeout(() => setToast(null), 2500);
+  }, []);
+
+  useEffect(() => {
+    const t = JSON.parse(localStorage.getItem("templates") ?? "[]");
+    setTemplates(t);
   }, []);
 
   useEffect(() => {
@@ -375,6 +382,17 @@ export default function PostSwapPage() {
         </h2>
 
         <div style={{ display: "grid", gap: 16 }}>
+          {/* Template picker */}
+          {templates.length > 0 && (
+            <button
+              onClick={() => setShowTemplates(true)}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 14, border: `1px solid ${C.gold}33`, background: C.gold + "08", cursor: "pointer", textAlign: "left" }}
+            >
+              <Icon n="saved" s={18} c={C.gold} />
+              <span style={{ fontSize: 14, fontWeight: 700, color: C.gold }}>Use a Template</span>
+            </button>
+          )}
+
           {/* Swap type */}
           <div>
             <label style={lb}>Swap Type</label>
@@ -537,6 +555,38 @@ export default function PostSwapPage() {
         </div>
       </main>
       {toast && <Toast message={toast} />}
+
+      {showTemplates && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.75)", zIndex: 300, display: "flex", alignItems: "flex-end" }} onClick={() => setShowTemplates(false)}>
+          <div style={{ width: "100%", maxWidth: 520, margin: "0 auto", background: "rgb(6,5,52)", borderRadius: "20px 20px 0 0", padding: "20px 16px 40px", maxHeight: "70vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: C.white, marginBottom: 16 }}>Your Templates</div>
+            {templates.map((t, i) => (
+              <button key={i} onClick={() => {
+                sF({
+                  category: t.category,
+                  details: t.details ?? "",
+                  contact: t.contact ?? "",
+                  date: "",
+                  run: t.run ?? "",
+                  route: t.route ?? "",
+                  startTime: t.startTime ?? "",
+                  clearTime: t.clearTime ?? "",
+                  swingStart: t.swingStart ?? "",
+                  swingEnd: t.swingEnd ?? "",
+                  fromDate: "",
+                  toDate: "",
+                  vacationHave: t.vacationHave ?? "",
+                  vacationWant: t.vacationWant ?? "",
+                });
+                setShowTemplates(false);
+              }} style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 14px", borderRadius: 12, border: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.03)", marginBottom: 8, cursor: "pointer" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.white }}>{t.templateName}</div>
+                <div style={{ fontSize: 11, color: C.m, marginTop: 2 }}>{t.category} · {t.details?.slice(0, 60)}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

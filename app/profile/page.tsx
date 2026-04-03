@@ -122,12 +122,43 @@ export default function ProfilePage() {
             </div>
             <div><label htmlFor="prof-email" style={lb}>Email Address</label><input id="prof-email" type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
             <div>
-              <label htmlFor="prof-lang" style={lb}>Language</label>
-              <select id="prof-lang" value={lang} onChange={e => setLang(e.target.value)} style={{ appearance: "auto", cursor: "pointer" }}>
-                <option value="en">English</option>
-                <option value="es">Español</option>
-                <option value="ht">Kreyòl Ayisyen</option>
-              </select>
+              <label style={lb}>Language</label>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {([
+                  { code: "en", label: "English" },
+                  { code: "es", label: "Español" },
+                  { code: "zh", label: "中文" },
+                  { code: "ht", label: "Kreyòl" },
+                ] as const).map(({ code, label }) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={async () => {
+                      setLang(code);
+                      try {
+                        const data = await api.put("/users/me", { firstName: fn, lastName: ln, email, language: code, depotId });
+                        updateUser(data as Parameters<typeof updateUser>[0]);
+                        showToast("Language updated!");
+                      } catch (e: unknown) {
+                        showToast(e instanceof Error ? e.message : "Failed to update language");
+                      }
+                    }}
+                    style={{
+                      padding: "8px 18px",
+                      borderRadius: 20,
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      background: lang === code ? C.gold : "rgba(255,255,255,.06)",
+                      color: lang === code ? C.bg : C.m,
+                      transition: "all .2s",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div>
               <label htmlFor="prof-depot" style={lb}>Home Depot</label>
