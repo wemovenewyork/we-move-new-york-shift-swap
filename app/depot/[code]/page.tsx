@@ -10,6 +10,7 @@ import DepotBadge from "@/components/ui/DepotBadge";
 import Icon from "@/components/ui/Icon";
 import InboxIcon from "@/components/ui/InboxIcon";
 import NotifIcon from "@/components/ui/NotifIcon";
+import PushBanner from "@/components/ui/PushBanner";
 
 export default function ActionPage() {
   const { user, loading } = useAuth();
@@ -66,6 +67,7 @@ export default function ActionPage() {
         <DepotBadge depot={depot} size={80} />
         <h2 style={{ fontSize: 22, fontWeight: 800, color: C.white, marginTop: 16, textAlign: "center" }}>{depot.name}</h2>
         <div style={{ fontSize: 12, color: C.gold, letterSpacing: 4, textTransform: "uppercase", marginTop: 30, marginBottom: 16 }}>What would you like to do?</div>
+        <PushBanner />
         <div style={{ display: "grid", gap: 10, width: "100%" }}>
           {options.map(o => (
             <button
