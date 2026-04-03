@@ -11,14 +11,13 @@ import RepBadge from "@/components/ui/RepBadge";
 import NotifIcon from "@/components/ui/NotifIcon";
 import InboxIcon from "@/components/ui/InboxIcon";
 import { Swap } from "@/types";
+import { fmtTime } from "@/lib/format";
 
 interface MatchedSwap extends Swap {
   _matchScore: number;
   _mySwapId: string;
   _matchReason: string;
 }
-
-const ft = (t?: string | null) => { if (!t) return ""; const [h, m] = t.split(":"); const hr = +h; return `${hr % 12 || 12}:${m} ${hr >= 12 ? "PM" : "AM"}`; };
 
 export default function MatchesPage() {
   const { user, loading } = useAuth();
@@ -69,7 +68,7 @@ export default function MatchesPage() {
               <Icon n="match" s={28} c="#F59E0B" />
             </div>
             <div style={{ fontSize: 16, fontWeight: 700, color: C.white, marginBottom: 8 }}>No matches yet</div>
-            <div style={{ fontSize: 13, color: C.m, lineHeight: 1.6 }}>Post an open swap and we&apos;ll automatically find operators looking for the exact same trade.</div>
+            <div style={{ fontSize: 13, color: C.m, lineHeight: 1.6 }}>Post a swap and we&apos;ll find other operators whose schedules complement yours.</div>
             <button onClick={() => router.push(`/depot/${code}/post`)} style={{ marginTop: 20, padding: "12px 24px", borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,#F59E0B,#F59E0Bcc)`, fontSize: 14, fontWeight: 700, color: "#fff" }}>
               Post a Swap
             </button>
@@ -148,7 +147,7 @@ export default function MatchesPage() {
                       </div>}
                       {m.startTime && <div style={{ flex: 1, padding: "6px 10px", borderRadius: 8, background: C.blue + "0d" }}>
                         <div style={{ fontSize: 8, color: C.blue, textTransform: "uppercase", letterSpacing: 1 }}>Start</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: C.white }}>{ft(m.startTime)}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: C.white }}>{fmtTime(m.startTime)}</div>
                       </div>}
                     </div>
                   )}

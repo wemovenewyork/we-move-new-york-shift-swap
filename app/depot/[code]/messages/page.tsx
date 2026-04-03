@@ -11,14 +11,7 @@ import DepotBadge from "@/components/ui/DepotBadge";
 import BottomNav from "@/components/ui/BottomNav";
 import Footer from "@/components/ui/Footer";
 import NotifIcon from "@/components/ui/NotifIcon";
-
-const timeAgo = (d: string) => {
-  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return Math.floor(s / 60) + "m ago";
-  if (s < 86400) return Math.floor(s / 3600) + "h ago";
-  return Math.floor(s / 86400) + "d ago";
-};
+import { timeAgo } from "@/lib/format";
 
 interface Conversation {
   counterpartId: string;

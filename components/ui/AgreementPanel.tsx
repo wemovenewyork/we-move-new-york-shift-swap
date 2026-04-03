@@ -105,7 +105,7 @@ export default function AgreementPanel({ swap, agreement, isOwner, currentUserId
         <Icon n="shield" s={16} c={color} />
         <span style={{ fontSize: 12, fontWeight: 700, color: color, textTransform: "uppercase", letterSpacing: 1 }}>Swap Agreement</span>
         <span style={{ marginLeft: "auto", padding: "3px 10px", borderRadius: 20, background: color + "18", border: `1px solid ${color}33`, fontSize: 10, fontWeight: 700, color, textTransform: "uppercase", letterSpacing: 0.5 }}>
-          {isCompleted ? "Taken" : agreement.status === "pending" ? "Awaiting Owner" : agreement.status === "userA_confirmed" ? "Awaiting You" : agreement.status}
+          {isCompleted ? "Taken" : agreement.status === "pending" ? "Awaiting Poster" : agreement.status === "userA_confirmed" ? "Awaiting You" : agreement.status}
         </span>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useId } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
@@ -38,7 +38,7 @@ export default function ThreadPage() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type?: "success" | "error" | "info" } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [clearConvoConfirm, setClearConvoConfirm] = useState(false);
@@ -46,8 +46,8 @@ export default function ThreadPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const showToast = useCallback((msg: string) => {
-    setToast(msg); setTimeout(() => setToast(null), 2000);
+  const showToast = useCallback((msg: string, type?: "success" | "error" | "info") => {
+    setToast({ message: msg, type }); setTimeout(() => setToast(null), 2000);
   }, []);
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export default function ThreadPage() {
       setTimeout(() => setSent(false), 1500);
       inputRef.current?.focus();
     } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : "Failed to send");
+      showToast(e instanceof Error ? e.message : "Failed to send", "error");
     } finally { setSending(false); }
   };
 
@@ -118,7 +118,7 @@ export default function ThreadPage() {
       setClearConvoConfirm(false);
       showToast("Conversation deleted");
     } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : "Delete failed");
+      showToast(e instanceof Error ? e.message : "Delete failed", "error");
     } finally { setClearingConvo(false); }
   };
 
@@ -133,7 +133,7 @@ export default function ThreadPage() {
       setMessages(prev => prev.filter(m => m.id !== id));
       setDeleteTarget(null);
     } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : "Delete failed");
+      showToast(e instanceof Error ? e.message : "Delete failed", "error");
     } finally { setDeleting(false); }
   };
 
@@ -298,8 +298,8 @@ export default function ThreadPage() {
       </div>
 
       {toast && (
-        <div style={{ position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)", background: "rgba(1,0,40,.95)", backdropFilter: "blur(16px)", border: `1px solid ${C.bd}`, borderRadius: 14, padding: "10px 18px", fontSize: 13, fontWeight: 600, color: C.white, zIndex: 500 }}>
-          {toast}
+        <div style={{ position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "rgba(255,71,87,.15)" : "rgba(1,0,40,.95)", backdropFilter: "blur(16px)", border: `1px solid ${toast.type === "error" ? "rgba(255,71,87,.3)" : C.bd}`, borderRadius: 14, padding: "10px 18px", fontSize: 13, fontWeight: 600, color: C.white, zIndex: 500 }}>
+          {toast.message}
         </div>
       )}
 

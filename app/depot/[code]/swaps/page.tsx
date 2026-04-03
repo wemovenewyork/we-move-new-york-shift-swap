@@ -33,9 +33,10 @@ export default function BrowsePage() {
   const [catCounts, setCatCounts] = useState<Record<string, number>>({});
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [swapsLoaded, setSwapsLoaded] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [flexibleOps, setFlexibleOps] = useState<FlexibleOperator[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type?: "success" | "error" | "info" } | null>(null);
   const [dmTarget, setDmTarget] = useState<FlexibleOperator | null>(null);
   const [dmText, setDmText] = useState("");
   const [dmBusy, setDmBusy] = useState(false);
@@ -65,8 +66,8 @@ export default function BrowsePage() {
   const [quickF, setQuickF] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  const showToast = useCallback((msg: string) => {
-    setToast(msg);
+  const showToast = useCallback((msg: string, type?: "success" | "error" | "info") => {
+    setToast({ message: msg, type });
     setTimeout(() => setToast(null), 2500);
   }, []);
 
@@ -103,7 +104,8 @@ export default function BrowsePage() {
         data.swaps.forEach(s => { counts[s.category] = (counts[s.category] ?? 0) + 1; });
         setCatCounts(counts);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); showToast("Failed to load swaps — pull to refresh", "error"); }
+    finally { setSwapsLoaded(true); }
   };
 
   const loadMore = async () => {
@@ -121,7 +123,7 @@ export default function BrowsePage() {
       const data = await api.get<{ swaps: Swap[]; nextCursor: string | null }>(`/swaps?${params}`);
       setSwaps(prev => [...prev, ...data.swaps]);
       setNextCursor(data.nextCursor);
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); showToast("Failed to load more swaps", "error"); }
     setLoadingMore(false);
   };
 
@@ -146,7 +148,7 @@ export default function BrowsePage() {
         await api.del(`/swaps/${id}`);
         setSwaps(p => p.filter(s => s.id !== id));
         showToast("Deleted");
-      } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Delete failed"); }
+      } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Delete failed", "error"); }
       setConfirm(null);
     }});
   };
@@ -156,7 +158,7 @@ export default function BrowsePage() {
       await api.put(`/swaps/${id}/status`, { status });
       setSwaps(p => p.map(s => s.id === id ? { ...s, status: status as Swap["status"] } : s));
       showToast("Status updated");
-    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed"); }
+    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed", "error"); }
   };
 
   const handleReport = (s: Swap) => {
@@ -164,7 +166,7 @@ export default function BrowsePage() {
       try {
         await api.post(`/swaps/${s.id}/report`, {});
         showToast("Reported. Thank you.");
-      } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Report failed"); }
+      } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Report failed", "error"); }
       setConfirm(null);
     }});
   };
@@ -177,7 +179,7 @@ export default function BrowsePage() {
         await api.del(`/swaps/${swap.id}/save`);
       }
       setSwaps(p => p.map(s => s.id === swap.id ? { ...s, saved: save } : s));
-    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed"); }
+    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed", "error"); }
   };
 
   const handleFlexToggle = async () => {
@@ -191,7 +193,7 @@ export default function BrowsePage() {
         setFlexibleOps(prev => prev.filter(op => op.id !== user?.id));
         showToast("Flexible mode off");
       }
-    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Toggle failed"); }
+    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Toggle failed", "error"); }
   };
 
   const handleDmSend = async () => {
@@ -202,7 +204,7 @@ export default function BrowsePage() {
       showToast(`Message sent to ${dmTarget.firstName}!`);
       setDmTarget(null);
       setDmText("");
-    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Send failed"); }
+    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Send failed", "error"); }
     setDmBusy(false);
   };
 
@@ -211,7 +213,7 @@ export default function BrowsePage() {
       await api.del(`/depots/${code}/announcements/${id}`);
       setAnnouncements(prev => prev.filter(a => a.id !== id));
       showToast("Announcement removed");
-    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed"); }
+    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed", "error"); }
   };
 
   if (!depot) return null;
@@ -305,13 +307,30 @@ export default function BrowsePage() {
         </div>
 
         <div style={{ display: "grid", gap: 8, paddingBottom: 80 }}>
-          {swaps.length === 0 && (
+          {!swapsLoaded && swaps.length === 0 && (
             Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="skeleton" style={{ height: 90, borderRadius: 16 }} />
             ))
           )}
+          {swapsLoaded && swaps.length === 0 && (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: C.m }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: C.white, marginBottom: 8 }}>No swaps posted yet — be the first!</div>
+              <button onClick={() => router.push(`/depot/${code}/post`)} style={{ marginTop: 8, padding: "10px 22px", borderRadius: 12, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 13, fontWeight: 700, color: C.bg }}>
+                + Post a Swap
+              </button>
+            </div>
+          )}
           {swaps.length > 0 && filtered.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 40, color: C.m }}>No swaps found</div>
+            <div style={{ textAlign: "center", padding: "40px 20px", color: C.m }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: C.white, marginBottom: 8 }}>No swaps match your filters</div>
+              <div style={{ fontSize: 13, color: C.m, marginBottom: 16 }}>Try adjusting your search or filter criteria.</div>
+              <button
+                onClick={() => { setCat("all"); setQ(""); setSf("open"); setDateFrom(""); setDateTo(""); setSortBy("newest"); setQuickF(""); }}
+                style={{ padding: "10px 20px", borderRadius: 12, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", fontSize: 13, fontWeight: 600 }}
+              >
+                Clear filters
+              </button>
+            </div>
           ) : filtered.map((s, idx) => (
             <div key={s.id} style={{ animation: `fadeUp .5s cubic-bezier(.4,0,.2,1) ${idx * 0.06}s both` }}>
               <SwapCard
@@ -342,7 +361,7 @@ export default function BrowsePage() {
 
       <BottomNav active="browse" depotCode={code} lang={user?.language} />
       {confirm && <ConfirmModal title={confirm.title} text={confirm.text} onConfirm={confirm.action} onCancel={() => setConfirm(null)} />}
-      {toast && <Toast message={toast} />}
+      {toast && <Toast message={toast.message} type={toast.type} />}
 
       {/* Post Announcement modal (reps only) */}
       {postAnnModal && (

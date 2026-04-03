@@ -12,9 +12,7 @@ import MsgModal from "@/components/ui/MsgModal";
 import Toast from "@/components/ui/Toast";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import AgreementPanel from "@/components/ui/AgreementPanel";
-
-const ft = (t?: string | null) => { if (!t) return "—"; const [h, m] = t.split(":"); const hr = +h; return `${hr % 12 || 12}:${m} ${hr >= 12 ? "PM" : "AM"}`; };
-const timeAgo = (d: string) => { const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000); if (s < 60) return "just now"; if (s < 3600) return Math.floor(s/60) + "m ago"; if (s < 86400) return Math.floor(s/3600) + "h ago"; return Math.floor(s/86400) + "d ago"; };
+import { timeAgo, fmtTime } from "@/lib/format";
 
 export default function SwapDetailPage() {
   const { user, loading } = useAuth();
@@ -176,12 +174,12 @@ export default function SwapDetailPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: (swap.swingStart || swap.swingEnd) ? 10 : 0 }}>
               <div style={{ flex: 1, padding: 14, borderRadius: 12, background: C.blue + "0a", border: "1px solid " + C.blue + "18" }}>
                 <div style={{ fontSize: 10, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Start Time</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: C.white }}>{ft(swap.startTime) || "—"}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: C.white }}>{fmtTime(swap.startTime) || "—"}</div>
               </div>
               <Icon n="arr" s={18} c={C.m} />
               <div style={{ flex: 1, padding: 14, borderRadius: 12, background: C.blue + "0a", border: "1px solid " + C.blue + "18" }}>
                 <div style={{ fontSize: 10, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Clear Time</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: C.white }}>{ft(swap.clearTime) || "—"}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: C.white }}>{fmtTime(swap.clearTime) || "—"}</div>
               </div>
             </div>
             {/* Swing times — only shown when present */}
@@ -191,12 +189,12 @@ export default function SwapDetailPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 10, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Swing In</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: C.white }}>{ft(swap.swingStart) || "—"}</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: C.white }}>{fmtTime(swap.swingStart) || "—"}</div>
                   </div>
                   <Icon n="arr" s={16} c={C.m} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 10, color: C.blue, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Swing Out</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: C.white }}>{ft(swap.swingEnd) || "—"}</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: C.white }}>{fmtTime(swap.swingEnd) || "—"}</div>
                   </div>
                 </div>
               </div>

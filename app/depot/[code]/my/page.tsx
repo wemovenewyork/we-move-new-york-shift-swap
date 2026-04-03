@@ -24,10 +24,10 @@ export default function MyPostsPage() {
 
   const [depot, setDepot] = useState<Depot | null>(null);
   const [swaps, setSwaps] = useState<Swap[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type?: "success" | "error" | "info" } | null>(null);
   const [confirm, setConfirm] = useState<{ title: string; text: string; action: () => void } | null>(null);
 
-  const showToast = useCallback((msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); }, []);
+  const showToast = useCallback((msg: string, type?: "success" | "error" | "info") => { setToast({ message: msg, type }); setTimeout(() => setToast(null), 2500); }, []);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -47,7 +47,7 @@ export default function MyPostsPage() {
         await api.del(`/swaps/${id}`);
         setSwaps(p => p.filter(s => s.id !== id));
         showToast("Deleted");
-      } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Delete failed"); }
+      } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Delete failed", "error"); }
       setConfirm(null);
     }});
   };
@@ -57,7 +57,7 @@ export default function MyPostsPage() {
       await api.put(`/swaps/${id}/status`, { status });
       setSwaps(p => p.map(s => s.id === id ? { ...s, status: status as Swap["status"] } : s));
       showToast("Status updated");
-    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed"); }
+    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed", "error"); }
   };
 
   const handleSaveTemplate = (s: Swap) => {
@@ -112,7 +112,7 @@ export default function MyPostsPage() {
 
       <BottomNav active="my" depotCode={code} />
       {confirm && <ConfirmModal title={confirm.title} text={confirm.text} onConfirm={confirm.action} onCancel={() => setConfirm(null)} />}
-      {toast && <Toast message={toast} />}
+      {toast && <Toast message={toast.message} type={toast.type} />}
     </div>
   );
 }

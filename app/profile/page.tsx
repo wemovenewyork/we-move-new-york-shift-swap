@@ -79,7 +79,7 @@ export default function ProfilePage() {
   return (
     <div style={{ minHeight: "100vh", background: C.bg }}>
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.8)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,.06)", padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
-        <button onClick={() => router.back()} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="back" s={16} /></button>
+        <button onClick={() => router.push(user?.depot?.code ? `/depot/${user.depot.code}` : "/depots")} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="back" s={16} /></button>
         <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.white }}>My Profile</div>
         <NotifIcon />
         <InboxIcon />
@@ -151,7 +151,7 @@ export default function ProfilePage() {
               </select>
               {depotLocked && depotUnlocksAt && (
                 <div style={{ fontSize: 11, color: C.gold, marginTop: 6, lineHeight: 1.5 }}>
-                  <span className="lock-icon jiggle-hover">🔒</span> Locked until {depotUnlocksAt.toLocaleDateString("en-US", { month: "long", day: "numeric" })}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle",marginRight:4}}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Locked until {depotUnlocksAt.toLocaleDateString("en-US", { month: "long", day: "numeric" })}
                 </div>
               )}
             </div>

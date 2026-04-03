@@ -24,6 +24,26 @@ const subLb: React.CSSProperties = {
 
 const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 
+function getWeekOptions(): { value: string; label: string }[] {
+  const year = new Date().getFullYear();
+  const jan1 = new Date(year, 0, 1);
+  // Find first Monday
+  const firstMonday = new Date(jan1);
+  firstMonday.setDate(jan1.getDate() + ((8 - jan1.getDay()) % 7 || 7));
+  const opts = [];
+  for (let i = 0; i < 52; i++) {
+    const start = new Date(firstMonday);
+    start.setDate(firstMonday.getDate() + i * 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    opts.push({ value: `Week ${i + 1}`, label: `Week ${i + 1}  (${fmt(start)} – ${fmt(end)})` });
+  }
+  return opts;
+}
+
+const WEEK_OPTIONS = getWeekOptions();
+
 function getToday() {
   // Use local date, not UTC, so EST users get the correct "today"
   const d = new Date();
@@ -404,7 +424,7 @@ export default function PostSwapPage() {
             <>
               <div style={{ background: "rgba(209,173,56,.04)", borderRadius: 16, border: "1px solid rgba(209,173,56,.12)", padding: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>
-                  Swapping From (Day You Are Working)
+                  Your Shift (the day you&apos;re giving away)
                 </div>
                 <div style={{ marginBottom: 12 }}>
                   <label htmlFor="doff-fromDate" style={lb}>
@@ -428,7 +448,7 @@ export default function PostSwapPage() {
               </div>
               <div style={{ background: "rgba(2,73,181,.04)", borderRadius: 16, border: "1px solid rgba(2,73,181,.12)", padding: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: C.blue, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>
-                  Swapping To (Day You Want To Work)
+                  Wanted Shift (the day you want off)
                 </div>
                 <label htmlFor="doff-toDate" style={lb}>Date</label>
                 <input
@@ -452,17 +472,17 @@ export default function PostSwapPage() {
           {f.category === "vacation" && (
             <>
               <div style={{ background: "rgba(0,201,167,.04)", borderRadius: 16, border: "1px solid rgba(0,201,167,.12)", padding: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#00C9A7", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Vacation Week You Have</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#00C9A7", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Vacation week you have</div>
                 <select value={f.vacationHave} onChange={e => sF({ ...f, vacationHave: e.target.value })} style={{ cursor: "pointer", fontSize: 16 }}>
                   <option value="">Select week...</option>
-                  {Array.from({ length: 52 }, (_, i) => <option key={i} value={`Week ${i + 1}`}>Week {i + 1}</option>)}
+                  {WEEK_OPTIONS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
                 </select>
               </div>
               <div style={{ background: "rgba(2,73,181,.04)", borderRadius: 16, border: "1px solid rgba(2,73,181,.12)", padding: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.blue, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Vacation Week You Want</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.blue, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Vacation week you want</div>
                 <select value={f.vacationWant} onChange={e => sF({ ...f, vacationWant: e.target.value })} style={{ cursor: "pointer", fontSize: 16 }}>
                   <option value="">Select week...</option>
-                  {Array.from({ length: 52 }, (_, i) => <option key={i} value={`Week ${i + 1}`}>Week {i + 1}</option>)}
+                  {WEEK_OPTIONS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
                 </select>
               </div>
             </>
