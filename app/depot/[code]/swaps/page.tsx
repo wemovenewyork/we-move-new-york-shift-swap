@@ -218,26 +218,26 @@ export default function BrowsePage() {
 
   return (
     <div className="page-enter" style={{ minHeight: "100vh", background: C.bg }}>
-      <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.75)", borderBottom: `1px solid ${C.bd}`, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
-        <button onClick={() => router.push(`/depot/${code}`)} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="back" s={16} /></button>
-        <DepotBadge depot={depot} size={38} />
-        <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.white }}>{depot.name}</div>
+      <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.75)", borderBottom: `1px solid ${C.bd}`, padding: "12px 12px", display: "flex", alignItems: "center", gap: 6 }}>
+        <button onClick={() => router.push(`/depot/${code}`)} aria-label="Go back" style={{ width: 32, height: 32, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon n="back" s={15} /></button>
+        <DepotBadge depot={depot} size={32} />
+        <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: C.white, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{depot.name}</div>
         <NotifIcon />
         <InboxIcon />
-        <button onClick={() => router.push(`/depot/${code}/saved`)} aria-label="Saved swaps" title="Saved Swaps" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.m, flexShrink: 0 }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+        <button onClick={() => router.push(`/depot/${code}/saved`)} aria-label="Saved swaps" title="Saved Swaps" style={{ width: 32, height: 32, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.m, flexShrink: 0 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
         </button>
         {isRep && (
           <>
-            <button onClick={() => setPostAnnModal(true)} title="Post Announcement" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.gold}44`, background: C.gs, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.gold, flexShrink: 0 }}>
-              <Icon n="bell" s={15} c={C.gold} />
+            <button onClick={() => setPostAnnModal(true)} title="Post Announcement" style={{ width: 32, height: 32, borderRadius: 10, border: `1px solid ${C.gold}44`, background: C.gs, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.gold, flexShrink: 0 }}>
+              <Icon n="bell" s={14} c={C.gold} />
             </button>
-            <button onClick={() => router.push(`/depot/${code}/rep`)} title="Rep Dashboard" style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid #C084FC33", background: "#C084FC12", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Icon n="shield" s={15} c="#C084FC" />
+            <button onClick={() => router.push(`/depot/${code}/rep`)} title="Rep Dashboard" style={{ width: 32, height: 32, borderRadius: 10, border: "1px solid #C084FC33", background: "#C084FC12", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Icon n="shield" s={14} c="#C084FC" />
             </button>
           </>
         )}
-        <button onClick={() => { playClick(); router.push(`/depot/${code}/post`); }} style={{ padding: "8px 18px", borderRadius: 10, border: "none", cursor: "pointer", background: "#D1AD38", fontSize: 13, fontWeight: 700, color: "#010028", flexShrink: 0 }}>+ Post</button>
+        <button onClick={() => { playClick(); router.push(`/depot/${code}/post`); }} style={{ padding: "7px 12px", borderRadius: 10, border: "none", cursor: "pointer", background: "#D1AD38", fontSize: 12, fontWeight: 700, color: "#010028", flexShrink: 0 }}>+ Post</button>
       </div>
 
       <main id="main-content" style={{ maxWidth: 720, margin: "0 auto", padding: "0 20px" }}>
