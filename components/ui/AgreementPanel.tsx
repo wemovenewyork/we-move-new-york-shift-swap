@@ -2,26 +2,19 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
-import { SwapAgreement } from "@/types";
+import { Swap, SwapAgreement } from "@/types";
 import { C } from "@/constants/colors";
 import Icon from "./Icon";
 import Confetti from "./Confetti";
 
 interface Props {
-  swapId: string;
+  swap: Swap;
   agreement: SwapAgreement | null;
   isOwner: boolean;
   currentUserId: string;
   onUpdate: (a: SwapAgreement) => void;
   onPropose: () => void;
 }
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Awaiting owner confirmation",
-  userA_confirmed: "Owner confirmed — waiting for your final confirmation",
-  completed: "Agreement completed",
-  cancelled: "Agreement cancelled",
-};
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#F59E0B",
@@ -30,7 +23,31 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "#EF4444",
 };
 
-export default function AgreementPanel({ swapId, agreement, isOwner, currentUserId, onUpdate, onPropose }: Props) {
+function SwapSummary({ swap }: { swap: Swap }) {
+  const lines: string[] = [];
+  if (swap.category === "work") {
+    if (swap.run) lines.push(`Run ${swap.run}`);
+    if (swap.route) lines.push(`Route ${swap.route}`);
+    if (swap.startTime) lines.push(`Start ${swap.startTime}`);
+    if (swap.clearTime) lines.push(`Clear ${swap.clearTime}`);
+  } else if (swap.category === "daysoff") {
+    if (swap.fromDay) lines.push(`Has: ${swap.fromDay}${swap.fromDate ? " " + new Date(swap.fromDate + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}`);
+    if (swap.toDay) lines.push(`Wants: ${swap.toDay}${swap.toDate ? " " + new Date(swap.toDate + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}`);
+  } else if (swap.category === "vacation") {
+    if (swap.vacationHave) lines.push(`Has: ${swap.vacationHave}`);
+    if (swap.vacationWant) lines.push(`Wants: ${swap.vacationWant}`);
+  }
+  if (!lines.length) lines.push(swap.details.substring(0, 60));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      {lines.map((l, i) => (
+        <div key={i} style={{ fontSize: 11, color: C.white, lineHeight: 1.4 }}>{l}</div>
+      ))}
+    </div>
+  );
+}
+
+export default function AgreementPanel({ swap, agreement, isOwner, currentUserId, onUpdate, onPropose }: Props) {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -40,7 +57,7 @@ export default function AgreementPanel({ swapId, agreement, isOwner, currentUser
     setBusy(true);
     setError("");
     try {
-      const updated = await api.patch<SwapAgreement>(`/swaps/${swapId}/agreement`, { action, note: note || undefined });
+      const updated = await api.patch<SwapAgreement>(`/swaps/${swap.id}/agreement`, { action, note: note || undefined });
       if (updated.status === "completed") setShowConfetti(true);
       onUpdate(updated);
     } catch (e: unknown) {
@@ -70,62 +87,73 @@ export default function AgreementPanel({ swapId, agreement, isOwner, currentUser
   const canConfirm = (isOwner && agreement.status === "pending") || (isInitiator && agreement.status === "userA_confirmed");
   const canCancel = agreement.status !== "completed" && agreement.status !== "cancelled";
   const isActive = agreement.status !== "completed" && agreement.status !== "cancelled";
+  const isCompleted = agreement.status === "completed";
 
   return (
     <div style={{ marginTop: 16, background: "rgba(255,255,255,.03)", borderRadius: 16, padding: 18, border: `1px solid ${color}22` }}>
       {showConfetti && <Confetti onDone={() => setShowConfetti(false)} />}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <Icon n="shield" s={16} c={color} />
         <span style={{ fontSize: 12, fontWeight: 700, color: color, textTransform: "uppercase", letterSpacing: 1 }}>Swap Agreement</span>
-        <span style={{ marginLeft: "auto", padding: "3px 10px", borderRadius: 20, background: color + "18", border: `1px solid ${color}33`, fontSize: 10, fontWeight: 700, color }}>{agreement.status.replace("_", " ").toUpperCase()}</span>
+        <span style={{ marginLeft: "auto", padding: "3px 10px", borderRadius: 20, background: color + "18", border: `1px solid ${color}33`, fontSize: 10, fontWeight: 700, color, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          {isCompleted ? "Taken" : agreement.status.replace("_", " ")}
+        </span>
       </div>
 
-      <div style={{ fontSize: 12, color: "rgba(255,255,255,.7)", marginBottom: 12, lineHeight: 1.5 }}>
-        {STATUS_LABELS[agreement.status]}
-      </div>
+      {/* TAKEN banner */}
+      {isCompleted && (
+        <div style={{ background: "rgba(0,201,167,.1)", border: "1px solid rgba(0,201,167,.3)", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
+          <Icon n="chk" s={20} c="#00C9A7" />
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "#00C9A7" }}>This swap is taken!</div>
+            <div style={{ fontSize: 11, color: C.m, marginTop: 2 }}>
+              Completed {agreement.completedAt ? new Date(agreement.completedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : ""}
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Parties */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8, alignItems: "center", marginBottom: 12 }}>
-        <div style={{ padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,.04)" }}>
-          <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", marginBottom: 2 }}>Proposer</div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: C.white }}>
+      {/* Both parties side by side */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8, alignItems: "stretch", marginBottom: 14 }}>
+        {/* Poster's swap info */}
+        <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.07)" }}>
+          <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Poster</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.white, marginBottom: 6 }}>
+            {agreement.userB ? `${agreement.userB.firstName} ${agreement.userB.lastName}` : swap.posterName}
+          </div>
+          <SwapSummary swap={swap} />
+          {agreement.userBAt && <div style={{ fontSize: 9, color: "#00C9A7", marginTop: 6 }}>✓ Confirmed</div>}
+          {agreement.userBNote && (
+            <div style={{ fontSize: 10, color: C.m, marginTop: 6, lineHeight: 1.4, borderTop: "1px solid rgba(255,255,255,.05)", paddingTop: 6 }}>{agreement.userBNote}</div>
+          )}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <Icon n="swap" s={16} c={color} />
+        </div>
+
+        {/* Proposer's schedule */}
+        <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.07)" }}>
+          <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Interested</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.white, marginBottom: 6 }}>
             {agreement.userA ? `${agreement.userA.firstName} ${agreement.userA.lastName}` : "—"}
           </div>
-          {agreement.userAAt && <div style={{ fontSize: 9, color: "#00C9A7", marginTop: 2 }}>✓ Signed</div>}
-        </div>
-        <Icon n="swap" s={16} c={C.m} />
-        <div style={{ padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,.04)" }}>
-          <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", marginBottom: 2 }}>Owner</div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: C.white }}>
-            {agreement.userB ? `${agreement.userB.firstName} ${agreement.userB.lastName}` : "—"}
-          </div>
-          {agreement.userBAt && <div style={{ fontSize: 9, color: "#00C9A7", marginTop: 2 }}>✓ Signed</div>}
+          {agreement.userANote ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {agreement.userANote.split("\n").filter(Boolean).map((line, i) => (
+                <div key={i} style={{ fontSize: 11, color: C.white, lineHeight: 1.4 }}>{line}</div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 11, color: C.m }}>No schedule added</div>
+          )}
+          {agreement.userAAt && <div style={{ fontSize: 9, color: "#00C9A7", marginTop: 6 }}>✓ Confirmed</div>}
         </div>
       </div>
 
-      {/* Notes */}
-      {agreement.userANote && (
-        <div style={{ padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,.02)", marginBottom: 8 }}>
-          <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", marginBottom: 2 }}>Proposer note</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,.7)" }}>{agreement.userANote}</div>
-        </div>
-      )}
-      {agreement.userBNote && (
-        <div style={{ padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,.02)", marginBottom: 8 }}>
-          <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", marginBottom: 2 }}>Owner note</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,.7)" }}>{agreement.userBNote}</div>
-        </div>
-      )}
-
-      {/* Completed at */}
-      {agreement.completedAt && (
-        <div style={{ padding: "8px 12px", borderRadius: 10, background: "rgba(0,201,167,.06)", border: "1px solid rgba(0,201,167,.2)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-          <Icon n="chk" s={14} c="#00C9A7" />
-          <span style={{ fontSize: 11, color: "#00C9A7" }}>Completed on {new Date(agreement.completedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
-        </div>
-      )}
-
-      {error && <div role="alert" aria-live="assertive" style={{ padding: "8px 12px", borderRadius: 10, background: "#EF444415", border: "1px solid #EF444433", fontSize: 12, color: "#EF4444", marginBottom: 10 }}>{error}</div>}
+      {error && <div role="alert" style={{ padding: "8px 12px", borderRadius: 10, background: "#EF444415", border: "1px solid #EF444433", fontSize: 12, color: "#EF4444", marginBottom: 10 }}>{error}</div>}
 
       {isActive && canConfirm && (
         <div style={{ display: "grid", gap: 8 }}>

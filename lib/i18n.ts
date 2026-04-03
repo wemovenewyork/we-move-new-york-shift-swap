@@ -20,7 +20,7 @@ const translations: Record<Lang, Record<string, string>> = {
     // Status
     "status.open": "Open",
     "status.pending": "Pending",
-    "status.filled": "Filled",
+    "status.filled": "Taken",
     "status.expired": "Expired",
     // Actions
     "action.interested": "I'm Interested",

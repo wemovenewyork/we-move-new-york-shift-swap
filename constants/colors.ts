@@ -28,7 +28,7 @@ export const CM = {
 export const STC = {
   open: { bg: "rgba(46,213,115,.12)", bd: "rgba(46,213,115,.3)", c: "#2ED573" },
   pending: { bg: "rgba(209,173,56,.12)", bd: "rgba(209,173,56,.3)", c: C.gold },
-  filled: { bg: "rgba(255,71,87,.12)", bd: "rgba(255,71,87,.3)", c: "#FF4757" },
+  filled: { bg: "rgba(0,201,167,.12)", bd: "rgba(0,201,167,.3)", c: "#00C9A7" },
   expired: { bg: "rgba(128,128,128,.12)", bd: "rgba(128,128,128,.3)", c: "#888" },
 } as const;
 

@@ -27,6 +27,17 @@ export default function SwapDetailPage() {
   const [agreeLoaded, setAgreeLoaded] = useState(false);
   const [proposeModal, setProposeModal] = useState(false);
   const [proposeNote, setProposeNote] = useState("");
+  // Schedule fields for propose modal
+  const [pRun, setPRun] = useState("");
+  const [pRoute, setPRoute] = useState("");
+  const [pStart, setPStart] = useState("");
+  const [pClear, setPClear] = useState("");
+  const [pFromDay, setPFromDay] = useState("");
+  const [pFromDate, setPFromDate] = useState("");
+  const [pToDay, setPToDay] = useState("");
+  const [pToDate, setPToDate] = useState("");
+  const [pVacHave, setPVacHave] = useState("");
+  const [pVacWant, setPVacWant] = useState("");
   const [proposeBusy, setProposeBusy] = useState(false);
   const [msgModal, setMsgModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -47,14 +58,35 @@ export default function SwapDetailPage() {
       .finally(() => setAgreeLoaded(true));
   }, [id, user, code, router]);
 
+  const buildProposeNote = () => {
+    if (!swap) return proposeNote || undefined;
+    const lines: string[] = [];
+    if (swap.category === "work") {
+      if (pRun) lines.push(`Run: ${pRun}`);
+      if (pRoute) lines.push(`Route: ${pRoute}`);
+      if (pStart) lines.push(`Start: ${pStart}`);
+      if (pClear) lines.push(`Clear: ${pClear}`);
+    } else if (swap.category === "daysoff") {
+      if (pFromDay || pFromDate) lines.push(`I have: ${[pFromDay, pFromDate].filter(Boolean).join(" ")}`);
+      if (pToDay || pToDate) lines.push(`I want: ${[pToDay, pToDate].filter(Boolean).join(" ")}`);
+    } else if (swap.category === "vacation") {
+      if (pVacHave) lines.push(`I have: ${pVacHave}`);
+      if (pVacWant) lines.push(`I want: ${pVacWant}`);
+    }
+    if (proposeNote.trim()) lines.push(proposeNote.trim());
+    return lines.length ? lines.join("\n") : undefined;
+  };
+
   const handlePropose = async () => {
     if (!id) return;
     setProposeBusy(true);
     try {
-      const a = await api.post<SwapAgreement>(`/swaps/${id}/agreement`, { note: proposeNote || undefined });
+      const a = await api.post<SwapAgreement>(`/swaps/${id}/agreement`, { note: buildProposeNote() });
       setAgreement(a);
       setProposeModal(false);
-      setProposeNote("");
+      setProposeNote(""); setPRun(""); setPRoute(""); setPStart(""); setPClear("");
+      setPFromDay(""); setPFromDate(""); setPToDay(""); setPToDate("");
+      setPVacHave(""); setPVacWant("");
       showToast("Agreement proposed!");
     } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed to propose"); }
     setProposeBusy(false);
@@ -98,7 +130,7 @@ export default function SwapDetailPage() {
             <Icon n={co?.ic || "swap"} s={18} />
             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>{co?.f}</span>
           </div>
-          <span style={{ padding: "4px 12px", borderRadius: 8, background: st2.bg, border: "1px solid " + st2.bd, fontSize: 11, fontWeight: 700, color: st2.c, textTransform: "uppercase", boxShadow: "0 0 8px " + st2.c + "22", letterSpacing: 1 }}>{swap.status}</span>
+          <span style={{ padding: "4px 12px", borderRadius: 8, background: st2.bg, border: "1px solid " + st2.bd, fontSize: 11, fontWeight: 700, color: st2.c, textTransform: "uppercase", boxShadow: "0 0 8px " + st2.c + "22", letterSpacing: 1 }}>{swap.status === "filled" ? "Taken" : swap.status}</span>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
@@ -215,7 +247,7 @@ export default function SwapDetailPage() {
 
         {!own && agreeLoaded && (
           <AgreementPanel
-            swapId={swap.id}
+            swap={swap}
             agreement={agreement}
             isOwner={false}
             currentUserId={user?.id ?? ""}
@@ -226,7 +258,7 @@ export default function SwapDetailPage() {
 
         {own && agreeLoaded && agreement && (
           <AgreementPanel
-            swapId={swap.id}
+            swap={swap}
             agreement={agreement}
             isOwner={true}
             currentUserId={user?.id ?? ""}
@@ -240,23 +272,96 @@ export default function SwapDetailPage() {
       {confirm && <ConfirmModal title={confirm.title} text={confirm.text} onConfirm={confirm.action} onCancel={() => setConfirm(null)} />}
       {toast && <Toast message={toast} />}
 
-      {proposeModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={() => setProposeModal(false)}>
-          <div style={{ width: "100%", background: "rgb(6,5,50)", borderRadius: "20px 20px 0 0", padding: "24px 20px 40px", maxWidth: 520, margin: "0 auto" }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: C.white, marginBottom: 6 }}>Agree to Swap</div>
-            <div style={{ fontSize: 12, color: C.m, lineHeight: 1.6, marginBottom: 16 }}>This creates a timestamped record. Both operators must confirm to complete the swap.</div>
+      {proposeModal && swap && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.75)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={() => setProposeModal(false)}>
+          <div style={{ width: "100%", background: "rgb(4,3,45)", borderRadius: "24px 24px 0 0", padding: "24px 20px 44px", maxWidth: 520, margin: "0 auto", maxHeight: "88vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.white, marginBottom: 4 }}>Agree to Swap</div>
+            <div style={{ fontSize: 12, color: C.m, lineHeight: 1.5, marginBottom: 18 }}>Enter your schedule — both operators must confirm to complete the swap.</div>
+
+            {swap.category === "work" && (
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Run #</div>
+                    <input value={pRun} onChange={e => setPRun(e.target.value)} placeholder="e.g. 42" style={{ width: "100%", padding: "10px 13px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.white, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Route</div>
+                    <input value={pRoute} onChange={e => setPRoute(e.target.value)} placeholder="e.g. M15" style={{ width: "100%", padding: "10px 13px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.white, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }} />
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Start Time</div>
+                    <input value={pStart} onChange={e => setPStart(e.target.value)} placeholder="e.g. 6:00 AM" style={{ width: "100%", padding: "10px 13px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.white, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Clear Time</div>
+                    <input value={pClear} onChange={e => setPClear(e.target.value)} placeholder="e.g. 2:30 PM" style={{ width: "100%", padding: "10px 13px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.white, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }} />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {swap.category === "daysoff" && (
+              <>
+                <div style={{ fontSize: 11, color: C.m, marginBottom: 6 }}>What are you offering?</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Day I have</div>
+                    <select value={pFromDay} onChange={e => setPFromDay(e.target.value)} style={{ width: "100%", padding: "10px 13px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.white, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }}>
+                      <option value="">Select</option>
+                      {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Date (optional)</div>
+                    <input type="date" value={pFromDate} onChange={e => setPFromDate(e.target.value)} style={{ width: "100%", padding: "10px 13px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.white, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }} />
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: C.m, marginBottom: 6 }}>What do you want in return?</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Day I want</div>
+                    <select value={pToDay} onChange={e => setPToDay(e.target.value)} style={{ width: "100%", padding: "10px 13px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.white, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }}>
+                      <option value="">Select</option>
+                      {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Date (optional)</div>
+                    <input type="date" value={pToDate} onChange={e => setPToDate(e.target.value)} style={{ width: "100%", padding: "10px 13px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.white, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }} />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {swap.category === "vacation" && (
+              <div style={{ marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Vacation I have</div>
+                  <input value={pVacHave} onChange={e => setPVacHave(e.target.value)} placeholder="e.g. Week of July 14–18" style={{ width: "100%", padding: "10px 13px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.white, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 10 }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Vacation I want</div>
+                  <input value={pVacWant} onChange={e => setPVacWant(e.target.value)} placeholder="e.g. Week of Aug 4–8" style={{ width: "100%", padding: "10px 13px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.white, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }} />
+                </div>
+              </div>
+            )}
+
+            <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Additional note (optional)</div>
             <textarea
               value={proposeNote}
               onChange={e => setProposeNote(e.target.value)}
-              placeholder="Add a note (optional)"
-              maxLength={300}
-              rows={3}
-              style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.04)", color: C.white, fontSize: 14, resize: "none", fontFamily: "inherit", marginBottom: 14, boxSizing: "border-box" }}
+              placeholder="Anything else to add..."
+              maxLength={200}
+              rows={2}
+              style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.04)", color: C.white, fontSize: 14, resize: "none", fontFamily: "inherit", marginBottom: 16, boxSizing: "border-box" }}
             />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <button onClick={() => setProposeModal(false)} style={{ padding: 14, borderRadius: 14, border: `1px solid ${C.bd}`, background: "transparent", cursor: "pointer", fontSize: 14, fontWeight: 600, color: C.m }}>Cancel</button>
               <button onClick={handlePropose} disabled={proposeBusy} style={{ padding: 14, borderRadius: 14, border: "none", background: "linear-gradient(135deg,#00C9A7,#00C9A7cc)", cursor: "pointer", fontSize: 14, fontWeight: 700, color: "#fff", opacity: proposeBusy ? 0.7 : 1 }}>
-                {proposeBusy ? "Proposing..." : "Propose"}
+                {proposeBusy ? "Proposing..." : "Agree to Swap"}
               </button>
             </div>
           </div>
