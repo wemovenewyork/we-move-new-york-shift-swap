@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
 import { Swap, SwapAgreement } from "@/types";
 
@@ -19,25 +20,46 @@ const fdate = (d?: string | Date | null) => {
 };
 
 export default function PrintAgreementPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const { id } = useParams<{ code: string; id: string }>();
   const [swap, setSwap] = useState<Swap | null>(null);
   const [agreement, setAgreement] = useState<SwapAgreement | null>(null);
+  const [gateError, setGateError] = useState("");
 
   useEffect(() => {
+    if (!loading && !user) router.replace("/login");
+  }, [user, loading, router]);
+
+  useEffect(() => {
+    if (!id || !user) return;
     Promise.all([
       api.get<Swap>(`/swaps/${id}`),
       api.get<SwapAgreement>(`/swaps/${id}/agreement`).catch(() => null),
     ]).then(([s, a]) => {
+      if (!a || a.status !== "completed") {
+        setGateError("The agreement for this swap has not been confirmed yet. The PDF is only available after both parties confirm.");
+        return;
+      }
       setSwap(s);
       setAgreement(a);
-    });
-  }, [id]);
+    }).catch(() => setGateError("Could not load agreement."));
+  }, [id, user]);
 
   useEffect(() => {
-    if (swap) setTimeout(() => window.print(), 600);
-  }, [swap]);
+    if (swap && agreement) setTimeout(() => window.print(), 600);
+  }, [swap, agreement]);
 
-  if (!swap) return (
+  if (gateError) return (
+    <div style={{ fontFamily: "Arial, sans-serif", maxWidth: 480, margin: "80px auto", padding: 40, textAlign: "center", color: "#333" }}>
+      <div style={{ fontSize: 40, marginBottom: 16 }}>🔒</div>
+      <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 10 }}>Agreement not confirmed</div>
+      <div style={{ fontSize: 13, color: "#666", lineHeight: 1.6, marginBottom: 28 }}>{gateError}</div>
+      <button onClick={() => window.close()} style={{ padding: "10px 24px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", cursor: "pointer", fontSize: 14 }}>Close</button>
+    </div>
+  );
+
+  if (!swap || !agreement) return (
     <div style={{ fontFamily: "Arial, sans-serif", padding: 40, color: "#333" }}>Loading…</div>
   );
 
@@ -79,17 +101,19 @@ export default function PrintAgreementPage() {
         <h1>{categoryLabel}</h1>
         <p className="sub">Generated {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
 
-        {/* Swap poster */}
+        {/* Both parties */}
         <div className="section">
-          <div className="section-title">Posted By</div>
+          <div className="section-title">Parties</div>
           <div className="grid">
             <div className="field">
-              <div className="field-label">Operator Name</div>
-              <div className="field-value">{swap.posterName}</div>
+              <div className="field-label">Poster (Owner)</div>
+              <div className="field-value">{agreement.userB ? `${agreement.userB.firstName} ${agreement.userB.lastName}` : swap.posterName}</div>
+              {agreement.userBAt && <div style={{ fontSize: 10, color: "#1a8a4a", marginTop: 6, fontWeight: 600 }}>✓ Confirmed {new Date(agreement.userBAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>}
             </div>
             <div className="field">
-              <div className="field-label">Swap Type</div>
-              <div className="field-value">{categoryLabel}</div>
+              <div className="field-label">Interested Party</div>
+              <div className="field-value">{agreement.userA ? `${agreement.userA.firstName} ${agreement.userA.lastName}` : "—"}</div>
+              {agreement.userAAt && <div style={{ fontSize: 10, color: "#1a8a4a", marginTop: 6, fontWeight: 600 }}>✓ Confirmed {new Date(agreement.userAAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>}
             </div>
           </div>
         </div>
@@ -171,8 +195,14 @@ export default function PrintAgreementPage() {
               </div>
               {agreement.userANote && (
                 <div className="field" style={{ marginBottom: 12 }}>
-                  <div className="field-label">Note</div>
-                  <div className="field-value" style={{ fontWeight: 400, fontSize: 13 }}>{agreement.userANote}</div>
+                  <div className="field-label">Interested Party&apos;s Schedule / Note</div>
+                  <div className="field-value" style={{ fontWeight: 400, fontSize: 13, whiteSpace: "pre-line" }}>{agreement.userANote}</div>
+                </div>
+              )}
+              {agreement.userBNote && (
+                <div className="field" style={{ marginBottom: 12 }}>
+                  <div className="field-label">Owner&apos;s Note</div>
+                  <div className="field-value" style={{ fontWeight: 400, fontSize: 13 }}>{agreement.userBNote}</div>
                 </div>
               )}
             </>

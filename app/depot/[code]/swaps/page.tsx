@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
@@ -8,7 +8,6 @@ import { Depot, Swap, Announcement, FlexibleOperator } from "@/types";
 import { C, CM, SWAP_TYPES } from "@/constants/colors";
 import SwapCard from "@/components/ui/SwapCard";
 import DepotBadge from "@/components/ui/DepotBadge";
-import MsgModal from "@/components/ui/MsgModal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import BottomNav from "@/components/ui/BottomNav";
 import Toast from "@/components/ui/Toast";
@@ -29,18 +28,30 @@ export default function BrowsePage() {
 
   const [depot, setDepot] = useState<Depot | null>(null);
   const [swaps, setSwaps] = useState<Swap[]>([]);
+  const [catCounts, setCatCounts] = useState<Record<string, number>>({});
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [flexibleOps, setFlexibleOps] = useState<FlexibleOperator[]>([]);
   const [toast, setToast] = useState<string | null>(null);
-  const [msgModal, setMsgModal] = useState<Swap | null>(null);
   const [dmTarget, setDmTarget] = useState<FlexibleOperator | null>(null);
   const [dmText, setDmText] = useState("");
   const [dmBusy, setDmBusy] = useState(false);
   const [postAnnModal, setPostAnnModal] = useState(false);
   const [confirm, setConfirm] = useState<{ title: string; text: string; action: () => void } | null>(null);
   const [lastVisit] = useState(() => Date.now());
+  const scrollKey = `swaps-scroll-${code}`;
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  // Restore scroll position when returning from a swap detail
+  useEffect(() => {
+    const saved = sessionStorage.getItem(scrollKey);
+    if (saved) {
+      const y = parseInt(saved, 10);
+      setTimeout(() => window.scrollTo({ top: y, behavior: "instant" as ScrollBehavior }), 80);
+      sessionStorage.removeItem(scrollKey);
+    }
+  }, [scrollKey]);
   const isRep = user?.role === "depotRep" || user?.role === "admin";
 
   const [cat, setCat] = useState("all");
@@ -83,6 +94,11 @@ export default function BrowsePage() {
       const data = await api.get<{ swaps: Swap[]; nextCursor: string | null }>(`/swaps?${params}`);
       setSwaps(data.swaps);
       setNextCursor(data.nextCursor);
+      if (cat === "all") {
+        const counts: Record<string, number> = {};
+        data.swaps.forEach(s => { counts[s.category] = (counts[s.category] ?? 0) + 1; });
+        setCatCounts(counts);
+      }
     } catch (e) { console.error(e); }
   };
 
@@ -160,14 +176,6 @@ export default function BrowsePage() {
     } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed"); }
   };
 
-  const handleSend = async (swap: Swap, text: string) => {
-    try {
-      await api.post(`/users/${swap.userId}/message`, { text });
-      setMsgModal(null);
-      router.push(`/depot/${code}/messages/${swap.userId}`);
-    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Send failed"); }
-  };
-
   const handleFlexToggle = async () => {
     try {
       const { flexibleMode } = await api.post<{ flexibleMode: boolean }>("/users/me/flexible", {});
@@ -207,15 +215,23 @@ export default function BrowsePage() {
   return (
     <div className="page-enter" style={{ minHeight: "100vh", background: C.bg }}>
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.75)", borderBottom: `1px solid ${C.bd}`, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
-        <button onClick={() => router.push(`/depot/${code}`)} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="back" s={16} /></button>
+        <button onClick={() => router.push("/depots")} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="back" s={16} /></button>
         <DepotBadge depot={depot} size={38} />
         <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.white }}>{depot.name}</div>
         <NotifIcon />
         <InboxIcon />
+        <button onClick={() => router.push(`/depot/${code}/saved`)} aria-label="Saved swaps" title="Saved Swaps" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.m, flexShrink: 0 }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+        </button>
         {isRep && (
-          <button onClick={() => setPostAnnModal(true)} title="Post Announcement" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.gold}44`, background: C.gs, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.gold, flexShrink: 0 }}>
-            <Icon n="bell" s={15} c={C.gold} />
-          </button>
+          <>
+            <button onClick={() => setPostAnnModal(true)} title="Post Announcement" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.gold}44`, background: C.gs, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.gold, flexShrink: 0 }}>
+              <Icon n="bell" s={15} c={C.gold} />
+            </button>
+            <button onClick={() => router.push(`/depot/${code}/rep`)} title="Rep Dashboard" style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid #C084FC33", background: "#C084FC12", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Icon n="shield" s={15} c="#C084FC" />
+            </button>
+          </>
         )}
         <button onClick={() => router.push(`/depot/${code}/post`)} style={{ padding: "8px 18px", borderRadius: 10, border: "none", cursor: "pointer", background: "#D1AD38", fontSize: 13, fontWeight: 700, color: "#010028", flexShrink: 0 }}>+ Post</button>
       </div>
@@ -241,17 +257,17 @@ export default function BrowsePage() {
           onToggle={handleFlexToggle}
         />
 
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search swaps..." style={{ height: 40, fontSize: 13, width: "100%", marginBottom: 8 }} />
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search..." style={{ height: 40, fontSize: 13, flex: 1 }} />
-          <select value={sf} onChange={e => setSf(e.target.value)} style={{ width: "auto", padding: "8px 10px", borderRadius: 14, fontSize: 11, fontWeight: 600, appearance: "auto", cursor: "pointer", background: C.s, border: `1px solid ${C.bd}`, color: C.white }}>
+          <select value={sf} onChange={e => setSf(e.target.value)} style={{ flex: 1, padding: "8px 10px", borderRadius: 14, fontSize: 11, fontWeight: 600, appearance: "auto", cursor: "pointer", background: C.s, border: `1px solid ${C.bd}`, color: C.white }}>
             <option value="all">All</option><option value="open">Open</option><option value="pending">Pending</option><option value="filled">Filled</option><option value="expired">Expired</option>
           </select>
-          <button onClick={() => setShowFilters(!showFilters)} style={{ padding: "8px 12px", borderRadius: 14, border: `1px solid ${showFilters ? C.gold + "44" : C.bd}`, background: showFilters ? C.gs : C.s, cursor: "pointer", color: showFilters ? C.gold : C.m, fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
-            <Icon n="tmr" s={12} /> Filters
-          </button>
-          <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ width: "auto", padding: "8px 10px", borderRadius: 14, fontSize: 11, fontWeight: 600, appearance: "auto", cursor: "pointer", background: C.s, border: `1px solid ${C.bd}`, color: C.white }}>
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ flex: 1, padding: "8px 10px", borderRadius: 14, fontSize: 11, fontWeight: 600, appearance: "auto", cursor: "pointer", background: C.s, border: `1px solid ${C.bd}`, color: C.white }}>
             <option value="newest">Newest</option><option value="oldest">Oldest</option><option value="date">By Date</option>
           </select>
+          <button onClick={() => setShowFilters(!showFilters)} style={{ padding: "8px 14px", borderRadius: 14, border: `1px solid ${showFilters ? C.gold + "44" : C.bd}`, background: showFilters ? C.gs : C.s, cursor: "pointer", color: showFilters ? C.gold : C.m, fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
+            <Icon n="tmr" s={12} /> Filters
+          </button>
         </div>
 
         {showFilters && (
@@ -267,7 +283,7 @@ export default function BrowsePage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 10 }}>
           {SWAP_TYPES.map(x => {
             const m = CM[x.id as keyof typeof CM];
-            const ct = swaps.filter(s => s.category === x.id).length;
+            const ct = catCounts[x.id] ?? 0;
             return (
               <button key={x.id} onClick={() => setCat(cat === x.id ? "all" : x.id)} style={{ padding: "12px 10px", borderRadius: 12, border: "none", cursor: "pointer", textAlign: "left", background: cat === x.id ? m.bg : "rgba(255,255,255,.025)", backdropFilter: "blur(8px)", boxShadow: cat === x.id ? `inset 0 0 0 1.5px ${m.bd2}, 0 0 12px ${m.c}10` : `inset 0 0 0 1px rgba(255,255,255,.05)` }}>
                 <Icon n={x.ic} s={18} c={cat === x.id ? m.c : C.m} />
@@ -299,12 +315,11 @@ export default function BrowsePage() {
                 user={user}
                 onDelete={handleDelete}
                 onStatusChange={handleStatus}
-                onInterest={s.status === "open" ? setMsgModal : undefined}
                 onEdit={s.userId === user?.id ? (sw) => router.push(`/depot/${code}/post?edit=${sw.id}`) : undefined}
                 onReport={handleReport}
                 onToggleSave={s.userId !== user?.id ? handleToggleSave : undefined}
                 lastVisit={lastVisit}
-                onClick={s.status === "open" ? () => router.push(`/depot/${code}/swaps/${s.id}`) : undefined}
+                onClick={() => { sessionStorage.setItem(scrollKey, String(window.scrollY)); router.push(`/depot/${code}/swaps/${s.id}`); }}
               />
             </div>
           ))}
@@ -322,7 +337,6 @@ export default function BrowsePage() {
       </main>
 
       <BottomNav active="browse" depotCode={code} lang={user?.language} />
-      {msgModal && <MsgModal swap={msgModal} onSend={handleSend} onClose={() => setMsgModal(null)} />}
       {confirm && <ConfirmModal title={confirm.title} text={confirm.text} onConfirm={confirm.action} onCancel={() => setConfirm(null)} />}
       {toast && <Toast message={toast} />}
 

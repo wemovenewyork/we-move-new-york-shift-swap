@@ -34,7 +34,7 @@ export default function ActionPage() {
   if (!depot) return null;
 
   const options = [
-    { k: "browse", ic: "list", t: "View Available Swaps", cl: C.blue, href: `/depot/${code}/swaps` },
+    { k: "browse", ic: "list", t: "View Available Swaps", cl: C.blue, href: `/depot/${code}/swaps`, count: depot.openSwaps ?? 0 },
     { k: "post", ic: "edit", t: "Post a Swap", cl: C.gold, href: `/depot/${code}/post` },
     { k: "my", ic: "usr", t: "My Posts", cl: "#00C9A7", href: `/depot/${code}/my` },
     { k: "messages", ic: "msg", t: "Messages", cl: "#C084FC", href: `/depot/${code}/messages`, badge: unread },
@@ -64,10 +64,7 @@ export default function ActionPage() {
         </button>
       </div>
 
-      <main id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "30px 20px", maxWidth: 480, margin: "0 auto", width: "100%" }}>
-        <DepotBadge depot={depot} size={80} />
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: C.white, marginTop: 16, textAlign: "center" }}>{depot.name}</h2>
-        <div style={{ fontSize: 12, color: C.gold, letterSpacing: 4, textTransform: "uppercase", marginTop: 30, marginBottom: 16 }}>What would you like to do?</div>
+      <main id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "24px 20px", maxWidth: 480, margin: "0 auto", width: "100%" }}>
         <PushBanner />
         <div style={{ display: "grid", gap: 10, width: "100%" }}>
           {options.map(o => (
@@ -85,6 +82,9 @@ export default function ActionPage() {
                 {o.t}
                 {(o.badge ?? 0) > 0 && (
                   <span role="status" aria-label={o.badge + " notifications"} style={{ background: C.red, color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 10, minWidth: 20, textAlign: "center" }}>{o.badge}</span>
+                )}
+                {"count" in o && (o.count ?? 0) > 0 && (
+                  <span style={{ fontSize: 11, fontWeight: 700, color: C.blue, background: C.blue + "18", border: `1px solid ${C.blue}33`, padding: "2px 8px", borderRadius: 8 }}>{o.count} open</span>
                 )}
               </div>
               <Icon n="chev" s={16} c={o.cl} />

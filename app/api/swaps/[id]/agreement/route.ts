@@ -43,13 +43,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   await prisma.swap.update({ where: { id }, data: { status: "pending" } });
 
-  // Notify swap owner that an agreement has been proposed
-  notifyUser(swap.userId, {
-    title: "Swap agreement proposed",
-    body: `${proposer?.firstName ?? "Someone"} wants to make it official — confirm to lock in the swap`,
-    url: `/depot/${swap.depotId}/swaps/${id}`,
-  });
-
   return ok(agreement, 201);
 }
 
@@ -121,29 +114,30 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (action === "confirm") {
     if (!isUserB && !isUserA) return err("Not a participant in this agreement", 403);
 
+    // Owner (userB) confirms → agreement is complete
     if (isUserB && agreement.status === "pending") {
       const updated = await prisma.swapAgreement.update({
         where: { id: agreement.id },
-        data: { status: "userA_confirmed", userBNote: note ?? null, userBAt: new Date() },
+        data: { status: "completed", userBNote: note ?? null, userBAt: new Date(), completedAt: new Date() },
       });
-      // Notify initiator that owner confirmed — their turn to finalize
+      await prisma.swap.update({ where: { id }, data: { status: "filled" } });
       notifyUser(agreement.userAId, {
-        title: "Owner confirmed — your turn!",
-        body: "The swap owner confirmed the agreement. Give your final confirmation to lock it in.",
+        title: "Swap confirmed! 🎉",
+        body: "Your swap is locked in. Print the agreement to show your dispatcher.",
         url: `/depot/${depotId}/swaps/${id}`,
       });
       return ok(updated);
     }
 
+    // Backwards-compat: handle existing userA_confirmed rows
     if (isUserA && agreement.status === "userA_confirmed") {
       const updated = await prisma.swapAgreement.update({
         where: { id: agreement.id },
         data: { status: "completed", completedAt: new Date() },
       });
       await prisma.swap.update({ where: { id }, data: { status: "filled" } });
-      // Notify swap owner that the agreement is fully complete
       notifyUser(agreement.userBId, {
-        title: "Swap agreement completed! 🎉",
+        title: "Swap agreement completed!",
         body: "Both operators confirmed. Your swap is locked in.",
         url: `/depot/${depotId}/swaps/${id}`,
       });

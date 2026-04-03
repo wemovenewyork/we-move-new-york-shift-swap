@@ -105,7 +105,7 @@ export default function DepotsPage() {
               {grouped[bn].map(d => (
                 <TiltCard key={d.code} className="card-enter" intensity={6}>
                   <button
-                    onClick={() => router.push(`/depot/${d.code}`)}
+                    onClick={() => router.push(`/depot/${d.code}/swaps`)}
                     onMouseEnter={() => setHovered(d.code)}
                     onMouseLeave={() => setHovered(null)}
                     style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", padding: "12px 16px", borderRadius: 14, border: "none", cursor: "pointer", textAlign: "left", transition: "background .25s, box-shadow .25s", background: hovered === d.code ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.025)", backdropFilter: "blur(8px)", borderLeft: hovered === d.code ? `3px solid ${C.gold}` : "3px solid transparent", boxShadow: hovered === d.code ? `0 8px 32px rgba(0,0,0,.2), inset 0 0 0 1px rgba(209,173,56,.15)` : `inset 0 0 0 1px rgba(255,255,255,.05)` }}

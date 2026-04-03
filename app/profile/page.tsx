@@ -185,7 +185,18 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <button onClick={handleLogout} style={{ marginTop: 20, padding: 16, borderRadius: 14, border: `1px solid ${C.red}33`, background: C.red + "12", cursor: "pointer", fontSize: 15, fontWeight: 600, color: C.red, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%" }}>
+        <button
+          onClick={() => {
+            const a = document.createElement("a");
+            a.href = "/api/users/me/export";
+            a.click();
+          }}
+          style={{ marginTop: 20, padding: 16, borderRadius: 14, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.04)", cursor: "pointer", fontSize: 14, fontWeight: 600, color: C.m, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%" }}
+        >
+          <Icon n="dl" s={16} c={C.m} /> Download My Data
+        </button>
+
+        <button onClick={handleLogout} style={{ marginTop: 10, padding: 16, borderRadius: 14, border: `1px solid ${C.red}33`, background: C.red + "12", cursor: "pointer", fontSize: 15, fontWeight: 600, color: C.red, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%" }}>
           <Icon n="out" s={16} c={C.red} /> Sign Out
         </button>
 

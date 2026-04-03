@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
@@ -44,6 +44,13 @@ export default function SwapDetailPage() {
   const [confirm, setConfirm] = useState<{ title: string; text: string; action: () => void } | null>(null);
 
   const showToast = useCallback((msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); }, []);
+  const agreementRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (agreeLoaded && agreement && agreementRef.current) {
+      setTimeout(() => agreementRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 150);
+    }
+  }, [agreeLoaded, agreement]);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -83,6 +90,7 @@ export default function SwapDetailPage() {
     try {
       const a = await api.post<SwapAgreement>(`/swaps/${id}/agreement`, { note: buildProposeNote() });
       setAgreement(a);
+      setSwap(prev => prev ? { ...prev, status: "pending" } : null);
       setProposeModal(false);
       setProposeNote(""); setPRun(""); setPRoute(""); setPStart(""); setPClear("");
       setPFromDay(""); setPFromDate(""); setPToDay(""); setPToDate("");
@@ -94,10 +102,10 @@ export default function SwapDetailPage() {
 
   const handleSend = async (s: Swap, text: string) => {
     try {
-      await api.post(`/swaps/${s.id}/interest`, { text });
-      showToast("Message sent!");
+      await api.post(`/users/${s.userId}/message`, { text });
+      setMsgModal(false);
+      router.push(`/depot/${code}/messages/${s.userId}`);
     } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Send failed"); }
-    setMsgModal(false);
   };
 
   const handleReport = () => {
@@ -118,9 +126,6 @@ export default function SwapDetailPage() {
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.8)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,.06)", padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={() => router.push(`/depot/${code}/swaps`)} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid " + C.bd, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="back" s={16} /></button>
         <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.white }}>Swap Details</div>
-        <button onClick={() => window.open(`/depot/${code}/swaps/${id}/print`, "_blank")} aria-label="Save as PDF" title="Save as PDF" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.gold}33`, background: C.gold + "12", color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-        </button>
         {!own && <button onClick={handleReport} aria-label="Report this swap" style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid " + C.bd, background: C.s, color: C.m, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="inf" s={14} /></button>}
       </div>
 
@@ -240,32 +245,42 @@ export default function SwapDetailPage() {
         )}
 
         {!own && swap.status === "open" && (
-          <button onClick={() => setMsgModal(true)} style={{ width: "100%", padding: 18, borderRadius: 16, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${m.c},${m.c}cc)`, fontSize: 16, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 20px " + m.c + "33" }}>
-            I&apos;m Interested <Icon n="arr" s={18} c="#fff" />
+          <button onClick={() => setMsgModal(true)} style={{ width: "100%", padding: 14, borderRadius: 16, border: `1px solid ${m.c}55`, cursor: "pointer", background: "transparent", fontSize: 14, fontWeight: 600, color: m.c, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <Icon n="msg" s={16} c={m.c} /> Send Message
           </button>
         )}
 
-        {!own && agreeLoaded && (
-          <AgreementPanel
-            swap={swap}
-            agreement={agreement}
-            isOwner={false}
-            currentUserId={user?.id ?? ""}
-            onUpdate={setAgreement}
-            onPropose={() => setProposeModal(true)}
-          />
+        {!own && swap.status === "open" && agreeLoaded && !agreement && (
+          <div style={{ textAlign: "center", fontSize: 11, color: C.m, margin: "12px 0 0", lineHeight: 1.5 }}>
+            Ready to make it official? Use the agreement below.
+          </div>
         )}
 
-        {own && agreeLoaded && agreement && (
-          <AgreementPanel
-            swap={swap}
-            agreement={agreement}
-            isOwner={true}
-            currentUserId={user?.id ?? ""}
-            onUpdate={setAgreement}
-            onPropose={() => {}}
-          />
-        )}
+        <div ref={agreementRef}>
+          {!own && agreeLoaded && (
+            <AgreementPanel
+              swap={swap}
+              agreement={agreement}
+              isOwner={false}
+              currentUserId={user?.id ?? ""}
+              onUpdate={(a) => { setAgreement(a); if (a.status === "completed") setSwap(prev => prev ? { ...prev, status: "filled" } : null); }}
+              onPropose={() => setProposeModal(true)}
+              onPrint={() => window.open(`/depot/${code}/swaps/${id}/print`, "_blank")}
+            />
+          )}
+
+          {own && agreeLoaded && (
+            <AgreementPanel
+              swap={swap}
+              agreement={agreement}
+              isOwner={true}
+              currentUserId={user?.id ?? ""}
+              onUpdate={(a) => { setAgreement(a); if (a.status === "completed") setSwap(prev => prev ? { ...prev, status: "filled" } : null); }}
+              onPropose={() => {}}
+              onPrint={() => window.open(`/depot/${code}/swaps/${id}/print`, "_blank")}
+            />
+          )}
+        </div>
       </main>
 
       {msgModal && swap && <MsgModal swap={swap} onSend={handleSend} onClose={() => setMsgModal(false)} />}
@@ -349,6 +364,7 @@ export default function SwapDetailPage() {
               </div>
             )}
 
+            <div style={{ borderTop: `1px solid rgba(255,255,255,.07)`, marginBottom: 16 }} />
             <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Additional note (optional)</div>
             <textarea
               value={proposeNote}
@@ -361,7 +377,7 @@ export default function SwapDetailPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <button onClick={() => setProposeModal(false)} style={{ padding: 14, borderRadius: 14, border: `1px solid ${C.bd}`, background: "transparent", cursor: "pointer", fontSize: 14, fontWeight: 600, color: C.m }}>Cancel</button>
               <button onClick={handlePropose} disabled={proposeBusy} style={{ padding: 14, borderRadius: 14, border: "none", background: "linear-gradient(135deg,#00C9A7,#00C9A7cc)", cursor: "pointer", fontSize: 14, fontWeight: 700, color: "#fff", opacity: proposeBusy ? 0.7 : 1 }}>
-                {proposeBusy ? "Proposing..." : "Agree to Swap"}
+                {proposeBusy ? "Sending..." : "Agree to Swap"}
               </button>
             </div>
           </div>

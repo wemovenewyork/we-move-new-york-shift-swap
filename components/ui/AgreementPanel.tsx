@@ -14,6 +14,7 @@ interface Props {
   currentUserId: string;
   onUpdate: (a: SwapAgreement) => void;
   onPropose: () => void;
+  onPrint?: () => void;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -47,7 +48,7 @@ function SwapSummary({ swap }: { swap: Swap }) {
   );
 }
 
-export default function AgreementPanel({ swap, agreement, isOwner, currentUserId, onUpdate, onPropose }: Props) {
+export default function AgreementPanel({ swap, agreement, isOwner, currentUserId, onUpdate, onPropose, onPrint }: Props) {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -58,7 +59,9 @@ export default function AgreementPanel({ swap, agreement, isOwner, currentUserId
     setError("");
     try {
       const updated = await api.patch<SwapAgreement>(`/swaps/${swap.id}/agreement`, { action, note: note || undefined });
-      if (updated.status === "completed") setShowConfetti(true);
+      if (updated.status === "completed") {
+        setShowConfetti(true);
+      }
       onUpdate(updated);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Action failed");
@@ -66,6 +69,7 @@ export default function AgreementPanel({ swap, agreement, isOwner, currentUserId
   };
 
   if (!agreement) {
+    if (isOwner) return null; // Owner sees nothing until someone proposes
     return (
       <div style={{ marginTop: 16 }}>
         <button
@@ -76,7 +80,7 @@ export default function AgreementPanel({ swap, agreement, isOwner, currentUserId
           Agree to Swap
         </button>
         <div style={{ fontSize: 10, color: C.m, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
-          Both operators must confirm — creates a timestamped record you can show your dispatcher.
+          Creates a timestamped record both operators can show their dispatcher.
         </div>
       </div>
     );
@@ -84,7 +88,8 @@ export default function AgreementPanel({ swap, agreement, isOwner, currentUserId
 
   const color = STATUS_COLORS[agreement.status] ?? C.m;
   const isInitiator = agreement.userAId === currentUserId;
-  const canConfirm = (isOwner && agreement.status === "pending") || (isInitiator && agreement.status === "userA_confirmed");
+  // Owner confirms to complete. Backwards-compat: initiator can still confirm if status is userA_confirmed (old records).
+  const canConfirm = (isOwner && agreement.status === "pending") || (isInitiator && !isOwner && agreement.status === "userA_confirmed");
   const canCancel = agreement.status !== "completed" && agreement.status !== "cancelled";
   const isActive = agreement.status !== "completed" && agreement.status !== "cancelled";
   const isCompleted = agreement.status === "completed";
@@ -98,20 +103,31 @@ export default function AgreementPanel({ swap, agreement, isOwner, currentUserId
         <Icon n="shield" s={16} c={color} />
         <span style={{ fontSize: 12, fontWeight: 700, color: color, textTransform: "uppercase", letterSpacing: 1 }}>Swap Agreement</span>
         <span style={{ marginLeft: "auto", padding: "3px 10px", borderRadius: 20, background: color + "18", border: `1px solid ${color}33`, fontSize: 10, fontWeight: 700, color, textTransform: "uppercase", letterSpacing: 0.5 }}>
-          {isCompleted ? "Taken" : agreement.status.replace("_", " ")}
+          {isCompleted ? "Taken" : agreement.status === "pending" ? "Awaiting Owner" : agreement.status === "userA_confirmed" ? "Awaiting You" : agreement.status}
         </span>
       </div>
 
       {/* TAKEN banner */}
       {isCompleted && (
-        <div style={{ background: "rgba(0,201,167,.1)", border: "1px solid rgba(0,201,167,.3)", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
-          <Icon n="chk" s={20} c="#00C9A7" />
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "#00C9A7" }}>This swap is taken!</div>
-            <div style={{ fontSize: 11, color: C.m, marginTop: 2 }}>
-              Completed {agreement.completedAt ? new Date(agreement.completedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : ""}
+        <div style={{ background: "rgba(0,201,167,.1)", border: "1px solid rgba(0,201,167,.3)", borderRadius: 12, padding: "14px 16px", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: onPrint ? 12 : 0 }}>
+            <Icon n="chk" s={20} c="#00C9A7" />
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#00C9A7" }}>This swap is taken!</div>
+              <div style={{ fontSize: 11, color: C.m, marginTop: 2 }}>
+                Confirmed {agreement.completedAt ? new Date(agreement.completedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : ""}
+              </div>
             </div>
           </div>
+          {onPrint && (
+            <button
+              onClick={onPrint}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(0,201,167,.4)", background: "rgba(0,201,167,.12)", cursor: "pointer", fontSize: 13, fontWeight: 700, color: "#00C9A7", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+              Print Agreement
+            </button>
+          )}
         </div>
       )}
 

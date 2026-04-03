@@ -10,6 +10,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!await rateLimit(`dm:ip:${ip}`, 60, 3_600_000)) return err("Rate limit exceeded — too many messages from this network", 429);
   if (!await rateLimit(`dm:${user.userId}`, 10, 3_600_000)) return err("Rate limit: max 10 direct messages per hour", 429);
 
   const { id: toUserId } = await params;

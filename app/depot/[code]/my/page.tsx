@@ -76,6 +76,7 @@ export default function MyPostsPage() {
         <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.white }}>My Posts</div>
         <NotifIcon />
         <InboxIcon />
+        <button onClick={() => router.push(`/depot/${code}/history`)} style={{ padding: "6px 14px", borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.m, cursor: "pointer", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>History</button>
       </div>
 
       <main id="main-content" style={{ maxWidth: 720, margin: "0 auto", padding: "16px 20px 50px" }}>

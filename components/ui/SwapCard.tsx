@@ -28,7 +28,6 @@ interface Props {
   user: User | null;
   onDelete?: (id: string) => void;
   onStatusChange?: (id: string, status: string) => void;
-  onInterest?: (s: Swap) => void;
   onEdit?: (s: Swap) => void;
   onReport?: (s: Swap) => void;
   onSaveTemplate?: (s: Swap) => void;
@@ -47,7 +46,7 @@ const activeAgo = (d?: string | null) => {
   return null; // older than a week — don't show
 };
 
-export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onInterest, onEdit, onReport, onSaveTemplate, onToggleSave, lastVisit, onClick }: Props) {
+export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEdit, onReport, onSaveTemplate, onToggleSave, lastVisit, onClick }: Props) {
   const { user: authUser } = useAuth();
   const tr = useT(authUser?.language);
   const m = CM[s.category] ?? CM.work;
@@ -66,7 +65,7 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onIn
 
   return (
     <div
-      style={{ background: "rgba(255,255,255,.03)", backdropFilter: "blur(12px)", borderRadius: 18, padding: 20, border: "1px solid rgba(255,255,255,.06)", transition: "all .3s cubic-bezier(.4,0,.2,1)", cursor: onClick ? "pointer" : "default", borderLeft: "3px solid transparent" }}
+      style={{ background: "rgba(255,255,255,.03)", backdropFilter: "blur(12px)", borderRadius: 18, padding: 20, border: "1px solid rgba(255,255,255,.06)", transition: "all .3s cubic-bezier(.4,0,.2,1)", cursor: onClick ? "pointer" : "default", borderLeft: "3px solid transparent", opacity: !own && s.status !== "open" ? 0.62 : 1 }}
       onMouseEnter={e => { const el = e.currentTarget; el.style.transform = "translateY(-2px)"; el.style.borderColor = m.c + "33"; el.style.boxShadow = `0 8px 32px rgba(0,0,0,.3),0 0 0 1px ${m.c}15`; el.style.borderLeftColor = m.c + "44"; }}
       onMouseLeave={e => { const el = e.currentTarget; el.style.transform = ""; el.style.borderColor = "rgba(255,255,255,.06)"; el.style.boxShadow = ""; el.style.borderLeftColor = "transparent"; }}
       onClick={onClick}
@@ -174,7 +173,10 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onIn
       )}
 
       <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${C.bd}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 11, color: C.m }}>{timeAgo(s.createdAt)}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 11, color: C.m }}>{timeAgo(s.createdAt)}</span>
+          {!own && onClick && <Icon n="chev" s={12} c={C.m} />}
+        </div>
         <div style={{ display: "flex", gap: 6 }} onClick={e => e.stopPropagation()}>
           {own ? (
             <>
@@ -210,11 +212,6 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onIn
               )}
               {onReport && (
                 <button onClick={() => onReport(s)} title={tr("action.report")} aria-label={tr("action.report")} style={{ padding: "4px 6px", borderRadius: 6, border: `1px solid ${C.bd}`, background: "transparent", cursor: "pointer", color: C.m, display: "flex", alignItems: "center", opacity: 0.5 }}><Icon n="inf" s={11} /></button>
-              )}
-              {s.status === "open" && onInterest && (
-                <button onClick={() => onInterest(s)} style={{ padding: "7px 16px", borderRadius: 8, border: `1px solid ${m.bd2}`, background: m.bg, cursor: "pointer", fontSize: 12, fontWeight: 600, color: m.c, display: "flex", alignItems: "center", gap: 4 }}>
-                  {tr("action.interested")} <Icon n="arr" s={12} />
-                </button>
               )}
             </>
           )}

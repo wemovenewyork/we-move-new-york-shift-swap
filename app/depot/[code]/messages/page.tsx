@@ -40,6 +40,7 @@ export default function MessagesPage() {
 
   const [depot, setDepot] = useState<Depot | null>(null);
   const [convos, setConvos] = useState<Conversation[]>([]);
+  const [searchQ, setSearchQ] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [clearAllConfirm, setClearAllConfirm] = useState(false);
@@ -104,81 +105,106 @@ export default function MessagesPage() {
       </div>
 
       <main id="main-content" style={{ maxWidth: 520, margin: "0 auto", padding: "16px 20px 90px" }}>
-        {convos.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "60px 20px", color: C.m }}>
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,.04)", border: `1px solid ${C.bd}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <Icon n="msg" s={28} c={C.m} />
+        {convos.length > 0 && (
+          <div style={{ marginBottom: 12, position: "relative" }}>
+            <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+              <Icon n="srch" s={15} c={C.m} />
             </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: C.white, marginBottom: 8 }}>No messages yet</div>
-            <div style={{ fontSize: 13, color: C.m }}>Your direct messages with other operators will appear here.</div>
-          </div>
-        ) : (
-          <div style={{ display: "grid", gap: 8 }}>
-            {convos.map((conv, idx) => {
-              const isReceived = conv.latestMessage.toUserId === user?.id;
-              const hasUnread = conv.unreadCount > 0;
-              const initials = conv.counterpart.firstName[0] + conv.counterpart.lastName[0];
-              const preview = (isReceived ? "" : "You: ") + conv.latestMessage.text;
-
-              const isTargeted = deleteTarget === conv.counterpartId;
-              return (
-                <div key={conv.counterpartId} style={{ animation: `fadeUp .4s cubic-bezier(.4,0,.2,1) ${idx * 0.05}s both` }}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
-                    <button
-                      onClick={() => { if (isTargeted) setDeleteTarget(null); else router.push(`/depot/${code}/messages/${conv.counterpartId}`); }}
-                      style={{
-                        flex: 1, textAlign: "left", border: "none", cursor: "pointer",
-                        background: isTargeted ? "rgba(255,71,87,.08)" : hasUnread ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.025)",
-                        backdropFilter: "blur(8px)", borderRadius: 14, padding: "14px 16px",
-                        boxShadow: isTargeted ? `inset 0 0 0 1px ${C.red}44` : hasUnread ? `inset 0 0 0 1px ${C.gold}33` : "inset 0 0 0 1px rgba(255,255,255,.06)",
-                        transition: "all .2s",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg,${C.navy},${C.blue})`, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${hasUnread ? C.gold + "55" : C.bd}`, flexShrink: 0, position: "relative" }}>
-                          <span style={{ fontSize: 14, fontWeight: 800, color: C.gold }}>{initials}</span>
-                          {hasUnread && (
-                            <span style={{ position: "absolute", top: -2, right: -2, width: 16, height: 16, borderRadius: "50%", background: C.red, border: "2px solid #010028", fontSize: 9, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              {conv.unreadCount > 9 ? "9+" : conv.unreadCount}
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-                            <span style={{ fontSize: 14, fontWeight: hasUnread ? 700 : 600, color: C.white }}>
-                              {conv.counterpart.firstName} {conv.counterpart.lastName}
-                            </span>
-                            <span style={{ fontSize: 11, color: C.m, flexShrink: 0, marginLeft: 8 }}>
-                              {timeAgo(conv.latestMessage.createdAt)}
-                            </span>
-                          </div>
-                          <p style={{ fontSize: 12, color: hasUnread ? "rgba(255,255,255,.75)" : C.m, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {preview}
-                          </p>
-                        </div>
-                        <Icon n="chev" s={14} c={hasUnread ? C.gold : C.m} />
-                      </div>
-                    </button>
-                    {isTargeted ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        <button onClick={() => deleteConvo(conv.counterpartId)} disabled={deleting} style={{ flex: 1, padding: "0 14px", borderRadius: 12, border: "none", background: C.red, color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700, opacity: deleting ? 0.6 : 1 }}>
-                          {deleting ? "…" : "Delete"}
-                        </button>
-                        <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, padding: "0 10px", borderRadius: 12, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setDeleteTarget(conv.counterpartId)} aria-label="Delete conversation" style={{ width: 36, borderRadius: 12, border: `1px solid rgba(255,71,87,.2)`, background: "rgba(255,71,87,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <Icon n="del" s={14} c={C.red} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            <input
+              value={searchQ}
+              onChange={e => setSearchQ(e.target.value)}
+              placeholder="Search conversations…"
+              style={{ paddingLeft: 36, paddingRight: 12, height: 40, fontSize: 13, borderRadius: 12 }}
+            />
           </div>
         )}
+        {(() => {
+          const q = searchQ.trim().toLowerCase();
+          const filtered = q
+            ? convos.filter(c =>
+                `${c.counterpart.firstName} ${c.counterpart.lastName}`.toLowerCase().includes(q) ||
+                c.latestMessage.text.toLowerCase().includes(q)
+              )
+            : convos;
+          if (convos.length === 0) return (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: C.m }}>
+              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,.04)", border: `1px solid ${C.bd}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                <Icon n="msg" s={28} c={C.m} />
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.white, marginBottom: 8 }}>No messages yet</div>
+              <div style={{ fontSize: 13, color: C.m }}>Your direct messages with other operators will appear here.</div>
+            </div>
+          );
+          if (filtered.length === 0) return (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: C.m, fontSize: 13 }}>No conversations match &ldquo;{searchQ}&rdquo;</div>
+          );
+          return (
+            <div style={{ display: "grid", gap: 8 }}>
+              {filtered.map((conv, idx) => {
+                const isReceived = conv.latestMessage.toUserId === user?.id;
+                const hasUnread = conv.unreadCount > 0;
+                const initials = conv.counterpart.firstName[0] + conv.counterpart.lastName[0];
+                const preview = (isReceived ? "" : "You: ") + conv.latestMessage.text;
+                const isTargeted = deleteTarget === conv.counterpartId;
+                return (
+                  <div key={conv.counterpartId} style={{ animation: `fadeUp .4s cubic-bezier(.4,0,.2,1) ${idx * 0.05}s both` }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                      <button
+                        onClick={() => { if (isTargeted) setDeleteTarget(null); else router.push(`/depot/${code}/messages/${conv.counterpartId}`); }}
+                        style={{
+                          flex: 1, textAlign: "left", border: "none", cursor: "pointer",
+                          background: isTargeted ? "rgba(255,71,87,.08)" : hasUnread ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.025)",
+                          backdropFilter: "blur(8px)", borderRadius: 14, padding: "14px 16px",
+                          boxShadow: isTargeted ? `inset 0 0 0 1px ${C.red}44` : hasUnread ? `inset 0 0 0 1px ${C.gold}33` : "inset 0 0 0 1px rgba(255,255,255,.06)",
+                          transition: "all .2s",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg,${C.navy},${C.blue})`, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${hasUnread ? C.gold + "55" : C.bd}`, flexShrink: 0, position: "relative" }}>
+                            <span style={{ fontSize: 14, fontWeight: 800, color: C.gold }}>{initials}</span>
+                            {hasUnread && (
+                              <span style={{ position: "absolute", top: -2, right: -2, width: 16, height: 16, borderRadius: "50%", background: C.red, border: "2px solid #010028", fontSize: 9, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                {conv.unreadCount > 9 ? "9+" : conv.unreadCount}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+                              <span style={{ fontSize: 14, fontWeight: hasUnread ? 700 : 600, color: C.white }}>
+                                {conv.counterpart.firstName} {conv.counterpart.lastName}
+                              </span>
+                              <span style={{ fontSize: 11, color: C.m, flexShrink: 0, marginLeft: 8 }}>
+                                {timeAgo(conv.latestMessage.createdAt)}
+                              </span>
+                            </div>
+                            <p style={{ fontSize: 12, color: hasUnread ? "rgba(255,255,255,.75)" : C.m, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {preview}
+                            </p>
+                          </div>
+                          <Icon n="chev" s={14} c={hasUnread ? C.gold : C.m} />
+                        </div>
+                      </button>
+                      {isTargeted ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          <button onClick={() => deleteConvo(conv.counterpartId)} disabled={deleting} style={{ flex: 1, padding: "0 14px", borderRadius: 12, border: "none", background: C.red, color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700, opacity: deleting ? 0.6 : 1 }}>
+                            {deleting ? "…" : "Delete"}
+                          </button>
+                          <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, padding: "0 10px", borderRadius: 12, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setDeleteTarget(conv.counterpartId)} aria-label="Delete conversation" style={{ width: 36, borderRadius: 12, border: `1px solid rgba(255,71,87,.2)`, background: "rgba(255,71,87,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon n="del" s={14} c={C.red} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
         <Footer />
       </main>
 

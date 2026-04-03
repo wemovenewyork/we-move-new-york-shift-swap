@@ -52,6 +52,9 @@ export default function AdminPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [bulkRole, setBulkRole] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [auditLogs, setAuditLogs] = useState<{ id: string; action: string; detail: string | null; createdAt: string; ip: string | null; admin: { firstName: string; lastName: string; email: string } }[]>([]);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<{
@@ -198,6 +201,29 @@ export default function AdminPage() {
     } finally { setBcSending(false); }
   };
 
+  const handleBulkRoleChange = async () => {
+    if (!bulkRole || selectedUsers.size === 0 || bulkBusy) return;
+    if (bulkRole === "depotRep") { showToast("Depot rep requires individual depot assignment"); return; }
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selectedUsers].map(userId =>
+        api.patch("/admin/users", { userId, role: bulkRole })
+      ));
+      setUsers(prev => prev.map(u => selectedUsers.has(u.id) ? { ...u, role: bulkRole as AdminUser["role"] } : u));
+      setSelectedUsers(new Set());
+      setBulkRole("");
+      showToast(`Role updated for ${selectedUsers.size} user${selectedUsers.size !== 1 ? "s" : ""}`);
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Bulk update failed");
+    } finally { setBulkBusy(false); }
+  };
+
+  const toggleSelectUser = (id: string) => setSelectedUsers(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+
   const handleDeleteUser = async (userId: string) => {
     setBusy(userId);
     try {
@@ -309,17 +335,63 @@ export default function AdminPage() {
           <div>
             <div style={{ marginBottom: 12 }}>
               <label htmlFor="admin-user-search" style={lb}>Search Users</label>
-              <input id="admin-user-search" value={userQ} onChange={e => setUserQ(e.target.value)} placeholder="Name or email..." style={{ height: 44 }} />
+              <input id="admin-user-search" value={userQ} onChange={e => { setUserQ(e.target.value); setSelectedUsers(new Set()); }} placeholder="Name or email..." style={{ height: 44 }} />
             </div>
+
+            {/* Bulk action toolbar */}
+            {!isSubAdmin && users.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, padding: "10px 14px", borderRadius: 12, background: selectedUsers.size > 0 ? PURPLE + "12" : "rgba(255,255,255,.03)", border: `1px solid ${selectedUsers.size > 0 ? PURPLE + "44" : C.bd}`, transition: "all .2s" }}>
+                <input
+                  type="checkbox"
+                  checked={selectedUsers.size === users.filter(u => u.id !== user.id).length && users.length > 0}
+                  onChange={e => setSelectedUsers(e.target.checked ? new Set(users.filter(u => u.id !== user.id).map(u => u.id)) : new Set())}
+                  style={{ width: 16, height: 16, cursor: "pointer", accentColor: PURPLE, flexShrink: 0 }}
+                />
+                <span style={{ fontSize: 12, color: selectedUsers.size > 0 ? PURPLE : C.m, fontWeight: 600, flex: 1 }}>
+                  {selectedUsers.size > 0 ? `${selectedUsers.size} selected` : "Select all"}
+                </span>
+                {selectedUsers.size > 0 && (
+                  <>
+                    <select
+                      value={bulkRole}
+                      onChange={e => setBulkRole(e.target.value)}
+                      style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${PURPLE}44`, background: PURPLE + "10", color: PURPLE, fontSize: 12, cursor: "pointer", appearance: "auto" }}
+                    >
+                      <option value="">— Set role —</option>
+                      <option value="operator">Operator</option>
+                      <option value="subAdmin">Sub Admin</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <button
+                      onClick={handleBulkRoleChange}
+                      disabled={!bulkRole || bulkBusy}
+                      style={{ padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer", background: PURPLE, color: "#fff", fontSize: 12, fontWeight: 700, opacity: !bulkRole || bulkBusy ? 0.5 : 1 }}
+                    >
+                      {bulkBusy ? "…" : "Apply"}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
             <div style={{ display: "grid", gap: 8 }}>
               {users.map(u => {
                 const rc = ROLE_COLORS[u.role] ?? C.m;
                 const isBusy = busy === u.id;
                 const isConfirming = deleteConfirm === u.id;
                 const isSelf = u.id === user.id;
+                const isSelected = selectedUsers.has(u.id);
                 return (
-                  <div key={u.id} style={{ background: isConfirming ? C.red + "08" : "rgba(255,255,255,.03)", borderRadius: 14, border: `1px solid ${isConfirming ? C.red + "33" : C.bd}`, padding: "14px 16px", transition: "all .2s" }}>
+                  <div key={u.id} style={{ background: isConfirming ? C.red + "08" : isSelected ? PURPLE + "08" : "rgba(255,255,255,.03)", borderRadius: 14, border: `1px solid ${isConfirming ? C.red + "33" : isSelected ? PURPLE + "44" : C.bd}`, padding: "14px 16px", transition: "all .2s" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      {!isSubAdmin && !isSelf && (
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectUser(u.id)}
+                          style={{ width: 16, height: 16, cursor: "pointer", accentColor: PURPLE, flexShrink: 0 }}
+                        />
+                      )}
                       <button onClick={() => openProfile(u.id)} style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", cursor: "pointer", padding: 0, flex: 1, minWidth: 0, textAlign: "left" }}>
                         <div style={{ width: 40, height: 40, borderRadius: "50%", background: rc + "18", border: `1px solid ${rc}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: rc, flexShrink: 0 }}>
                           {u.firstName[0]}{u.lastName[0]}

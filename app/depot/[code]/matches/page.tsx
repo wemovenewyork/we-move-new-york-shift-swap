@@ -157,7 +157,7 @@ export default function MatchesPage() {
         )}
       </main>
 
-      <BottomNav depotCode={code} active="browse" />
+      <BottomNav depotCode={code} active="matches" />
     </div>
   );
 }

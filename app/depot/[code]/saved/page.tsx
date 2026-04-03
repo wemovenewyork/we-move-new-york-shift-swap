@@ -13,7 +13,6 @@ import Footer from "@/components/ui/Footer";
 import BottomNav from "@/components/ui/BottomNav";
 import NotifIcon from "@/components/ui/NotifIcon";
 import InboxIcon from "@/components/ui/InboxIcon";
-import MsgModal from "@/components/ui/MsgModal";
 import Toast from "@/components/ui/Toast";
 
 export default function SavedSwapsPage() {
@@ -24,7 +23,6 @@ export default function SavedSwapsPage() {
 
   const [depot, setDepot] = useState<Depot | null>(null);
   const [swaps, setSwaps] = useState<Swap[]>([]);
-  const [msgModal, setMsgModal] = useState<Swap | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const showToast = useCallback((msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); }, []);
@@ -44,14 +42,6 @@ export default function SavedSwapsPage() {
       await api.del(`/swaps/${swap.id}/save`);
       setSwaps(prev => prev.filter(s => s.id !== swap.id));
     } catch { showToast("Failed to unsave"); }
-  };
-
-  const handleSend = async (swap: Swap, text: string) => {
-    try {
-      await api.post(`/users/${swap.userId}/message`, { text });
-      setMsgModal(null);
-      router.push(`/depot/${code}/messages/${swap.userId}`);
-    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Send failed"); }
   };
 
   if (!depot) return null;
@@ -90,8 +80,8 @@ export default function SavedSwapsPage() {
                 key={s.id}
                 swap={s}
                 user={user}
-                onInterest={() => setMsgModal(s)}
                 onToggleSave={handleToggleSave}
+                onClick={() => router.push(`/depot/${code}/swaps/${s.id}`)}
               />
             ))}
           </div>
@@ -99,15 +89,7 @@ export default function SavedSwapsPage() {
         <Footer />
       </main>
 
-      <BottomNav active="saved" depotCode={code} />
-
-      {msgModal && (
-        <MsgModal
-          swap={msgModal}
-          onClose={() => setMsgModal(null)}
-          onSend={(swap, text) => handleSend(swap, text)}
-        />
-      )}
+      <BottomNav active="browse" depotCode={code} />
       {toast && <Toast message={toast} />}
     </div>
   );

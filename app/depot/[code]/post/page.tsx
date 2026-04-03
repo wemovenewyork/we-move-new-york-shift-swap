@@ -252,7 +252,7 @@ export default function PostSwapPage() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10, marginTop: 8 }}>
-            <button onClick={() => router.push(`/depot/${code}`)} style={{ padding: 16, borderRadius: 14, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 15, fontWeight: 600 }}>Cancel</button>
+            <button onClick={() => router.back()} style={{ padding: 16, borderRadius: 14, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 15, fontWeight: 600 }}>Cancel</button>
             <button onClick={handleSubmit} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 15, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1 }}>
               {submitting ? "Saving..." : editId ? "Save Changes" : "Post Swap"}
             </button>
