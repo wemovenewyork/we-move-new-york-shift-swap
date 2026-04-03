@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useT } from "@/lib/i18n";
 import Icon from "./Icon";
 import RepBadge from "./RepBadge";
+import VerifiedBadge from "./VerifiedBadge";
 import { playClick, playPop } from "@/lib/sound";
 
 const ft = (t?: string | null) => {
@@ -58,6 +59,11 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
   const st2 = STC[s.status] ?? STC.open;
   const isNew = lastVisit && new Date(s.createdAt).getTime() > lastVisit - 3600000;
   const isRecentlyNew = Date.now() - new Date(s.createdAt).getTime() < 2 * 60 * 60 * 1000;
+
+  const urgentMs = 48 * 60 * 60 * 1000;
+  const swapDate = s.date || s.fromDate;
+  const msToSwap = swapDate ? new Date(swapDate + "T12:00").getTime() - Date.now() : null;
+  const isUrgent = msToSwap !== null && s.status === "open" && msToSwap < urgentMs && msToSwap > 0;
   const [tapped, setTapped] = useState(false);
   const tappedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -97,6 +103,9 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
           {isRecentlyNew && (
             <span style={{ background: "rgba(46,213,115,.15)", border: "1px solid rgba(46,213,115,.3)", color: "#2ED573", fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 8, letterSpacing: 1 }}>NEW</span>
           )}
+          {isUrgent && (
+            <span style={{ background: "rgba(251,146,60,.15)", border: "1px solid rgba(251,146,60,.3)", color: "#FB923C", fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 8, letterSpacing: 1 }}>⚡ URGENT</span>
+          )}
           <span style={{ padding: "4px 10px", borderRadius: 20, background: st2.bg, border: `1px solid ${st2.bd}`, fontSize: 9, fontWeight: 700, color: st2.c, textTransform: "uppercase", letterSpacing: 1, boxShadow: `0 0 8px ${st2.c}15`, display: "flex", alignItems: "center", gap: 4 }}>
             <span style={{ width: 5, height: 5, borderRadius: "50%", background: st2.c, animation: s.status === "open" ? "pulseGlow 2s ease infinite" : "none" }} />
             {statusLabel[s.status] ?? s.status}
@@ -105,7 +114,7 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 17, fontWeight: 700, color: C.white }}>{s.posterName}</span>
+        <span style={{ fontSize: 17, fontWeight: 700, color: C.white }}>{s.posterName}{s.posterVerified && <VerifiedBadge size={14} />}</span>
         <RepBadge rep={s.reputation} size="small" />
         {activeLabel && (
           <span style={{ fontSize: 9, fontWeight: 700, color: "#00C9A7", background: "rgba(0,201,167,.12)", border: "1px solid rgba(0,201,167,.25)", borderRadius: 6, padding: "2px 6px", letterSpacing: .5 }}>

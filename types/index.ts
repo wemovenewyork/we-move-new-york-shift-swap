@@ -38,6 +38,7 @@ export interface Swap {
   reputation?: RepScore;
   saved?: boolean;
   posterLastActive?: string | null;
+  posterVerified?: boolean;
 }
 
 export interface RepScore {
@@ -68,6 +69,7 @@ export interface User {
   inviteCodes?: { code: string; isValid: boolean }[];
   jobTitle?: string | null;
   depotSetAt?: string | null;
+  verifiedOperator?: boolean;
 }
 
 export interface Announcement {

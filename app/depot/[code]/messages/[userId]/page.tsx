@@ -43,6 +43,8 @@ export default function ThreadPage() {
   const [deleting, setDeleting] = useState(false);
   const [clearConvoConfirm, setClearConvoConfirm] = useState(false);
   const [clearingConvo, setClearingConvo] = useState(false);
+  const [blockConfirm, setBlockConfirm] = useState(false);
+  const [blocking, setBlocking] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -60,6 +62,7 @@ export default function ThreadPage() {
     if (!user || !counterpartId) return;
     api.get<ThreadMessage[]>(`/messages/thread?with=${counterpartId}`).then(msgs => {
       setMessages(msgs);
+      api.post(`/messages/thread/read`, { with: counterpartId }).catch(() => {});
       // Derive counterpart info from messages
       const cp = msgs.find(m => m.fromUserId === counterpartId)?.fromUser
         ?? msgs.find(m => m.toUserId === counterpartId)?.fromUser;
@@ -122,6 +125,18 @@ export default function ThreadPage() {
     } finally { setClearingConvo(false); }
   };
 
+  const blockUser = async () => {
+    setBlocking(true);
+    try {
+      await api.post(`/users/${counterpartId}/block`, {});
+      showToast("User blocked", "success");
+      setBlockConfirm(false);
+      router.push(`/depot/${code}/messages`);
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Block failed", "error");
+    } finally { setBlocking(false); }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
@@ -159,6 +174,14 @@ export default function ThreadPage() {
           <div style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{counterpartName}</div>
           <div style={{ fontSize: 10, color: C.m }}>Operator</div>
         </div>
+        <button
+          onClick={() => setBlockConfirm(true)}
+          aria-label="Block user"
+          title="Block user"
+          style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.04)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: C.m }}><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        </button>
         {messages.length > 0 && (
           <button
             onClick={() => setClearConvoConfirm(true)}
@@ -213,6 +236,12 @@ export default function ThreadPage() {
                 >
                   {msg.text}
                 </div>
+
+                {isMine && !isTargeted && (
+                  <div style={{ fontSize: 10, color: msg.read ? "#60A5FA" : C.m }}>
+                    {msg.read ? "✓✓" : "✓"}
+                  </div>
+                )}
 
                 {isTargeted && (
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -314,6 +343,23 @@ export default function ThreadPage() {
               <button onClick={() => setClearConvoConfirm(false)} style={{ padding: 13, borderRadius: 12, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>Cancel</button>
               <button onClick={clearConversation} disabled={clearingConvo} style={{ padding: 13, borderRadius: 12, border: "none", background: C.red, color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 700, opacity: clearingConvo ? 0.6 : 1 }}>
                 {clearingConvo ? "Deleting…" : "Delete All"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {blockConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 500, padding: 20 }} onClick={() => setBlockConfirm(false)}>
+          <div style={{ background: "rgb(4,3,45)", borderRadius: 20, padding: "24px 20px", maxWidth: 360, width: "100%", border: `1px solid rgba(255,255,255,.08)` }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.white, marginBottom: 8 }}>Block this user?</div>
+            <div style={{ fontSize: 13, color: C.m, lineHeight: 1.5, marginBottom: 20 }}>
+              Block {counterpartName}? They won&apos;t be able to message you.
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <button onClick={() => setBlockConfirm(false)} style={{ padding: 13, borderRadius: 12, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>Cancel</button>
+              <button onClick={blockUser} disabled={blocking} style={{ padding: 13, borderRadius: 12, border: "none", background: C.red, color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 700, opacity: blocking ? 0.6 : 1 }}>
+                {blocking ? "Blocking…" : "Block User"}
               </button>
             </div>
           </div>

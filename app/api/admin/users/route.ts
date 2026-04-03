@@ -44,7 +44,7 @@ export async function PATCH(req: NextRequest) {
   const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
   if (!dbUser || dbUser.role !== "admin") return err("Forbidden", 403);
 
-  const { userId, role, depotId, suspendedUntil } = await req.json();
+  const { userId, role, depotId, suspendedUntil, verifiedOperator } = await req.json();
   if (!userId) return err("userId required", 400);
   if (userId === user.userId) return err("Cannot change your own role", 400);
 
@@ -66,6 +66,7 @@ export async function PATCH(req: NextRequest) {
         depotSetAt: new Date(), // Admin resets the lock timer
       }),
       ...(suspendedUntil !== undefined && { suspendedUntil: new Date(suspendedUntil) }),
+      ...(verifiedOperator !== undefined && { verifiedOperator }),
     },
     select: { id: true, firstName: true, lastName: true, role: true, depotId: true, suspendedUntil: true, depot: { select: { name: true, code: true } } },
   });

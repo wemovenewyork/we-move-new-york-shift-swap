@@ -219,6 +219,32 @@ export default function AdminPage() {
     } finally { setBulkBusy(false); }
   };
 
+  const handleBulkSuspend = async () => {
+    if (selectedUsers.size === 0 || bulkBusy) return;
+    setBulkBusy(true);
+    const suspendedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    try {
+      await Promise.all([...selectedUsers].map(userId =>
+        api.patch("/admin/users", { userId, suspendedUntil })
+      ));
+      setUsers(prev => prev.map(u => selectedUsers.has(u.id) ? { ...u, suspendedUntil } : u));
+      setSelectedUsers(new Set());
+      showToast(`Suspended ${selectedUsers.size} user${selectedUsers.size !== 1 ? "s" : ""} for 7 days`);
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Bulk suspend failed");
+    } finally { setBulkBusy(false); }
+  };
+
+  const handleBulkExport = () => {
+    const selected = users.filter(u => selectedUsers.has(u.id));
+    const data = selected.map(u => ({ id: u.id, firstName: u.firstName, lastName: u.lastName, email: u.email ?? "", role: u.role, depot: u.depot?.name ?? "", lastActiveAt: u.lastActiveAt, suspendedUntil: u.suspendedUntil }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `wmny-users-export-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const toggleSelectUser = (id: string) => setSelectedUsers(prev => {
     const next = new Set(prev);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -381,6 +407,21 @@ export default function AdminPage() {
                       style={{ padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer", background: PURPLE, color: "#fff", fontSize: 12, fontWeight: 700, opacity: !bulkRole || bulkBusy ? 0.5 : 1 }}
                     >
                       {bulkBusy ? "…" : "Apply"}
+                    </button>
+                    <button
+                      onClick={handleBulkSuspend}
+                      disabled={bulkBusy}
+                      title="Suspend selected users for 7 days"
+                      style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.gold}44`, background: C.gold + "10", color: C.gold, cursor: "pointer", fontSize: 12, fontWeight: 700, opacity: bulkBusy ? 0.5 : 1, whiteSpace: "nowrap" }}
+                    >
+                      Suspend 7d
+                    </button>
+                    <button
+                      onClick={handleBulkExport}
+                      title="Export selected users as JSON"
+                      style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.m, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}
+                    >
+                      Export
                     </button>
                   </>
                 )}

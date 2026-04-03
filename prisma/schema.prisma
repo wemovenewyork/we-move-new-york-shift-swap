@@ -52,6 +52,7 @@ model User {
   lastActiveAt       DateTime? @map("last_active_at")
   jobTitle          String?   @map("job_title")
   depotSetAt        DateTime? @map("depot_set_at")
+  verifiedOperator  Boolean   @default(false) @map("verified_operator")
 
   @@map("users")
 }

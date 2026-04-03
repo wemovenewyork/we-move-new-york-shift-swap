@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
     inviteCodes,
     jobTitle: dbUser.jobTitle,
     depotSetAt: dbUser.depotSetAt?.toISOString() ?? null,
+    verifiedOperator: dbUser.verifiedOperator,
   });
 }
 
@@ -54,7 +55,7 @@ export async function PUT(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
-  const { firstName, lastName, email, language, depotId, jobTitle } = await req.json();
+  const { firstName, lastName, email, language, depotId, jobTitle, avatarUrl } = await req.json();
 
   if (email) {
     const existing = await prisma.user.findFirst({
@@ -87,6 +88,7 @@ export async function PUT(req: NextRequest) {
       ...(email && { email: email.toLowerCase().trim() }),
       ...(language && { language }),
       ...(jobTitle !== undefined && { jobTitle }),
+      ...(avatarUrl !== undefined && { avatarUrl }),
       ...(depotId !== undefined && {
         depotId,
         ...(depotId ? { depotSetAt: new Date() } : {}),

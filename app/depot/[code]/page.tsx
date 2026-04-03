@@ -13,6 +13,7 @@ import NotifIcon from "@/components/ui/NotifIcon";
 import PushBanner from "@/components/ui/PushBanner";
 import { playClick, isMuted, toggleMute } from "@/lib/sound";
 import OfflineBanner from "@/components/ui/OfflineBanner";
+import FeedbackButton from "@/components/ui/FeedbackButton";
 import { t } from "@/lib/i18n";
 
 export default function ActionPage() {
@@ -23,6 +24,7 @@ export default function ActionPage() {
   const [depot, setDepot] = useState<Depot | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [unread, setUnread] = useState(0);
+  const [stats, setStats] = useState<{ completed: number; active: number } | null>(null);
   const [logoSpin, setLogoSpin] = useState(false);
   const [muted, setMuted] = useState(() => typeof window !== "undefined" ? isMuted() : false);
   const [showTip, setShowTip] = useState(() => typeof window !== "undefined" && !localStorage.getItem("depot-action-seen"));
@@ -37,6 +39,7 @@ export default function ActionPage() {
     if (!code) return;
     api.get<Depot>(`/depots/${code}`).then(setDepot).catch(() => router.replace("/depots"));
     api.get<{ unreadCount: number }>("/messages").then(d => setUnread(d.unreadCount)).catch(() => {});
+    api.get<{ completed: number; active: number }>(`/depots/${code}/stats`).then(setStats).catch(() => {});
   }, [code, router]);
 
   if (!depot) return null;
@@ -117,6 +120,16 @@ export default function ActionPage() {
             <button onClick={() => { localStorage.setItem("depot-action-seen", "1"); setShowTip(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 18, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
           </div>
         )}
+        {stats && (
+          <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: 12, marginBottom: 16 }}>
+            <div style={{ background: "rgba(255,255,255,.04)", border: `1px solid ${C.bd}`, borderRadius: 20, padding: "6px 14px", fontSize: 11, color: C.m, fontWeight: 600 }}>
+              <span style={{ color: C.gold }}>{stats.completed}</span> completed this month
+            </div>
+            <div style={{ background: "rgba(255,255,255,.04)", border: `1px solid ${C.bd}`, borderRadius: 20, padding: "6px 14px", fontSize: 11, color: C.m, fontWeight: 600 }}>
+              <span style={{ color: C.gold }}>{stats.active}</span> active swaps
+            </div>
+          </div>
+        )}
         <div style={{ display: "grid", gap: 10, width: "100%" }}>
           {options.map(o => (
             <button
@@ -143,6 +156,7 @@ export default function ActionPage() {
           ))}
         </div>
       </main>
+      <FeedbackButton />
     </div>
   );
 }

@@ -21,6 +21,7 @@ import InboxIcon from "@/components/ui/InboxIcon";
 import FirstSwapBanner from "@/components/ui/FirstSwapBanner";
 import CountUp from "@/components/ui/CountUp";
 import OfflineBanner from "@/components/ui/OfflineBanner";
+import FeedbackButton from "@/components/ui/FeedbackButton";
 import { playClick } from "@/lib/sound";
 
 export default function BrowsePage() {
@@ -69,6 +70,8 @@ export default function BrowsePage() {
   const [sortBy, setSortBy] = useState("newest");
   const [quickF, setQuickF] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [runFilter, setRunFilter] = useState("");
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const showToast = useCallback((msg: string, type?: "success" | "error" | "info") => {
     setToast({ message: msg, type });
@@ -143,8 +146,24 @@ export default function BrowsePage() {
       const we = weekEnd.toISOString().split("T")[0];
       r = r.filter(s => s.date && s.date <= we);
     }
+    if (runFilter) {
+      const rf = runFilter.toLowerCase();
+      r = r.filter(s =>
+        (s.run && s.run.toLowerCase().includes(rf)) ||
+        (s.route && s.route.toLowerCase().includes(rf))
+      );
+    }
     return r;
-  }, [swaps, quickF]);
+  }, [swaps, quickF, runFilter]);
+
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && nextCursor && !loadingMore) loadMore();
+    }, { rootMargin: "200px" });
+    obs.observe(sentinelRef.current);
+    return () => obs.disconnect();
+  }, [nextCursor, loadingMore]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = (id: string) => {
     setConfirm({ title: "Delete Swap", text: "Are you sure? This cannot be undone.", action: async () => {
@@ -314,13 +333,23 @@ export default function BrowsePage() {
         </div>
 
         {showFilters && (
-          <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
-            <span style={{ fontSize: 11, color: C.m, flexShrink: 0 }}>Date:</span>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ height: 36, fontSize: 12, flex: 1, padding: "8px 12px" }} />
-            <span style={{ fontSize: 11, color: C.m }}>to</span>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ height: 36, fontSize: 12, flex: 1, padding: "8px 12px" }} />
-            {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.bd}`, background: C.s, color: C.m, cursor: "pointer", fontSize: 10, flexShrink: 0 }}>Clear</button>}
-          </div>
+          <>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
+              <span style={{ fontSize: 11, color: C.m, flexShrink: 0 }}>Date:</span>
+              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ height: 36, fontSize: 12, flex: 1, padding: "8px 12px" }} />
+              <span style={{ fontSize: 11, color: C.m }}>to</span>
+              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ height: 36, fontSize: 12, flex: 1, padding: "8px 12px" }} />
+              {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.bd}`, background: C.s, color: C.m, cursor: "pointer", fontSize: 10, flexShrink: 0 }}>Clear</button>}
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <input
+                value={runFilter}
+                onChange={e => setRunFilter(e.target.value)}
+                placeholder="Filter by run # or route…"
+                style={{ height: 36, fontSize: 12, padding: "8px 12px", width: "100%" }}
+              />
+            </div>
+          </>
         )}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 10 }}>
@@ -362,7 +391,7 @@ export default function BrowsePage() {
               <div style={{ fontSize: 15, fontWeight: 600, color: C.white, marginBottom: 8 }}>No swaps match your filters</div>
               <div style={{ fontSize: 13, color: C.m, marginBottom: 16 }}>Try adjusting your search or filter criteria.</div>
               <button
-                onClick={() => { setCat("all"); setQ(""); setSf("open"); setDateFrom(""); setDateTo(""); setSortBy("newest"); setQuickF(""); }}
+                onClick={() => { setCat("all"); setQ(""); setSf("open"); setDateFrom(""); setDateTo(""); setSortBy("newest"); setQuickF(""); setRunFilter(""); }}
                 style={{ padding: "10px 20px", borderRadius: 12, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", fontSize: 13, fontWeight: 600 }}
               >
                 Clear filters
@@ -383,14 +412,13 @@ export default function BrowsePage() {
               />
             </div>
           ))}
-          {nextCursor && (
-            <button
-              onClick={loadMore}
-              disabled={loadingMore}
-              style={{ marginTop: 8, padding: "14px 0", borderRadius: 14, border: `1px solid ${C.bd}`, background: C.s, color: C.m, cursor: loadingMore ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 600, opacity: loadingMore ? 0.6 : 1 }}
-            >
-              {loadingMore ? "Loading…" : "Load More"}
-            </button>
+          {loadingMore && (
+            <div style={{ textAlign: "center", padding: 20, color: C.m, fontSize: 13 }}>
+              <div style={{ display: "inline-block", width: 20, height: 20, borderRadius: "50%", border: `2px solid ${C.bd}`, borderTopColor: C.gold, animation: "rotateLogo .8s linear infinite" }} />
+            </div>
+          )}
+          {nextCursor && !loadingMore && (
+            <div ref={sentinelRef} style={{ height: 1 }} />
           )}
         </div>
         <Footer />
@@ -408,6 +436,8 @@ export default function BrowsePage() {
           onClose={() => setPostAnnModal(false)}
         />
       )}
+
+      <FeedbackButton />
 
       {/* DM modal for flexible operator */}
       {dmTarget && (

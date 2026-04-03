@@ -44,6 +44,17 @@ export default function SwapDetailPage() {
   const showToast = useCallback((msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); }, []);
   const agreementRef = useRef<HTMLDivElement>(null);
 
+  const handleShare = async () => {
+    const url = window.location.href;
+    const text = `Check out this swap: ${swap?.details?.slice(0, 80)}`;
+    if (navigator.share) {
+      await navigator.share({ title: "We Move NY Swap", text, url }).catch(() => {});
+    } else {
+      await navigator.clipboard.writeText(url).catch(() => {});
+      showToast("Link copied!");
+    }
+  };
+
   useEffect(() => {
     if (agreeLoaded && agreement && agreementRef.current) {
       setTimeout(() => agreementRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 150);
@@ -126,6 +137,12 @@ export default function SwapDetailPage() {
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.8)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,.06)", padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={() => router.push(`/depot/${code}/swaps`)} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid " + C.bd, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="back" s={16} /></button>
         <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.white }}>Swap Details</div>
+        <button onClick={handleShare} aria-label="Share this swap" style={{ width: 32, height: 32, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.m, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
+        </button>
         {!own && <button onClick={handleReport} aria-label="Report this swap" style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid " + C.bd, background: C.s, color: C.m, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="inf" s={14} /></button>}
       </div>
 
