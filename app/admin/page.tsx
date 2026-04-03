@@ -76,9 +76,9 @@ export default function AdminPage() {
   }, [user]);
 
   useEffect(() => {
-    if (tab !== "users" || !user || user.role !== "admin") return;
+    if ((tab !== "users" && !(tab === "broadcast" && bcTarget === "user")) || !user || user.role !== "admin") return;
     api.get<AdminUser[]>(`/admin/users${userQ ? `?q=${encodeURIComponent(userQ)}` : ""}`).then(setUsers).catch(() => {});
-  }, [tab, userQ, user]);
+  }, [tab, userQ, user, bcTarget]);
 
   useEffect(() => {
     if (tab !== "invites" || !user || user.role !== "admin") return;
