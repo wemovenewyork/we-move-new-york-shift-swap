@@ -34,3 +34,24 @@ export async function GET(req: NextRequest) {
 
   return ok(messages);
 }
+
+// DELETE /api/messages/thread?with=userId  → delete all messages in a thread
+export async function DELETE(req: NextRequest) {
+  let user;
+  try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
+
+  const url = new URL(req.url);
+  const withUserId = url.searchParams.get("with");
+  if (!withUserId) return err("'with' query param required", 400);
+
+  const result = await prisma.message.deleteMany({
+    where: {
+      OR: [
+        { fromUserId: user.userId, toUserId: withUserId },
+        { fromUserId: withUserId, toUserId: user.userId },
+      ],
+    },
+  });
+
+  return ok({ deleted: result.count });
+}

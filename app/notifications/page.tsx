@@ -53,6 +53,8 @@ export default function NotificationsPage() {
   const [unread, setUnread] = useState(0);
   const [fetching, setFetching] = useState(true);
   const [markingRead, setMarkingRead] = useState(false);
+  const [clearAllConfirm, setClearAllConfirm] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -69,6 +71,25 @@ export default function NotificationsPage() {
     if (!user) return;
     load();
   }, [user, load]);
+
+  const deleteNotif = (id: string) => {
+    setNotifs(prev => prev.filter(n => n.id !== id));
+    setUnread(prev => {
+      const wasUnread = notifs.find(n => n.id === id)?.read === false;
+      return wasUnread ? Math.max(0, prev - 1) : prev;
+    });
+    api.del(`/notifications/${id}`).catch(() => {});
+  };
+
+  const clearAll = async () => {
+    setClearingAll(true);
+    try {
+      await api.del("/notifications");
+      setNotifs([]);
+      setUnread(0);
+      setClearAllConfirm(false);
+    } catch { /* non-fatal */ } finally { setClearingAll(false); }
+  };
 
   const markAllRead = async () => {
     if (unread === 0 || markingRead) return;
@@ -128,15 +149,18 @@ export default function NotificationsPage() {
           </div>
         </div>
 
-        {unread > 0 && (
-          <button
-            onClick={markAllRead}
-            disabled={markingRead}
-            style={{ fontSize: 11, fontWeight: 600, color: C.gold, background: "transparent", border: "none", cursor: "pointer", padding: "4px 8px", opacity: markingRead ? 0.5 : 1 }}
-          >
-            Mark all read
-          </button>
-        )}
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {unread > 0 && (
+            <button onClick={markAllRead} disabled={markingRead} style={{ fontSize: 11, fontWeight: 600, color: C.gold, background: "transparent", border: "none", cursor: "pointer", padding: "4px 8px", opacity: markingRead ? 0.5 : 1 }}>
+              Mark all read
+            </button>
+          )}
+          {notifs.length > 0 && (
+            <button onClick={() => setClearAllConfirm(true)} aria-label="Clear all notifications" style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid rgba(255,71,87,.3)`, background: "rgba(255,71,87,.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon n="del" s={14} c={C.red} />
+            </button>
+          )}
+        </div>
       </div>
 
       <main id="main-content" style={{ maxWidth: 520, margin: "0 auto", padding: "16px 20px 40px" }}>
@@ -197,9 +221,16 @@ export default function NotificationsPage() {
                       </p>
                     </div>
 
-                    {!n.read && (
-                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: C.red, flexShrink: 0, marginTop: 6 }} />
-                    )}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+                      {!n.read && <div style={{ width: 7, height: 7, borderRadius: "50%", background: C.red }} />}
+                      <button
+                        onClick={e => { e.stopPropagation(); deleteNotif(n.id); }}
+                        aria-label="Delete notification"
+                        style={{ width: 24, height: 24, borderRadius: 6, border: `1px solid rgba(255,71,87,.25)`, background: "rgba(255,71,87,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                      >
+                        <Icon n="del" s={12} c={C.red} />
+                      </button>
+                    </div>
                   </div>
                 </button>
               );
@@ -207,6 +238,23 @@ export default function NotificationsPage() {
           </div>
         )}
       </main>
+
+      {clearAllConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 500, padding: 20 }} onClick={() => setClearAllConfirm(false)}>
+          <div style={{ background: "rgb(4,3,45)", borderRadius: 20, padding: "24px 20px", maxWidth: 360, width: "100%", border: `1px solid rgba(255,255,255,.08)` }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.white, marginBottom: 8 }}>Clear all notifications?</div>
+            <div style={{ fontSize: 13, color: C.m, lineHeight: 1.5, marginBottom: 20 }}>
+              All {notifs.length} notification{notifs.length !== 1 ? "s" : ""} will be permanently deleted.
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <button onClick={() => setClearAllConfirm(false)} style={{ padding: 13, borderRadius: 12, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>Cancel</button>
+              <button onClick={clearAll} disabled={clearingAll} style={{ padding: 13, borderRadius: 12, border: "none", background: C.red, color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 700, opacity: clearingAll ? 0.6 : 1 }}>
+                {clearingAll ? "Clearing…" : "Clear All"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes fadeUp {

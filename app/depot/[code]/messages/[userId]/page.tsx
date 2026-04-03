@@ -41,6 +41,8 @@ export default function ThreadPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [clearConvoConfirm, setClearConvoConfirm] = useState(false);
+  const [clearingConvo, setClearingConvo] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -106,6 +108,18 @@ export default function ThreadPage() {
     } finally { setSending(false); }
   };
 
+  const clearConversation = async () => {
+    setClearingConvo(true);
+    try {
+      await api.del(`/messages/thread?with=${counterpartId}`);
+      setMessages([]);
+      setClearConvoConfirm(false);
+      showToast("Conversation deleted");
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Delete failed");
+    } finally { setClearingConvo(false); }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
@@ -143,6 +157,15 @@ export default function ThreadPage() {
           <div style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{counterpartName}</div>
           <div style={{ fontSize: 10, color: C.m }}>Operator</div>
         </div>
+        {messages.length > 0 && (
+          <button
+            onClick={() => setClearConvoConfirm(true)}
+            aria-label="Delete conversation"
+            style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid rgba(255,71,87,.3)`, background: "rgba(255,71,87,.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+          >
+            <Icon n="del" s={15} c={C.red} />
+          </button>
+        )}
       </div>
 
       {/* Messages */}
@@ -275,6 +298,23 @@ export default function ThreadPage() {
       {toast && (
         <div style={{ position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)", background: "rgba(1,0,40,.95)", backdropFilter: "blur(16px)", border: `1px solid ${C.bd}`, borderRadius: 14, padding: "10px 18px", fontSize: 13, fontWeight: 600, color: C.white, zIndex: 500 }}>
           {toast}
+        </div>
+      )}
+
+      {clearConvoConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 500, padding: 20 }} onClick={() => setClearConvoConfirm(false)}>
+          <div style={{ background: "rgb(4,3,45)", borderRadius: 20, padding: "24px 20px", maxWidth: 360, width: "100%", border: `1px solid rgba(255,255,255,.08)` }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.white, marginBottom: 8 }}>Delete conversation?</div>
+            <div style={{ fontSize: 13, color: C.m, lineHeight: 1.5, marginBottom: 20 }}>
+              All messages with {counterpartName} will be permanently deleted. This cannot be undone.
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <button onClick={() => setClearConvoConfirm(false)} style={{ padding: 13, borderRadius: 12, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>Cancel</button>
+              <button onClick={clearConversation} disabled={clearingConvo} style={{ padding: 13, borderRadius: 12, border: "none", background: C.red, color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 700, opacity: clearingConvo ? 0.6 : 1 }}>
+                {clearingConvo ? "Deleting…" : "Delete All"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

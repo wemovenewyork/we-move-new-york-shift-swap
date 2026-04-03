@@ -20,3 +20,13 @@ export async function GET(req: NextRequest) {
 
   return ok({ notifications, unreadCount });
 }
+
+// DELETE /api/notifications  → delete all notifications for the user
+export async function DELETE(req: NextRequest) {
+  let user;
+  try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
+
+  const result = await prisma.notification.deleteMany({ where: { userId: user.userId } });
+
+  return ok({ deleted: result.count });
+}
