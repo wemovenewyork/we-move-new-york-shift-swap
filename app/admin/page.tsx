@@ -53,6 +53,15 @@ export default function AdminPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [auditLogs, setAuditLogs] = useState<{ id: string; action: string; detail: string | null; createdAt: string; ip: string | null; admin: { firstName: string; lastName: string; email: string } }[]>([]);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [profileData, setProfileData] = useState<{
+    id: string; firstName: string; lastName: string; email: string; role: string;
+    createdAt: string; depot: { name: string; code: string; borough: string } | null;
+    flexibleMode: boolean; reputation: { score: number; label: string; completed: number; cancelled: number; noShow: number };
+    swapCount: number; messageCount: number;
+  } | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
   const [bcTarget, setBcTarget] = useState<"all" | "user" | "depot">("all");
   const [bcUserId, setBcUserId] = useState("");
   const [bcDepotCode, setBcDepotCode] = useState("");
@@ -155,6 +164,17 @@ export default function AdminPage() {
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Failed");
     } finally { setBusy(null); }
+  };
+
+  const openProfile = async (userId: string) => {
+    setProfileUserId(userId);
+    setProfileData(null);
+    setProfileLoading(true);
+    try {
+      const data = await api.get<typeof profileData>(`/admin/users/${userId}`);
+      setProfileData(data);
+    } catch { showToast("Failed to load profile"); setProfileUserId(null); }
+    finally { setProfileLoading(false); }
   };
 
   const handleBroadcast = async () => {
@@ -295,14 +315,16 @@ export default function AdminPage() {
                 return (
                   <div key={u.id} style={{ background: isConfirming ? C.red + "08" : "rgba(255,255,255,.03)", borderRadius: 14, border: `1px solid ${isConfirming ? C.red + "33" : C.bd}`, padding: "14px 16px", transition: "all .2s" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: rc + "18", border: `1px solid ${rc}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: rc, flexShrink: 0 }}>
-                        {u.firstName[0]}{u.lastName[0]}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{u.firstName} {u.lastName}</div>
-                        <div style={{ fontSize: 11, color: C.m, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</div>
-                        {u.depot && <div style={{ fontSize: 10, color: C.gold, marginTop: 2 }}>{u.depot.name}</div>}
-                      </div>
+                      <button onClick={() => openProfile(u.id)} style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", cursor: "pointer", padding: 0, flex: 1, minWidth: 0, textAlign: "left" }}>
+                        <div style={{ width: 40, height: 40, borderRadius: "50%", background: rc + "18", border: `1px solid ${rc}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: rc, flexShrink: 0 }}>
+                          {u.firstName[0]}{u.lastName[0]}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{u.firstName} {u.lastName}</div>
+                          <div style={{ fontSize: 11, color: C.m, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</div>
+                          {u.depot && <div style={{ fontSize: 10, color: C.gold, marginTop: 2 }}>{u.depot.name}</div>}
+                        </div>
+                      </button>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
                         <select
                           value={u.role}
@@ -523,6 +545,92 @@ export default function AdminPage() {
           </div>
         )}
       </main>
+
+      {/* User Profile Modal */}
+      {profileUserId && (
+        <div
+          onClick={() => { setProfileUserId(null); setProfileData(null); }}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ width: "100%", maxWidth: 520, background: "#010028", border: `1px solid ${C.bd}`, borderRadius: "20px 20px 0 0", padding: "24px 20px 36px", maxHeight: "80vh", overflowY: "auto" }}
+          >
+            {/* Handle */}
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: "rgba(255,255,255,.15)", margin: "0 auto 20px" }} />
+
+            {profileLoading && (
+              <div style={{ display: "grid", gap: 10 }}>
+                {[80, 60, 60, 40].map((w, i) => <div key={i} className="skeleton" style={{ height: w, borderRadius: 12 }} />)}
+              </div>
+            )}
+
+            {profileData && (() => {
+              const rc = ROLE_COLORS[profileData.role] ?? C.m;
+              return (
+                <div style={{ display: "grid", gap: 16 }}>
+                  {/* Header */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <div style={{ width: 56, height: 56, borderRadius: "50%", background: rc + "18", border: `2px solid ${rc}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: rc, flexShrink: 0 }}>
+                      {profileData.firstName[0]}{profileData.lastName[0]}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 17, fontWeight: 800, color: C.white }}>{profileData.firstName} {profileData.lastName}</div>
+                      <div style={{ fontSize: 12, color: C.m, marginTop: 2 }}>{profileData.email}</div>
+                      <span style={{ display: "inline-block", marginTop: 4, padding: "2px 10px", borderRadius: 8, background: rc + "18", border: `1px solid ${rc}33`, fontSize: 11, fontWeight: 700, color: rc }}>
+                        {profileData.role}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Stats row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                    {[
+                      { l: "Swaps Posted", v: profileData.swapCount, c: C.blue },
+                      { l: "Messages Sent", v: profileData.messageCount, c: "#C084FC" },
+                      { l: "Rep Score", v: profileData.reputation.score, c: C.gold },
+                    ].map(s => (
+                      <div key={s.l} style={{ padding: "12px 10px", borderRadius: 12, background: s.c + "12", border: `1px solid ${s.c}22`, textAlign: "center" }}>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: s.c }}>{s.v}</div>
+                        <div style={{ fontSize: 9, color: C.m, textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>{s.l}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Details */}
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {profileData.depot && (
+                      <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: `1px solid ${C.bd}`, display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: 12, color: C.m }}>Depot</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: C.white }}>{profileData.depot.name} · {profileData.depot.borough}</span>
+                      </div>
+                    )}
+                    <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: `1px solid ${C.bd}`, display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 12, color: C.m }}>Joined</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: C.white }}>{new Date(profileData.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
+                    </div>
+                    <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: `1px solid ${C.bd}`, display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 12, color: C.m }}>Reputation</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: C.gold }}>{profileData.reputation.label} · {profileData.reputation.completed} completed</span>
+                    </div>
+                    <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: `1px solid ${C.bd}`, display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 12, color: C.m }}>Flexible Mode</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: profileData.flexibleMode ? "#00C9A7" : C.m }}>{profileData.flexibleMode ? "On" : "Off"}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => { setProfileUserId(null); setProfileData(null); }}
+                    style={{ padding: "12px", borderRadius: 12, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 13, fontWeight: 600 }}
+                  >
+                    Close
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* Toast */}
       {toast && (
