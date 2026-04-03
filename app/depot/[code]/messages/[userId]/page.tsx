@@ -37,6 +37,7 @@ export default function ThreadPage() {
   const [counterpart, setCounterpart] = useState<CounterpartInfo | null>(null);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -97,6 +98,8 @@ export default function ThreadPage() {
       const newMsg = await api.post<ThreadMessage>(`/users/${counterpartId}/message`, { text: trimmed });
       setMessages(prev => [...prev, newMsg]);
       setText("");
+      setSent(true);
+      setTimeout(() => setSent(false), 1500);
       inputRef.current?.focus();
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Failed to send");
@@ -230,19 +233,24 @@ export default function ThreadPage() {
           />
           <button
             onClick={sendMessage}
-            disabled={!text.trim() || sending}
+            disabled={!text.trim() || sending || sent}
             aria-label="Send message"
             style={{
               width: 44, height: 44, borderRadius: 14, border: "none", cursor: "pointer",
-              background: text.trim() && !sending
-                ? `linear-gradient(135deg,${C.gold},${C.gold}cc)`
-                : "rgba(255,255,255,.06)",
-              color: text.trim() && !sending ? C.bg : C.m,
+              background: sent
+                ? "rgba(0,201,167,.18)"
+                : text.trim() && !sending
+                  ? `linear-gradient(135deg,${C.gold},${C.gold}cc)`
+                  : "rgba(255,255,255,.06)",
+              color: sent ? "#00C9A7" : text.trim() && !sending ? C.bg : C.m,
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0, transition: "all .2s",
             }}
           >
-            <Icon n="arr" s={18} c={text.trim() && !sending ? C.bg : C.m} />
+            {sent
+              ? <Icon n="chk" s={18} c="#00C9A7" />
+              : <Icon n="arr" s={18} c={text.trim() && !sending ? C.bg : C.m} />
+            }
           </button>
         </div>
         <div style={{ fontSize: 10, color: text.length > 450 ? C.red : C.m, textAlign: "right", marginTop: 4 }}>
