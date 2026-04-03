@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
 import { Depot } from "@/types";
 import { C } from "@/constants/colors";
+import { analytics } from "@/lib/analytics";
 
 const JOB_TITLES = ["Bus Operator", "Dispatcher", "Maintainer", "Cleaner", "Station Agent", "Train Operator", "Conductor", "Other"];
 const BOROUGH_ORDER = ["Manhattan", "Brooklyn", "Bronx", "Queens", "Staten Island"];
@@ -42,6 +43,7 @@ export default function SetupProfilePage() {
       await api.put("/users/me", { jobTitle, depotId });
       await refreshUser();
       const selected = depots.find(d => d.id === depotId);
+      analytics.profileSetupCompleted(selected?.code ?? "");
       router.replace(selected ? `/depot/${selected.code}` : "/depots");
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Save failed");

@@ -7,6 +7,7 @@ import { C } from "@/constants/colors";
 import Icon from "./Icon";
 import Confetti from "./Confetti";
 import { playClick, playChime } from "@/lib/sound";
+import { analytics } from "@/lib/analytics";
 
 interface Props {
   swap: Swap;
@@ -63,6 +64,7 @@ export default function AgreementPanel({ swap, agreement, isOwner, currentUserId
       if (updated.status === "completed") {
         setShowConfetti(true);
         playChime();
+        analytics.agreementCompleted(swap.id);
       }
       onUpdate(updated);
     } catch (e: unknown) {
@@ -75,7 +77,7 @@ export default function AgreementPanel({ swap, agreement, isOwner, currentUserId
     return (
       <div style={{ marginTop: 16 }}>
         <button
-          onClick={() => { playClick(); onPropose(); }}
+          onClick={() => { playClick(); analytics.agreementStarted(swap.id); onPropose(); }}
           style={{ width: "100%", padding: "16px 20px", borderRadius: 16, border: `1px solid #00C9A744`, background: "rgba(0,201,167,.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 15, fontWeight: 700, color: "#00C9A7" }}
         >
           <Icon n="agree" s={18} c="#00C9A7" />

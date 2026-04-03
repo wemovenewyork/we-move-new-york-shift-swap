@@ -13,6 +13,7 @@ import Toast from "@/components/ui/Toast";
 import NotifToggle from "@/components/ui/NotifToggle";
 import InboxIcon from "@/components/ui/InboxIcon";
 import NotifIcon from "@/components/ui/NotifIcon";
+import { analytics } from "@/lib/analytics";
 import CountUp from "@/components/ui/CountUp";
 import ProgressRing from "@/components/ui/ProgressRing";
 
@@ -85,6 +86,7 @@ export default function ProfilePage() {
         try {
           await api.put("/users/me", { avatarUrl: dataUrl });
           await refreshUser();
+          analytics.avatarUploaded();
         } catch { showToast("Failed to upload avatar"); }
         setAvatarUploading(false);
       };
@@ -108,6 +110,7 @@ export default function ProfilePage() {
     const a = document.createElement("a");
     a.href = url; a.download = "my-wmny-data.json"; a.click();
     URL.revokeObjectURL(url);
+    analytics.dataDownloaded();
   };
 
   const saveProfile = async () => {

@@ -9,6 +9,7 @@ import Icon from "./Icon";
 import RepBadge from "./RepBadge";
 import VerifiedBadge from "./VerifiedBadge";
 import { playClick, playPop } from "@/lib/sound";
+import { analytics } from "@/lib/analytics";
 
 const ft = (t?: string | null) => {
   if (!t) return "";
@@ -234,7 +235,7 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
             <>
               {onToggleSave && s.status === "open" && (
                 <button
-                  onClick={() => { playPop(); onToggleSave(s, !s.saved); }}
+                  onClick={() => { playPop(); if (!s.saved) analytics.swapSaved(s.id); onToggleSave(s, !s.saved); }}
                   title={s.saved ? "Unsave" : "Save swap"}
                   aria-label={s.saved ? "Unsave swap" : "Save swap"}
                   style={{ padding: "4px 8px", borderRadius: 8, border: `1px solid ${s.saved ? C.gold + "55" : C.bd}`, background: s.saved ? C.gold + "18" : "transparent", cursor: "pointer", color: s.saved ? C.gold : C.m, display: "flex", alignItems: "center" }}

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { C } from "@/constants/colors";
+import { analytics } from "@/lib/analytics";
 
 export default function FeedbackButton() {
   const [open, setOpen] = useState(false);
@@ -14,6 +15,7 @@ export default function FeedbackButton() {
     setSending(true);
     try {
       await api.post("/feedback", { message: text.trim() });
+      analytics.feedbackSubmitted();
       setSent(true);
       setTimeout(() => { setSent(false); setOpen(false); setText(""); }, 1500);
     } catch { /* non-fatal */ }

@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { User } from "@/types";
 import { api, clearTokens } from "@/lib/api";
+import { identifyUser, resetAnalytics } from "@/lib/analytics";
 
 interface AuthContextValue {
   user: User | null;
@@ -47,6 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = (accessToken: string, refreshToken: string, userData: User) => {
     api.setTokens(accessToken, refreshToken);
     setUser(userData);
+    identifyUser(userData.id, {
+      role: userData.role,
+      depot: userData.depot?.code,
+      language: userData.language ?? "en",
+    });
   };
 
   const logout = () => {
@@ -60,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }).catch(() => {});
     }
     clearTokens();
+    resetAnalytics();
     setUser(null);
   };
 

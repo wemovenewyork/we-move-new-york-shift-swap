@@ -14,6 +14,7 @@ import InboxIcon from "@/components/ui/InboxIcon";
 import { playClick, playSuccess } from "@/lib/sound";
 import FirstSwapCelebration from "@/components/ui/FirstSwapCelebration";
 import { markChecklistItem } from "@/components/ui/OnboardingChecklist";
+import { analytics } from "@/lib/analytics";
 
 const lb: React.CSSProperties = {
   display: "block", marginBottom: 6, fontSize: 11, fontWeight: 600,
@@ -344,9 +345,11 @@ export default function PostSwapPage() {
       if (editId) {
         await api.put(`/swaps/${editId}`, payload);
         showToast("Swap updated!");
+        analytics.swapPosted({ type: f.category, depot: code, swapType: "edit" });
       } else {
         await api.post("/swaps", payload);
         showToast("Swap posted!");
+        analytics.swapPosted({ type: f.category, depot: code });
         if (user && !localStorage.getItem("first-swap-done")) {
           localStorage.setItem("first-swap-done", "1");
           if (user) markChecklistItem(user.id, "posted");
