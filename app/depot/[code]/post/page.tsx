@@ -24,7 +24,12 @@ const subLb: React.CSSProperties = {
 const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 
 function getToday() {
-  return new Date().toISOString().split("T")[0];
+  // Use local date, not UTC, so EST users get the correct "today"
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = (d.getMonth() + 1).toString().padStart(2, "0");
+  const day = d.getDate().toString().padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 function getDayFromDate(dateStr: string): string {
   if (!dateStr) return "";
@@ -77,23 +82,41 @@ function TimePicker({
     backgroundPosition: "right 6px center",
   };
 
+  // When today is selected, only show hours from now onward.
+  // When the current hour is selected on today, only show minutes from now+1 onward.
+  const minHour = isToday ? nowH : 0;
+  const minMin  = (isToday && selH !== "" && parseInt(selH, 10) === nowH) ? nowM + 1 : 0;
+
+  // If the current selection is now in the past (e.g. date changed to today),
+  // clear it so the user has to re-pick.
+  const selHNum = selH !== "" ? parseInt(selH, 10) : -1;
+  const selMNum = selM !== "" ? parseInt(selM, 10) : -1;
+  const selIsPast =
+    isToday &&
+    selH !== "" &&
+    (selHNum < minHour || (selHNum === nowH && selMNum < minMin));
+
   return (
     <div>
       <label htmlFor={`${id}-hr`} style={lb}>{label}</label>
+      {selIsPast && (
+        <div style={{ fontSize: 10, color: C.red, marginBottom: 4 }}>
+          Selected time is in the past — please choose again
+        </div>
+      )}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <div>
           <span style={subLb}>Hour (00–23)</span>
           <select
             id={`${id}-hr`}
-            value={selH}
+            value={selIsPast ? "" : selH}
             onChange={e => commit(e.target.value, selM || "00")}
             style={selStyle}
           >
             <option value="">--</option>
-            {Array.from({ length: 24 }, (_, i) => {
-              const h = i.toString().padStart(2, "0");
-              const past = isToday && i < nowH;
-              return <option key={h} value={h} disabled={past}>{h}</option>;
+            {Array.from({ length: 24 - minHour }, (_, i) => {
+              const h = (i + minHour).toString().padStart(2, "0");
+              return <option key={h} value={h}>{h}</option>;
             })}
           </select>
         </div>
@@ -101,15 +124,14 @@ function TimePicker({
           <span style={subLb}>Minute</span>
           <select
             id={`${id}-min`}
-            value={selM}
+            value={selIsPast ? "" : selM}
             onChange={e => commit(selH || "00", e.target.value)}
             style={selStyle}
           >
             <option value="">--</option>
-            {Array.from({ length: 60 }, (_, i) => {
-              const m = i.toString().padStart(2, "0");
-              const past = isToday && selH !== "" && parseInt(selH, 10) === nowH && i <= nowM;
-              return <option key={m} value={m} disabled={past}>{m}</option>;
+            {Array.from({ length: 60 - minMin }, (_, i) => {
+              const m = (i + minMin).toString().padStart(2, "0");
+              return <option key={m} value={m}>{m}</option>;
             })}
           </select>
         </div>
@@ -338,7 +360,7 @@ export default function PostSwapPage() {
                   id="doff-toDate"
                   type="date"
                   value={f.toDate}
-                  min={today}
+                  min={f.fromDate || today}
                   onChange={e => sF({ ...f, toDate: e.target.value })}
                   style={dateInputStyle}
                 />
