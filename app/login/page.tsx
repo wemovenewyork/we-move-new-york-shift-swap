@@ -44,8 +44,10 @@ export default function LoginPage() {
     if (!loading && user && !showDisclaimer && !showTerms) {
       if (user.termsVersion !== CURRENT_TERMS_VERSION) {
         setShowTerms(true);
+      } else if (!user.depotId) {
+        router.replace("/setup-profile");
       } else {
-        router.replace("/depots");
+        router.replace(user.depot?.code ? `/depot/${user.depot.code}` : "/depots");
       }
     }
   }, [user, loading, router, showDisclaimer, showTerms]);
@@ -249,7 +251,8 @@ export default function LoginPage() {
                 try {
                   await api.post("/auth/accept-terms", { version: CURRENT_TERMS_VERSION });
                 } catch { /* non-fatal — proceed anyway */ }
-                window.location.href = "/depots";
+                const dest = user?.depot?.code ? `/depot/${user.depot.code}` : user?.depotId ? "/depots" : "/setup-profile";
+                window.location.href = dest;
               }}
               disabled={!termsChecked || acceptingTerms}
               style={{ width: "100%", padding: 16, borderRadius: 14, border: "none", cursor: termsChecked ? "pointer" : "not-allowed", background: termsChecked ? `linear-gradient(135deg,${C.gold},${C.gold}cc)` : "rgba(255,255,255,.08)", fontSize: 16, fontWeight: 800, color: termsChecked ? C.bg : C.m, transition: "all .2s" }}

@@ -41,7 +41,8 @@ export default function SetupProfilePage() {
     try {
       await api.put("/users/me", { jobTitle, depotId });
       await refreshUser();
-      router.replace("/depots");
+      const selected = depots.find(d => d.id === depotId);
+      router.replace(selected ? `/depot/${selected.code}` : "/depots");
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Save failed");
     } finally {
