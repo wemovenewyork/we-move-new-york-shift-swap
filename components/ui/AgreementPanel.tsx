@@ -56,10 +56,10 @@ export default function AgreementPanel({ swapId, agreement, isOwner, currentUser
           style={{ width: "100%", padding: "16px 20px", borderRadius: 16, border: `1px solid #00C9A744`, background: "rgba(0,201,167,.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 15, fontWeight: 700, color: "#00C9A7" }}
         >
           <Icon n="agree" s={18} c="#00C9A7" />
-          Propose Formal Agreement
+          Agree to Swap
         </button>
         <div style={{ fontSize: 10, color: C.m, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
-          A formal agreement creates a timestamped record that both operators must confirm.
+          Both operators must confirm — creates a timestamped record you can show your dispatcher.
         </div>
       </div>
     );
@@ -76,7 +76,7 @@ export default function AgreementPanel({ swapId, agreement, isOwner, currentUser
       {showConfetti && <Confetti onDone={() => setShowConfetti(false)} />}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <Icon n="shield" s={16} c={color} />
-        <span style={{ fontSize: 12, fontWeight: 700, color: color, textTransform: "uppercase", letterSpacing: 1 }}>Formal Agreement</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: color, textTransform: "uppercase", letterSpacing: 1 }}>Swap Agreement</span>
         <span style={{ marginLeft: "auto", padding: "3px 10px", borderRadius: 20, background: color + "18", border: `1px solid ${color}33`, fontSize: 10, fontWeight: 700, color }}>{agreement.status.replace("_", " ").toUpperCase()}</span>
       </div>
 

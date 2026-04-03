@@ -27,7 +27,7 @@ const STEPS = [
     icon: "shield",
     color: "#C084FC",
     title: "Make It Official",
-    body: "Propose a formal agreement. Both operators confirm — creating a timestamped record you can take to your dispatcher or union rep.",
+    body: "Agree to the swap. Both operators confirm — creating a timestamped record you can take to your dispatcher or union rep.",
   },
 ];
 

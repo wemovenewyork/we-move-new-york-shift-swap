@@ -48,8 +48,8 @@ const translations: Record<Lang, Record<string, string>> = {
     "detail.contact": "Contact",
     "detail.posted": "Posted",
     // Agreement
-    "agree.title": "Formal Agreement",
-    "agree.propose": "Propose Agreement",
+    "agree.title": "Swap Agreement",
+    "agree.propose": "Agree to Swap",
     "agree.pending": "Awaiting owner confirmation",
     "agree.confirm": "Confirm Agreement",
     "agree.completed": "Agreement Completed",

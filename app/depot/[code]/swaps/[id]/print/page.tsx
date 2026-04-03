@@ -146,7 +146,7 @@ export default function PrintAgreementPage() {
 
         {/* Agreement */}
         <div className="section">
-          <div className="section-title">Formal Agreement</div>
+          <div className="section-title">Swap Agreement</div>
           {agreement ? (
             <>
               <div className="grid" style={{ marginBottom: 16 }}>
@@ -177,7 +177,7 @@ export default function PrintAgreementPage() {
               )}
             </>
           ) : (
-            <p style={{ color: "#888", fontSize: 13 }}>No formal agreement on file.</p>
+            <p style={{ color: "#888", fontSize: 13 }}>No swap agreement on file.</p>
           )}
         </div>
 

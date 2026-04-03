@@ -243,7 +243,7 @@ export default function SwapDetailPage() {
       {proposeModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={() => setProposeModal(false)}>
           <div style={{ width: "100%", background: "rgb(6,5,50)", borderRadius: "20px 20px 0 0", padding: "24px 20px 40px", maxWidth: 520, margin: "0 auto" }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: C.white, marginBottom: 6 }}>Propose Formal Agreement</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.white, marginBottom: 6 }}>Agree to Swap</div>
             <div style={{ fontSize: 12, color: C.m, lineHeight: 1.6, marginBottom: 16 }}>This creates a timestamped record. Both operators must confirm to complete the swap.</div>
             <textarea
               value={proposeNote}

@@ -45,7 +45,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   // Notify swap owner that an agreement has been proposed
   notifyUser(swap.userId, {
-    title: "Formal agreement proposed",
+    title: "Swap agreement proposed",
     body: `${proposer?.firstName ?? "Someone"} wants to make it official — confirm to lock in the swap`,
     url: `/depot/${swap.depotId}/swaps/${id}`,
   });
@@ -111,7 +111,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const otherUserId = isUserB ? agreement.userAId : agreement.userBId;
     notifyUser(otherUserId, {
       title: "Agreement cancelled",
-      body: "The formal agreement for your swap was cancelled",
+      body: "The swap agreement was cancelled",
       url: `/depot/${depotId}/swaps/${id}`,
     });
 
