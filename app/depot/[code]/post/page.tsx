@@ -12,10 +12,20 @@ import Toast from "@/components/ui/Toast";
 import NotifIcon from "@/components/ui/NotifIcon";
 import InboxIcon from "@/components/ui/InboxIcon";
 
-const lb: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: 12, fontWeight: 600, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
+const lb: React.CSSProperties = {
+  display: "block", marginBottom: 6, fontSize: 11, fontWeight: 600,
+  color: C.m, letterSpacing: 1.5, textTransform: "uppercase",
+};
+const subLb: React.CSSProperties = {
+  display: "block", marginBottom: 4, fontSize: 9, fontWeight: 700,
+  color: "rgba(255,255,255,.35)", letterSpacing: 1, textTransform: "uppercase",
+};
 
 const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 
+function getToday() {
+  return new Date().toISOString().split("T")[0];
+}
 function getDayFromDate(dateStr: string): string {
   if (!dateStr) return "";
   const d = new Date(dateStr + "T12:00");
@@ -31,25 +41,156 @@ interface FormState {
   vacationHave: string; vacationWant: string;
 }
 
-function ShiftFields({ f, sF, idPrefix = "sf" }: { f: FormState; sF: (v: FormState) => void; idPrefix?: string }) {
+// ── TimePicker ─────────────────────────────────────────────────────────────────
+// value / onChange use 24-h "HH:mm" strings (matches existing form state).
+// Renders three native <select> columns → mobile shows native scroll drum picker.
+function TimePicker({
+  value, onChange, label, id, dateStr,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+  id: string;
+  dateStr?: string; // associated date for past-time blocking
+}) {
+  const today = getToday();
+  const isToday = !!dateStr && dateStr === today;
+  const now = new Date();
+  const nowH = now.getHours();
+  const nowM = now.getMinutes();
+
+  // Parse value "HH:mm" → 12-h parts
+  let selH12 = "";
+  let selMin = "";
+  let selAmpm: "AM" | "PM" | "" = "";
+  if (value) {
+    const [hStr, mStr] = value.split(":");
+    const h24 = parseInt(hStr, 10);
+    selH12 = (h24 % 12 || 12).toString();
+    selMin = mStr;
+    selAmpm = h24 >= 12 ? "PM" : "AM";
+  }
+
+  // Rebuild 24-h string from parts
+  const commit = (h12: string, min: string, ampm: string) => {
+    if (!h12 || !min || !ampm) { onChange(""); return; }
+    let h24 = parseInt(h12, 10);
+    if (ampm === "PM" && h24 !== 12) h24 += 12;
+    if (ampm === "AM" && h24 === 12) h24 = 0;
+    onChange(`${h24.toString().padStart(2, "0")}:${min}`);
+  };
+
+  // Current selection as 24-h for past comparison
+  const sel24 = (() => {
+    if (!selH12 || !selAmpm) return -1;
+    let h = parseInt(selH12, 10);
+    if (selAmpm === "PM" && h !== 12) h += 12;
+    if (selAmpm === "AM" && h === 12) h = 0;
+    return h;
+  })();
+
+  const isHourPast = (h12: string, ampm: string) => {
+    if (!isToday) return false;
+    let h24 = parseInt(h12, 10);
+    if (ampm === "PM" && h24 !== 12) h24 += 12;
+    if (ampm === "AM" && h24 === 12) h24 = 0;
+    return h24 < nowH;
+  };
+  const isMinPast = (min: string) => {
+    if (!isToday || sel24 < 0) return false;
+    if (sel24 !== nowH) return false;
+    return parseInt(min, 10) <= nowM;
+  };
+
+  const selStyle: React.CSSProperties = {
+    padding: "12px 10px",
+    fontSize: 15,
+    fontWeight: 600,
+    width: "100%",
+    textAlign: "center",
+    paddingRight: 30,
+    backgroundPosition: "right 8px center",
+  };
+
   return (
-    <div style={{ display: "grid", gap: 10 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10 }}>
-        <div><label htmlFor={`${idPrefix}-run`} style={lb}>Run</label><input id={`${idPrefix}-run`} value={f.run} onChange={e => sF({ ...f, run: e.target.value })} placeholder="401" /></div>
-        <div><label htmlFor={`${idPrefix}-route`} style={lb}>Route</label><input id={`${idPrefix}-route`} value={f.route} onChange={e => sF({ ...f, route: e.target.value })} placeholder="Bx1" /></div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <div><label htmlFor={`${idPrefix}-start`} style={lb}>Start Time</label><input id={`${idPrefix}-start`} type="time" value={f.startTime} onChange={e => sF({ ...f, startTime: e.target.value })} style={{ fontSize: 15 }} /></div>
-        <div><label htmlFor={`${idPrefix}-clear`} style={lb}>Clear Time</label><input id={`${idPrefix}-clear`} type="time" value={f.clearTime} onChange={e => sF({ ...f, clearTime: e.target.value })} style={{ fontSize: 15 }} /></div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <div><label htmlFor={`${idPrefix}-swingS`} style={lb}>Swing Start</label><input id={`${idPrefix}-swingS`} type="time" value={f.swingStart} onChange={e => sF({ ...f, swingStart: e.target.value })} style={{ fontSize: 15 }} /></div>
-        <div><label htmlFor={`${idPrefix}-swingE`} style={lb}>Swing End</label><input id={`${idPrefix}-swingE`} type="time" value={f.swingEnd} onChange={e => sF({ ...f, swingEnd: e.target.value })} style={{ fontSize: 15 }} /></div>
+    <div>
+      <label htmlFor={`${id}-hr`} style={lb}>{label}</label>
+      <div style={{ display: "grid", gridTemplateColumns: "3fr 3fr 2fr", gap: 6 }}>
+        <div>
+          <span style={subLb}>HR</span>
+          <select
+            id={`${id}-hr`}
+            value={selH12}
+            onChange={e => commit(e.target.value, selMin || "00", selAmpm || "AM")}
+            style={selStyle}
+          >
+            <option value="">--</option>
+            {Array.from({ length: 12 }, (_, i) => {
+              const h = (i + 1).toString();
+              const pastAM = isHourPast(h, selAmpm || "AM");
+              const pastPM = isHourPast(h, selAmpm || "PM");
+              const past = selAmpm ? (selAmpm === "AM" ? pastAM : pastPM) : (pastAM && pastPM);
+              return (
+                <option key={h} value={h} disabled={past}>{h}</option>
+              );
+            })}
+          </select>
+        </div>
+        <div>
+          <span style={subLb}>MIN</span>
+          <select
+            id={`${id}-min`}
+            value={selMin}
+            onChange={e => commit(selH12 || "12", e.target.value, selAmpm || "AM")}
+            style={selStyle}
+          >
+            <option value="">--</option>
+            {Array.from({ length: 60 }, (_, i) => {
+              const m = i.toString().padStart(2, "0");
+              return <option key={m} value={m} disabled={isMinPast(m)}>{m}</option>;
+            })}
+          </select>
+        </div>
+        <div>
+          <span style={subLb}>AM/PM</span>
+          <select
+            id={`${id}-ampm`}
+            value={selAmpm}
+            onChange={e => commit(selH12 || "12", selMin || "00", e.target.value)}
+            style={selStyle}
+          >
+            <option value="">--</option>
+            <option value="AM" disabled={isToday && nowH >= 12 && selH12 !== "" && isHourPast(selH12, "AM")}>AM</option>
+            <option value="PM" disabled={isToday && nowH >= 24}>PM</option>
+          </select>
+        </div>
       </div>
     </div>
   );
 }
 
+// ── ShiftFields ────────────────────────────────────────────────────────────────
+function ShiftFields({ f, sF, idPrefix = "sf", dateStr }: {
+  f: FormState;
+  sF: (v: FormState) => void;
+  idPrefix?: string;
+  dateStr?: string;
+}) {
+  return (
+    <div style={{ display: "grid", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div><label htmlFor={`${idPrefix}-run`} style={lb}>Run</label><input id={`${idPrefix}-run`} value={f.run} onChange={e => sF({ ...f, run: e.target.value })} placeholder="401" style={{ fontSize: 16 }} /></div>
+        <div><label htmlFor={`${idPrefix}-route`} style={lb}>Route</label><input id={`${idPrefix}-route`} value={f.route} onChange={e => sF({ ...f, route: e.target.value })} placeholder="Bx1" style={{ fontSize: 16 }} /></div>
+      </div>
+      <TimePicker id={`${idPrefix}-start`} label="Start Time" value={f.startTime} onChange={v => sF({ ...f, startTime: v })} dateStr={dateStr} />
+      <TimePicker id={`${idPrefix}-clear`} label="Clear Time" value={f.clearTime} onChange={v => sF({ ...f, clearTime: v })} dateStr={dateStr} />
+      <TimePicker id={`${idPrefix}-swingS`} label="Swing Start" value={f.swingStart} onChange={v => sF({ ...f, swingStart: v })} dateStr={dateStr} />
+      <TimePicker id={`${idPrefix}-swingE`} label="Swing End" value={f.swingEnd} onChange={v => sF({ ...f, swingEnd: v })} dateStr={dateStr} />
+    </div>
+  );
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────────
 export default function PostSwapPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -62,9 +203,17 @@ export default function PostSwapPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [f, sF] = useState<FormState>({ category: "work", details: "", contact: "", date: "", run: "", route: "", startTime: "", clearTime: "", swingStart: "", swingEnd: "", fromDate: "", toDate: "", vacationHave: "", vacationWant: "" });
+  const [f, sF] = useState<FormState>({
+    category: "work", details: "", contact: "",
+    date: "", run: "", route: "",
+    startTime: "", clearTime: "", swingStart: "", swingEnd: "",
+    fromDate: "", toDate: "",
+    vacationHave: "", vacationWant: "",
+  });
 
-  const showToast = useCallback((msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); }, []);
+  const showToast = useCallback((msg: string) => {
+    setToast(msg); setTimeout(() => setToast(null), 2500);
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -97,6 +246,7 @@ export default function PostSwapPage() {
 
   const fromDay = getDayFromDate(f.fromDate);
   const toDay = getDayFromDate(f.toDate);
+  const today = getToday();
 
   const validate = () => {
     if (!f.details.trim()) return false;
@@ -128,7 +278,6 @@ export default function PostSwapPage() {
         vacationHave: f.category === "vacation" ? f.vacationHave : undefined,
         vacationWant: f.category === "vacation" ? f.vacationWant : undefined,
       };
-
       if (editId) {
         await api.put(`/swaps/${editId}`, payload);
         showToast("Swap updated!");
@@ -144,6 +293,12 @@ export default function PostSwapPage() {
 
   if (!depot) return null;
 
+  const dateInputStyle: React.CSSProperties = {
+    width: "100%",
+    fontSize: 16, // prevents iOS auto-zoom
+    boxSizing: "border-box",
+  };
+
   return (
     <div style={{ minHeight: "100vh", background: C.bg }}>
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.75)", borderBottom: `1px solid ${C.bd}`, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -154,8 +309,8 @@ export default function PostSwapPage() {
         <InboxIcon />
       </div>
 
-      <main id="main-content" style={{ maxWidth: 480, margin: "0 auto", padding: "24px 20px 50px" }}>
-        <h2 style={{ fontSize: 26, fontWeight: 800, background: `linear-gradient(135deg,${C.white},${C.gold}88)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 16 }}>
+      <main id="main-content" style={{ maxWidth: 480, margin: "0 auto", padding: "24px 16px 60px", width: "100%" }}>
+        <h2 style={{ fontSize: 24, fontWeight: 800, background: `linear-gradient(135deg,${C.white},${C.gold}88)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 16 }}>
           {editId ? "Edit Swap" : "Post a Swap"}
         </h2>
 
@@ -168,9 +323,9 @@ export default function PostSwapPage() {
                 const sel = f.category === sc.id;
                 const m = CM[sc.id as keyof typeof CM];
                 return (
-                  <button key={sc.id} onClick={() => sF({ ...f, category: sc.id as FormState["category"] })} style={{ padding: "14px 10px", borderRadius: 14, border: "none", cursor: "pointer", textAlign: "center", background: sel ? m.bg : C.s, boxShadow: sel ? `inset 0 0 0 2px ${m.c}` : `inset 0 0 0 1px ${C.bd}` }}>
+                  <button key={sc.id} onClick={() => sF({ ...f, category: sc.id as FormState["category"] })} style={{ padding: "14px 8px", borderRadius: 14, border: "none", cursor: "pointer", textAlign: "center", background: sel ? m.bg : C.s, boxShadow: sel ? `inset 0 0 0 2px ${m.c}` : `inset 0 0 0 1px ${C.bd}` }}>
                     <div style={{ display: "flex", justifyContent: "center", marginBottom: 6, color: sel ? m.c : C.m }}><Icon n={sc.ic} s={20} /></div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: sel ? m.c : C.m }}>{sc.l}</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: sel ? m.c : C.m, lineHeight: 1.2 }}>{sc.l}</div>
                   </button>
                 );
               })}
@@ -181,12 +336,21 @@ export default function PostSwapPage() {
           {f.category === "work" && (
             <>
               <div>
-                <label htmlFor="work-date" style={lb}>Date {showErrors && !f.date && <span style={{ color: C.red, fontSize: 10 }}>Required</span>}</label>
-                <input id="work-date" type="date" value={f.date} onChange={e => sF({ ...f, date: e.target.value })} style={showErrors && !f.date ? { borderColor: C.red + "66" } : {}} />
+                <label htmlFor="work-date" style={lb}>
+                  Date {showErrors && !f.date && <span style={{ color: C.red, fontSize: 10 }}>Required</span>}
+                </label>
+                <input
+                  id="work-date"
+                  type="date"
+                  value={f.date}
+                  min={today}
+                  onChange={e => sF({ ...f, date: e.target.value })}
+                  style={{ ...dateInputStyle, ...(showErrors && !f.date ? { borderColor: C.red + "66" } : {}) }}
+                />
               </div>
-              <div style={{ background: "rgba(2,73,181,.04)", borderRadius: 16, border: "1px solid rgba(2,73,181,.12)", padding: 18 }}>
+              <div style={{ background: "rgba(2,73,181,.04)", borderRadius: 16, border: "1px solid rgba(2,73,181,.12)", padding: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: C.blue, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Shift Details</div>
-                <ShiftFields f={f} sF={sF} idPrefix="work" />
+                <ShiftFields f={f} sF={sF} idPrefix="work" dateStr={f.date} />
               </div>
             </>
           )}
@@ -194,23 +358,39 @@ export default function PostSwapPage() {
           {/* Days off fields */}
           {f.category === "daysoff" && (
             <>
-              <div style={{ background: "rgba(209,173,56,.04)", borderRadius: 16, border: "1px solid rgba(209,173,56,.12)", padding: 18 }}>
+              <div style={{ background: "rgba(209,173,56,.04)", borderRadius: 16, border: "1px solid rgba(209,173,56,.12)", padding: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>
                   Swapping From (Day You Are Working)
                 </div>
                 <div style={{ marginBottom: 12 }}>
-                  <label htmlFor="doff-fromDate" style={lb}>Date {showErrors && !f.fromDate && <span style={{ color: C.red, fontSize: 10 }}>Required</span>}</label>
-                  <input id="doff-fromDate" type="date" value={f.fromDate} onChange={e => sF({ ...f, fromDate: e.target.value })} style={showErrors && !f.fromDate ? { borderColor: C.red + "66" } : {}} />
+                  <label htmlFor="doff-fromDate" style={lb}>
+                    Date {showErrors && !f.fromDate && <span style={{ color: C.red, fontSize: 10 }}>Required</span>}
+                  </label>
+                  <input
+                    id="doff-fromDate"
+                    type="date"
+                    value={f.fromDate}
+                    min={today}
+                    onChange={e => sF({ ...f, fromDate: e.target.value })}
+                    style={{ ...dateInputStyle, ...(showErrors && !f.fromDate ? { borderColor: C.red + "66" } : {}) }}
+                  />
                   {fromDay && <div style={{ fontSize: 12, color: C.gold, marginTop: 6, fontWeight: 600 }}>📅 {fromDay}</div>}
                 </div>
-                <ShiftFields f={f} sF={sF} idPrefix="doff" />
+                <ShiftFields f={f} sF={sF} idPrefix="doff" dateStr={f.fromDate} />
               </div>
-              <div style={{ background: "rgba(2,73,181,.04)", borderRadius: 16, border: "1px solid rgba(2,73,181,.12)", padding: 18 }}>
+              <div style={{ background: "rgba(2,73,181,.04)", borderRadius: 16, border: "1px solid rgba(2,73,181,.12)", padding: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: C.blue, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>
                   Swapping To (Day You Want To Work)
                 </div>
                 <label htmlFor="doff-toDate" style={lb}>Date</label>
-                <input id="doff-toDate" type="date" value={f.toDate} onChange={e => sF({ ...f, toDate: e.target.value })} />
+                <input
+                  id="doff-toDate"
+                  type="date"
+                  value={f.toDate}
+                  min={today}
+                  onChange={e => sF({ ...f, toDate: e.target.value })}
+                  style={dateInputStyle}
+                />
                 {toDay && <div style={{ fontSize: 12, color: C.blue, marginTop: 6, fontWeight: 600 }}>📅 {toDay}</div>}
               </div>
             </>
@@ -219,16 +399,16 @@ export default function PostSwapPage() {
           {/* Vacation fields */}
           {f.category === "vacation" && (
             <>
-              <div style={{ background: "rgba(0,201,167,.04)", borderRadius: 16, border: "1px solid rgba(0,201,167,.12)", padding: 18 }}>
+              <div style={{ background: "rgba(0,201,167,.04)", borderRadius: 16, border: "1px solid rgba(0,201,167,.12)", padding: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#00C9A7", letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Vacation Week You Have</div>
-                <select value={f.vacationHave} onChange={e => sF({ ...f, vacationHave: e.target.value })} style={{ appearance: "auto", cursor: "pointer" }}>
+                <select value={f.vacationHave} onChange={e => sF({ ...f, vacationHave: e.target.value })} style={{ cursor: "pointer", fontSize: 16 }}>
                   <option value="">Select week...</option>
                   {Array.from({ length: 52 }, (_, i) => <option key={i} value={`Week ${i + 1}`}>Week {i + 1}</option>)}
                 </select>
               </div>
-              <div style={{ background: "rgba(2,73,181,.04)", borderRadius: 16, border: "1px solid rgba(2,73,181,.12)", padding: 18 }}>
+              <div style={{ background: "rgba(2,73,181,.04)", borderRadius: 16, border: "1px solid rgba(2,73,181,.12)", padding: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: C.blue, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Vacation Week You Want</div>
-                <select value={f.vacationWant} onChange={e => sF({ ...f, vacationWant: e.target.value })} style={{ appearance: "auto", cursor: "pointer" }}>
+                <select value={f.vacationWant} onChange={e => sF({ ...f, vacationWant: e.target.value })} style={{ cursor: "pointer", fontSize: 16 }}>
                   <option value="">Select week...</option>
                   {Array.from({ length: 52 }, (_, i) => <option key={i} value={`Week ${i + 1}`}>Week {i + 1}</option>)}
                 </select>
@@ -241,14 +421,22 @@ export default function PostSwapPage() {
             <label htmlFor="post-details" style={lb}>
               Details {showErrors && !f.details.trim() && <span style={{ color: C.red, fontSize: 10 }}>Required</span>}
             </label>
-            <textarea id="post-details" value={f.details} onChange={e => sF({ ...f, details: e.target.value })} placeholder="Details about this swap..." rows={3} style={{ resize: "vertical", ...(showErrors && !f.details.trim() ? { borderColor: C.red + "66" } : {}) }} maxLength={500} />
+            <textarea
+              id="post-details"
+              value={f.details}
+              onChange={e => sF({ ...f, details: e.target.value })}
+              placeholder="Details about this swap..."
+              rows={3}
+              style={{ resize: "vertical", fontSize: 16, ...(showErrors && !f.details.trim() ? { borderColor: C.red + "66" } : {}) }}
+              maxLength={500}
+            />
             <div style={{ fontSize: 10, color: f.details.length > 450 ? C.red : C.m, textAlign: "right", marginTop: 4 }}>{f.details.length}/500</div>
           </div>
 
           {/* Contact */}
           <div>
             <label htmlFor="post-contact" style={lb}>Contact (optional)</label>
-            <input id="post-contact" value={f.contact} onChange={e => sF({ ...f, contact: e.target.value })} placeholder="Phone or see dispatcher" />
+            <input id="post-contact" value={f.contact} onChange={e => sF({ ...f, contact: e.target.value })} placeholder="Phone or see dispatcher" style={{ fontSize: 16 }} />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10, marginTop: 8 }}>
