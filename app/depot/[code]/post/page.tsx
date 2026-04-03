@@ -42,8 +42,8 @@ interface FormState {
 }
 
 // ── TimePicker ─────────────────────────────────────────────────────────────────
-// value / onChange use 24-h "HH:mm" strings (matches existing form state).
-// Renders three native <select> columns → mobile shows native scroll drum picker.
+// value / onChange use 24-h "HH:mm" strings. Two native selects: HR (00-23) and
+// MIN (00-59). Mobile browsers render native selects as scroll drum pickers.
 function TimePicker({
   value, onChange, label, id, dateStr,
 }: {
@@ -51,7 +51,7 @@ function TimePicker({
   onChange: (v: string) => void;
   label: string;
   id: string;
-  dateStr?: string; // associated date for past-time blocking
+  dateStr?: string;
 }) {
   const today = getToday();
   const isToday = !!dateStr && dateStr === today;
@@ -59,109 +59,58 @@ function TimePicker({
   const nowH = now.getHours();
   const nowM = now.getMinutes();
 
-  // Parse value "HH:mm" → 12-h parts
-  let selH12 = "";
-  let selMin = "";
-  let selAmpm: "AM" | "PM" | "" = "";
-  if (value) {
-    const [hStr, mStr] = value.split(":");
-    const h24 = parseInt(hStr, 10);
-    selH12 = (h24 % 12 || 12).toString();
-    selMin = mStr;
-    selAmpm = h24 >= 12 ? "PM" : "AM";
-  }
+  const selH = value ? value.split(":")[0] : "";
+  const selM = value ? value.split(":")[1] : "";
 
-  // Rebuild 24-h string from parts
-  const commit = (h12: string, min: string, ampm: string) => {
-    if (!h12 || !min || !ampm) { onChange(""); return; }
-    let h24 = parseInt(h12, 10);
-    if (ampm === "PM" && h24 !== 12) h24 += 12;
-    if (ampm === "AM" && h24 === 12) h24 = 0;
-    onChange(`${h24.toString().padStart(2, "0")}:${min}`);
-  };
-
-  // Current selection as 24-h for past comparison
-  const sel24 = (() => {
-    if (!selH12 || !selAmpm) return -1;
-    let h = parseInt(selH12, 10);
-    if (selAmpm === "PM" && h !== 12) h += 12;
-    if (selAmpm === "AM" && h === 12) h = 0;
-    return h;
-  })();
-
-  const isHourPast = (h12: string, ampm: string) => {
-    if (!isToday) return false;
-    let h24 = parseInt(h12, 10);
-    if (ampm === "PM" && h24 !== 12) h24 += 12;
-    if (ampm === "AM" && h24 === 12) h24 = 0;
-    return h24 < nowH;
-  };
-  const isMinPast = (min: string) => {
-    if (!isToday || sel24 < 0) return false;
-    if (sel24 !== nowH) return false;
-    return parseInt(min, 10) <= nowM;
+  const commit = (h: string, m: string) => {
+    if (!h || !m) { onChange(""); return; }
+    onChange(`${h}:${m}`);
   };
 
   const selStyle: React.CSSProperties = {
-    padding: "12px 10px",
-    fontSize: 15,
+    padding: "12px 8px",
+    fontSize: 16,
     fontWeight: 600,
     width: "100%",
     textAlign: "center",
-    paddingRight: 30,
-    backgroundPosition: "right 8px center",
+    paddingRight: 28,
+    backgroundPosition: "right 6px center",
   };
 
   return (
     <div>
       <label htmlFor={`${id}-hr`} style={lb}>{label}</label>
-      <div style={{ display: "grid", gridTemplateColumns: "3fr 3fr 2fr", gap: 6 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <div>
-          <span style={subLb}>HR</span>
+          <span style={subLb}>Hour (00–23)</span>
           <select
             id={`${id}-hr`}
-            value={selH12}
-            onChange={e => commit(e.target.value, selMin || "00", selAmpm || "AM")}
+            value={selH}
+            onChange={e => commit(e.target.value, selM || "00")}
             style={selStyle}
           >
             <option value="">--</option>
-            {Array.from({ length: 12 }, (_, i) => {
-              const h = (i + 1).toString();
-              const pastAM = isHourPast(h, selAmpm || "AM");
-              const pastPM = isHourPast(h, selAmpm || "PM");
-              const past = selAmpm ? (selAmpm === "AM" ? pastAM : pastPM) : (pastAM && pastPM);
-              return (
-                <option key={h} value={h} disabled={past}>{h}</option>
-              );
+            {Array.from({ length: 24 }, (_, i) => {
+              const h = i.toString().padStart(2, "0");
+              const past = isToday && i < nowH;
+              return <option key={h} value={h} disabled={past}>{h}</option>;
             })}
           </select>
         </div>
         <div>
-          <span style={subLb}>MIN</span>
+          <span style={subLb}>Minute</span>
           <select
             id={`${id}-min`}
-            value={selMin}
-            onChange={e => commit(selH12 || "12", e.target.value, selAmpm || "AM")}
+            value={selM}
+            onChange={e => commit(selH || "00", e.target.value)}
             style={selStyle}
           >
             <option value="">--</option>
             {Array.from({ length: 60 }, (_, i) => {
               const m = i.toString().padStart(2, "0");
-              return <option key={m} value={m} disabled={isMinPast(m)}>{m}</option>;
+              const past = isToday && selH !== "" && parseInt(selH, 10) === nowH && i <= nowM;
+              return <option key={m} value={m} disabled={past}>{m}</option>;
             })}
-          </select>
-        </div>
-        <div>
-          <span style={subLb}>AM/PM</span>
-          <select
-            id={`${id}-ampm`}
-            value={selAmpm}
-            onChange={e => commit(selH12 || "12", selMin || "00", e.target.value)}
-            style={selStyle}
-          >
-            <option value="">--</option>
-            <option value="AM" disabled={isToday && nowH >= 12 && selH12 !== "" && isHourPast(selH12, "AM")}>AM</option>
-            <option value="PM" disabled={isToday && nowH >= 24}>PM</option>
           </select>
         </div>
       </div>
@@ -295,8 +244,10 @@ export default function PostSwapPage() {
 
   const dateInputStyle: React.CSSProperties = {
     width: "100%",
-    fontSize: 16, // prevents iOS auto-zoom
+    maxWidth: "100%",
+    fontSize: 16,      // prevents iOS auto-zoom
     boxSizing: "border-box",
+    display: "block",
   };
 
   return (
