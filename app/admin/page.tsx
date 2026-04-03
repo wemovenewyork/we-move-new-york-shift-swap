@@ -64,7 +64,11 @@ export default function AdminPage() {
 
   const [bcTarget, setBcTarget] = useState<"all" | "user" | "depot">("all");
   const [bcUserId, setBcUserId] = useState("");
+  const [bcUserName, setBcUserName] = useState("");
+  const [bcUserQ, setBcUserQ] = useState("");
   const [bcDepotCode, setBcDepotCode] = useState("");
+  const [bcDepotName, setBcDepotName] = useState("");
+  const [bcDepotQ, setBcDepotQ] = useState("");
   const [bcText, setBcText] = useState("");
   const [bcSending, setBcSending] = useState(false);
 
@@ -479,27 +483,86 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Depot picker */}
+            {/* Depot search */}
             {bcTarget === "depot" && (
               <div>
-                <label style={lb}>Depot</label>
-                <select value={bcDepotCode} onChange={e => setBcDepotCode(e.target.value)} style={{ height: 48 }}>
-                  <option value="">— Select depot —</option>
-                  {depots.map(d => <option key={d.code} value={d.code}>{d.name} ({d.code})</option>)}
-                </select>
+                <label style={lb}>Search Depot</label>
+                {bcDepotCode ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: PURPLE + "0c", border: `1px solid ${PURPLE}33` }}>
+                    <div style={{ flex: 1, fontSize: 13, fontWeight: 700, color: C.white }}>{bcDepotName}</div>
+                    <button onClick={() => { setBcDepotCode(""); setBcDepotName(""); setBcDepotQ(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: C.m, padding: 0 }}>Change</button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      value={bcDepotQ}
+                      onChange={e => setBcDepotQ(e.target.value)}
+                      placeholder="Type depot name…"
+                      style={{ height: 44, marginBottom: 6 }}
+                    />
+                    {bcDepotQ.trim() && (
+                      <div style={{ borderRadius: 12, border: `1px solid ${C.bd}`, overflow: "hidden" }}>
+                        {depots.filter(d => d.name.toLowerCase().includes(bcDepotQ.toLowerCase())).slice(0, 6).map(d => (
+                          <button
+                            key={d.code}
+                            onClick={() => { setBcDepotCode(d.code); setBcDepotName(d.name); setBcDepotQ(""); }}
+                            style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 14px", background: "rgba(255,255,255,.03)", border: "none", borderBottom: `1px solid ${C.bd}`, cursor: "pointer", fontSize: 13, color: C.white }}
+                          >
+                            {d.name} <span style={{ fontSize: 11, color: C.m }}>({d.code})</span>
+                          </button>
+                        ))}
+                        {depots.filter(d => d.name.toLowerCase().includes(bcDepotQ.toLowerCase())).length === 0 && (
+                          <div style={{ padding: "10px 14px", fontSize: 12, color: C.m }}>No depots found</div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
-            {/* User picker */}
+            {/* User search */}
             {bcTarget === "user" && (
               <div>
-                <label style={lb}>User</label>
-                <select value={bcUserId} onChange={e => setBcUserId(e.target.value)} style={{ height: 48 }}>
-                  <option value="">— Select user —</option>
-                  {users.map(u => <option key={u.id} value={u.id}>{u.firstName} {u.lastName} ({u.email})</option>)}
-                </select>
-                {users.length === 0 && (
-                  <div style={{ fontSize: 11, color: C.m, marginTop: 6 }}>Load users from the Users tab first.</div>
+                <label style={lb}>Search User</label>
+                {bcUserId ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: PURPLE + "0c", border: `1px solid ${PURPLE}33` }}>
+                    <div style={{ flex: 1, fontSize: 13, fontWeight: 700, color: C.white }}>{bcUserName}</div>
+                    <button onClick={() => { setBcUserId(""); setBcUserName(""); setBcUserQ(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: C.m, padding: 0 }}>Change</button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      value={bcUserQ}
+                      onChange={e => setBcUserQ(e.target.value)}
+                      placeholder="Type name or email…"
+                      style={{ height: 44, marginBottom: 6 }}
+                    />
+                    {bcUserQ.trim() && (
+                      <div style={{ borderRadius: 12, border: `1px solid ${C.bd}`, overflow: "hidden" }}>
+                        {users.filter(u =>
+                          `${u.firstName} ${u.lastName}`.toLowerCase().includes(bcUserQ.toLowerCase()) ||
+                          (u.email && u.email.toLowerCase().includes(bcUserQ.toLowerCase()))
+                        ).slice(0, 6).map(u => (
+                          <button
+                            key={u.id}
+                            onClick={() => { setBcUserId(u.id); setBcUserName(`${u.firstName} ${u.lastName}`); setBcUserQ(""); }}
+                            style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 14px", background: "rgba(255,255,255,.03)", border: "none", borderBottom: `1px solid ${C.bd}`, cursor: "pointer", fontSize: 13, color: C.white }}
+                          >
+                            {u.firstName} {u.lastName}
+                            {u.email && <span style={{ fontSize: 11, color: C.m }}> · {u.email}</span>}
+                            {u.depot && <span style={{ fontSize: 11, color: C.gold }}> · {u.depot.name}</span>}
+                          </button>
+                        ))}
+                        {users.filter(u =>
+                          `${u.firstName} ${u.lastName}`.toLowerCase().includes(bcUserQ.toLowerCase()) ||
+                          (u.email && u.email.toLowerCase().includes(bcUserQ.toLowerCase()))
+                        ).length === 0 && (
+                          <div style={{ padding: "10px 14px", fontSize: 12, color: C.m }}>No users found</div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
