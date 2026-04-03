@@ -40,7 +40,7 @@ const lb: React.CSSProperties = { display: "block", marginBottom: 6, fontSize: 1
 export default function AdminPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [tab, setTab] = useState<"reports" | "users" | "invites" | "audit">("reports");
+  const [tab, setTab] = useState<"reports" | "users" | "invites" | "audit" | "broadcast">("reports");
   const [stats, setStats] = useState<Stats | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -53,6 +53,11 @@ export default function AdminPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [auditLogs, setAuditLogs] = useState<{ id: string; action: string; detail: string | null; createdAt: string; ip: string | null; admin: { firstName: string; lastName: string; email: string } }[]>([]);
+  const [bcTarget, setBcTarget] = useState<"all" | "user" | "depot">("all");
+  const [bcUserId, setBcUserId] = useState("");
+  const [bcDepotCode, setBcDepotCode] = useState("");
+  const [bcText, setBcText] = useState("");
+  const [bcSending, setBcSending] = useState(false);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg); setTimeout(() => setToast(null), 2500);
@@ -152,6 +157,23 @@ export default function AdminPage() {
     } finally { setBusy(null); }
   };
 
+  const handleBroadcast = async () => {
+    if (!bcText.trim() || bcSending) return;
+    if (bcTarget === "user" && !bcUserId) { showToast("Select a user"); return; }
+    if (bcTarget === "depot" && !bcDepotCode) { showToast("Select a depot"); return; }
+    setBcSending(true);
+    try {
+      const body: Record<string, string> = { target: bcTarget, text: bcText.trim() };
+      if (bcTarget === "user") body.userId = bcUserId;
+      if (bcTarget === "depot") body.depotCode = bcDepotCode;
+      const res = await api.post<{ sent: number }>("/admin/broadcast", body);
+      showToast(`Sent to ${res.sent} user${res.sent !== 1 ? "s" : ""}`);
+      setBcText("");
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Send failed");
+    } finally { setBcSending(false); }
+  };
+
   const handleDeleteUser = async (userId: string) => {
     setBusy(userId);
     try {
@@ -205,10 +227,10 @@ export default function AdminPage() {
         )}
 
         {/* Tabs */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4, background: C.s, borderRadius: 12, padding: 4, marginBottom: 16 }}>
-          {(["reports", "users", "invites", "audit"] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{ padding: "10px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: tab === t ? PURPLE + "22" : "transparent", color: tab === t ? PURPLE : C.m, boxShadow: tab === t ? `inset 0 0 0 1px ${PURPLE}44` : "none" }}>
-              {t === "reports" ? `Reports${stats?.pendingReports ? ` (${stats.pendingReports})` : ""}` : t === "users" ? "Users" : t === "invites" ? "Invites" : "Audit"}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", gap: 4, background: C.s, borderRadius: 12, padding: 4, marginBottom: 16 }}>
+          {(["reports", "users", "invites", "audit", "broadcast"] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)} style={{ padding: "10px 4px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, background: tab === t ? PURPLE + "22" : "transparent", color: tab === t ? PURPLE : C.m, boxShadow: tab === t ? `inset 0 0 0 1px ${PURPLE}44` : "none" }}>
+              {t === "reports" ? `Reports${stats?.pendingReports ? ` (${stats.pendingReports})` : ""}` : t === "users" ? "Users" : t === "invites" ? "Invites" : t === "audit" ? "Audit" : "Broadcast"}
             </button>
           ))}
         </div>
@@ -401,6 +423,81 @@ export default function AdminPage() {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Broadcast tab */}
+        {tab === "broadcast" && (
+          <div style={{ display: "grid", gap: 16 }}>
+            <div style={{ padding: "14px 16px", borderRadius: 14, background: PURPLE + "0c", border: `1px solid ${PURPLE}22` }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.white, marginBottom: 4 }}>Send Message</div>
+              <div style={{ fontSize: 11, color: C.m }}>Messages appear in recipient inboxes and trigger a push notification.</div>
+            </div>
+
+            {/* Target selector */}
+            <div>
+              <label style={lb}>Send To</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                {(["all", "depot", "user"] as const).map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setBcTarget(t)}
+                    style={{ padding: "10px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: bcTarget === t ? PURPLE + "22" : "rgba(255,255,255,.04)", color: bcTarget === t ? PURPLE : C.m, boxShadow: bcTarget === t ? `inset 0 0 0 1px ${PURPLE}44` : `inset 0 0 0 1px rgba(255,255,255,.06)` }}
+                  >
+                    {t === "all" ? "All Users" : t === "depot" ? "A Depot" : "One User"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Depot picker */}
+            {bcTarget === "depot" && (
+              <div>
+                <label style={lb}>Depot</label>
+                <select value={bcDepotCode} onChange={e => setBcDepotCode(e.target.value)} style={{ height: 48 }}>
+                  <option value="">— Select depot —</option>
+                  {depots.map(d => <option key={d.code} value={d.code}>{d.name} ({d.code})</option>)}
+                </select>
+              </div>
+            )}
+
+            {/* User picker */}
+            {bcTarget === "user" && (
+              <div>
+                <label style={lb}>User</label>
+                <select value={bcUserId} onChange={e => setBcUserId(e.target.value)} style={{ height: 48 }}>
+                  <option value="">— Select user —</option>
+                  {users.map(u => <option key={u.id} value={u.id}>{u.firstName} {u.lastName} ({u.email})</option>)}
+                </select>
+                {users.length === 0 && (
+                  <div style={{ fontSize: 11, color: C.m, marginTop: 6 }}>Load users from the Users tab first.</div>
+                )}
+              </div>
+            )}
+
+            {/* Message */}
+            <div>
+              <label style={lb}>Message</label>
+              <textarea
+                value={bcText}
+                onChange={e => setBcText(e.target.value)}
+                placeholder="Type your message…"
+                rows={4}
+                maxLength={1000}
+                style={{ resize: "none" }}
+              />
+              <div style={{ fontSize: 10, color: bcText.length > 900 ? C.red : C.m, textAlign: "right", marginTop: 4 }}>
+                {bcText.length}/1000
+              </div>
+            </div>
+
+            <button
+              onClick={handleBroadcast}
+              disabled={!bcText.trim() || bcSending || (bcTarget === "user" && !bcUserId) || (bcTarget === "depot" && !bcDepotCode)}
+              style={{ padding: "14px", borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${PURPLE},${PURPLE}cc)`, color: "#fff", fontSize: 14, fontWeight: 700, opacity: (!bcText.trim() || bcSending || (bcTarget === "user" && !bcUserId) || (bcTarget === "depot" && !bcDepotCode)) ? 0.5 : 1 }}
+            >
+              {bcSending ? "Sending…" : bcTarget === "all" ? "Send to All Users" : bcTarget === "depot" ? "Send to Depot" : "Send to User"}
+            </button>
           </div>
         )}
 
