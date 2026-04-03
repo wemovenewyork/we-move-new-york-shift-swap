@@ -43,6 +43,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   await prisma.swap.update({ where: { id }, data: { status: "pending" } });
 
+  // Notify the swap poster that someone wants to agree
+  const depotCode = await prisma.depot.findUnique({ where: { id: swap.depotId }, select: { code: true } });
+  await notifyUser(swap.userId, {
+    title: "Someone wants to swap with you!",
+    body: `${proposer?.firstName ?? "An operator"} proposed an agreement on your swap`,
+    url: `/depot/${depotCode?.code ?? ""}/swaps/${id}`,
+  });
+
   return ok(agreement, 201);
 }
 
@@ -102,7 +110,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     // Notify the other party
     const otherUserId = isUserB ? agreement.userAId : agreement.userBId;
-    notifyUser(otherUserId, {
+    await notifyUser(otherUserId, {
       title: "Agreement cancelled",
       body: "The swap agreement was cancelled",
       url: `/depot/${depotId}/swaps/${id}`,
@@ -121,7 +129,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         data: { status: "completed", userBNote: note ?? null, userBAt: new Date(), completedAt: new Date() },
       });
       await prisma.swap.update({ where: { id }, data: { status: "filled" } });
-      notifyUser(agreement.userAId, {
+      await notifyUser(agreement.userAId, {
         title: "Swap confirmed! 🎉",
         body: "Your swap is locked in. Print the agreement to show your dispatcher.",
         url: `/depot/${depotId}/swaps/${id}`,
@@ -136,7 +144,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         data: { status: "completed", completedAt: new Date() },
       });
       await prisma.swap.update({ where: { id }, data: { status: "filled" } });
-      notifyUser(agreement.userBId, {
+      await notifyUser(agreement.userBId, {
         title: "Swap agreement completed!",
         body: "Both operators confirmed. Your swap is locked in.",
         url: `/depot/${depotId}/swaps/${id}`,
