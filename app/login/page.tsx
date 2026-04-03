@@ -6,7 +6,6 @@ import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
 import { C } from "@/constants/colors";
 import { Depot } from "@/types";
-import Footer from "@/components/ui/Footer";
 import Intro from "@/components/screens/Intro";
 import MagneticButton from "@/components/ui/MagneticButton";
 
@@ -122,7 +121,7 @@ export default function LoginPage() {
               <label htmlFor="signin-pw" style={lb}>Password</label>
               <div style={{ position: "relative" }}>
                 <input id="signin-pw" type={showPw ? "text" : "password"} value={pw} onChange={e => { setPw(e.target.value); setErr(""); }} placeholder="Your password" onKeyDown={e => e.key === "Enter" && doSignIn()} style={{ paddingRight: 44 }} />
-                <button type="button" aria-label={showPw ? "Hide password" : "Show password"} onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, fontWeight: 600, padding: "4px 6px" }}>{showPw ? "Hide" : "Show"}</button>
+                <button type="button" aria-label={showPw ? "Hide password" : "Show password"} onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 6, cursor: "pointer", color: C.white, fontSize: 11, fontWeight: 700, padding: "3px 8px", lineHeight: "16px" }}>{showPw ? "Hide" : "Show"}</button>
               </div>
             </div>
             <MagneticButton onClick={doSignIn} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 16, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1, width: "100%" }}>
@@ -156,14 +155,14 @@ export default function LoginPage() {
               <label htmlFor="reg-pw" style={lb}>Create Password</label>
               <div style={{ position: "relative" }}>
                 <input id="reg-pw" type={showPw ? "text" : "password"} value={pw} onChange={e => { setPw(e.target.value); setErr(""); }} placeholder="Min 12 chars" style={{ paddingRight: 44 }} />
-                <button type="button" aria-label={showPw ? "Hide password" : "Show password"} onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, fontWeight: 600, padding: "4px 6px" }}>{showPw ? "Hide" : "Show"}</button>
+                <button type="button" aria-label={showPw ? "Hide password" : "Show password"} onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 6, cursor: "pointer", color: C.white, fontSize: 11, fontWeight: 700, padding: "3px 8px", lineHeight: "16px" }}>{showPw ? "Hide" : "Show"}</button>
               </div>
             </div>
             <div>
               <label htmlFor="reg-pw2" style={lb}>Verify Password</label>
               <div style={{ position: "relative" }}>
                 <input id="reg-pw2" type={showPw2 ? "text" : "password"} value={pw2} onChange={e => { setPw2(e.target.value); setErr(""); }} placeholder="Re-enter" style={{ paddingRight: 44 }} />
-                <button type="button" aria-label={showPw2 ? "Hide password" : "Show password"} onClick={() => setShowPw2(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.m, fontSize: 13, fontWeight: 600, padding: "4px 6px" }}>{showPw2 ? "Hide" : "Show"}</button>
+                <button type="button" aria-label={showPw2 ? "Hide password" : "Show password"} onClick={() => setShowPw2(v => !v)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 6, cursor: "pointer", color: C.white, fontSize: 11, fontWeight: 700, padding: "3px 8px", lineHeight: "16px" }}>{showPw2 ? "Hide" : "Show"}</button>
               </div>
             </div>
             <div><label htmlFor="reg-invite" style={lb}>Invite Code</label><input id="reg-invite" value={invCode} onChange={e => { setInvCode(e.target.value.toUpperCase()); setErr(""); }} placeholder="e.g. WMNY-DEMO1" style={{ letterSpacing: 2, textTransform: "uppercase" }} /></div>
@@ -176,7 +175,6 @@ export default function LoginPage() {
           </div>
         )}
 
-        <Footer />
       </div>
 
       {showDisclaimer && (
