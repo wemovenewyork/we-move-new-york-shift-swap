@@ -29,6 +29,7 @@ export default function PrintAgreementPage() {
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
+    if (!loading && user && !user.depotId) router.replace("/setup-profile");
   }, [user, loading, router]);
 
   useEffect(() => {

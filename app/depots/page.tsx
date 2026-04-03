@@ -32,7 +32,8 @@ export default function DepotsPage() {
   }, []);
 
   useEffect(() => {
-    if (!loading && !user && !localStorage.getItem("accessToken")) router.replace("/login");
+    if (!loading && !user) router.replace("/login");
+    if (!loading && user && !user.depotId) router.replace("/setup-profile");
   }, [user, loading, router]);
 
   useEffect(() => {

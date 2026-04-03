@@ -23,7 +23,9 @@ export default function ActionPage() {
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
-  }, [user, loading, router]);
+    if (!loading && user && !user.depotId) router.replace("/setup-profile");
+    if (!loading && user?.depot && user.depot.code !== code && user.role !== "admin" && user.role !== "subAdmin") router.replace(`/depot/${user.depot.code}/swaps`);
+  }, [user, loading, router, code]);
 
   useEffect(() => {
     if (!code) return;

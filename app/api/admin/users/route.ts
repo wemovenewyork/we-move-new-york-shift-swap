@@ -45,16 +45,28 @@ export async function PATCH(req: NextRequest) {
   if (!dbUser || dbUser.role !== "admin") return err("Forbidden", 403);
 
   const { userId, role, depotId } = await req.json();
-  if (!userId || !["operator", "depotRep", "admin"].includes(role)) return err("Invalid request", 400);
+  if (!userId) return err("userId required", 400);
   if (userId === user.userId) return err("Cannot change your own role", 400);
-  if (role === "depotRep" && !depotId) return err("Depot is required for depot rep role", 400);
 
   const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, email: true } });
+  if (!target) return err("User not found", 404);
+
+  // Validate role if provided
+  if (role !== undefined && !["operator", "depotRep", "subAdmin", "admin"].includes(role)) {
+    return err("Invalid role", 400);
+  }
+  if (role === "depotRep" && !depotId) return err("Depot is required for depot rep role", 400);
 
   const updated = await prisma.user.update({
     where: { id: userId },
-    data: { role, ...(role === "depotRep" ? { depotId } : {}) },
-    select: { id: true, firstName: true, lastName: true, role: true, depot: { select: { name: true, code: true } } },
+    data: {
+      ...(role !== undefined && { role }),
+      ...(depotId !== undefined && {
+        depotId,
+        depotSetAt: new Date(), // Admin resets the lock timer
+      }),
+    },
+    select: { id: true, firstName: true, lastName: true, role: true, depotId: true, depot: { select: { name: true, code: true } } },
   });
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
@@ -63,7 +75,10 @@ export async function PATCH(req: NextRequest) {
     action: "role_change",
     targetId: userId,
     targetType: "user",
-    detail: `Changed role from ${target?.role} to ${role} for ${target?.email}${role === "depotRep" ? ` (depot: ${depotId})` : ""}`,
+    detail: [
+      role !== undefined ? `role → ${role}` : null,
+      depotId !== undefined ? `depot → ${depotId ?? "none"}` : null,
+    ].filter(Boolean).join(", ") + ` for ${target.email}`,
     ip,
   });
 

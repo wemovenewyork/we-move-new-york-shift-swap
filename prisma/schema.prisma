@@ -50,6 +50,8 @@ model User {
   notifications      Notification[]
   savedSwaps         SavedSwap[]
   lastActiveAt       DateTime? @map("last_active_at")
+  jobTitle          String?   @map("job_title")
+  depotSetAt        DateTime? @map("depot_set_at")
 
   @@map("users")
 }

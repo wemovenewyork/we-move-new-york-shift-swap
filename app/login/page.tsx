@@ -5,13 +5,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
 import { C } from "@/constants/colors";
-import { Depot } from "@/types";
 import Intro from "@/components/screens/Intro";
 import MagneticButton from "@/components/ui/MagneticButton";
 
 const lb: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: 12, fontWeight: 600, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
-
-const BOROUGH_ORDER = ["Manhattan", "Brooklyn", "Bronx", "Queens", "Staten Island"];
 
 export default function LoginPage() {
   const { login, user, loading } = useAuth();
@@ -29,8 +26,6 @@ export default function LoginPage() {
   const [invCode, setInvCode] = useState(() =>
     typeof window !== "undefined" ? (new URLSearchParams(window.location.search).get("invite") ?? "") : ""
   );
-  const [depotId, setDepotId] = useState("");
-  const [depots, setDepots] = useState<Depot[]>([]);
   const [showPw, setShowPw] = useState(false); const [showPw2, setShowPw2] = useState(false);
   const [err, setErr] = useState(""); const [shaking, setShaking] = useState(false); const [submitting, setSubmitting] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
@@ -55,12 +50,6 @@ export default function LoginPage() {
     }
   }, [user, loading, router, showDisclaimer, showTerms]);
 
-  useEffect(() => {
-    if (mode === "register" && depots.length === 0) {
-      api.get<Depot[]>("/depots").then(setDepots).catch(() => {});
-    }
-  }, [mode, depots.length]);
-
   const doSignIn = async () => {
     if (!em || !pw) { setErrWithShake("Fill in all fields"); return; }
     setSubmitting(true); setErr("");
@@ -75,22 +64,16 @@ export default function LoginPage() {
 
   const doRegister = async () => {
     if (!fn || !ln || !em || !pw || !pw2 || !invCode) { setErrWithShake("Fill in all fields"); return; }
-    if (!depotId) { setErrWithShake("Please select your home depot"); return; }
     if (pw !== pw2) { setErrWithShake("Passwords do not match"); return; }
     setSubmitting(true); setErr("");
     try {
-      const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; role: string; language: string; flexibleMode: boolean } }>("/auth/register", { firstName: fn, lastName: ln, email: em, password: pw, inviteCode: invCode, depotId });
+      const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; role: string; language: string; flexibleMode: boolean } }>("/auth/register", { firstName: fn, lastName: ln, email: em, password: pw, inviteCode: invCode });
       login(data.accessToken, data.refreshToken, data.user as Parameters<typeof login>[2]);
-      window.location.href = "/depots";
+      window.location.href = "/setup-profile";
     } catch (e: unknown) {
       setErrWithShake(e instanceof Error ? e.message : "Registration failed");
     } finally { setSubmitting(false); }
   };
-
-  const groupedDepots = BOROUGH_ORDER.map(borough => ({
-    borough,
-    depots: depots.filter(d => d.borough === borough),
-  })).filter(g => g.depots.length > 0);
 
   if (showIntro) return <Intro onDone={() => { sessionStorage.setItem("intro-seen", "1"); setShowIntro(false); }} />;
 
@@ -136,19 +119,6 @@ export default function LoginPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div><label htmlFor="reg-fn" style={lb}>First Name</label><input id="reg-fn" value={fn} onChange={e => { setFn(e.target.value); setErr(""); }} placeholder="John" /></div>
               <div><label htmlFor="reg-ln" style={lb}>Last Name</label><input id="reg-ln" value={ln} onChange={e => { setLn(e.target.value); setErr(""); }} placeholder="Williams" /></div>
-            </div>
-            <div>
-              <label htmlFor="reg-depot" style={lb}>Home Depot</label>
-              <select id="reg-depot" value={depotId} onChange={e => { setDepotId(e.target.value); setErr(""); }} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.bd}`, background: C.s, color: depotId ? C.white : C.m, fontSize: 14, cursor: "pointer" }}>
-                <option value="">— Select your home depot —</option>
-                {groupedDepots.map(({ borough, depots: bd }) => (
-                  <optgroup key={borough} label={borough}>
-                    {bd.map(d => (
-                      <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
             </div>
             <div><label htmlFor="reg-email" style={lb}>Email</label><input id="reg-email" type="email" value={em} onChange={e => { setEm(e.target.value); setErr(""); }} placeholder="you@example.com" /></div>
             <div>

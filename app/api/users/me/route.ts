@@ -45,6 +45,8 @@ export async function GET(req: NextRequest) {
     termsVersion: dbUser.termsVersion,
     reputation,
     inviteCodes,
+    jobTitle: dbUser.jobTitle,
+    depotSetAt: dbUser.depotSetAt?.toISOString() ?? null,
   });
 }
 
@@ -52,7 +54,7 @@ export async function PUT(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
-  const { firstName, lastName, email, language, depotId } = await req.json();
+  const { firstName, lastName, email, language, depotId, jobTitle } = await req.json();
 
   if (email) {
     const existing = await prisma.user.findFirst({
@@ -61,10 +63,20 @@ export async function PUT(req: NextRequest) {
     if (existing) return err("Email already in use", 409);
   }
 
-  // Validate depot if changing
-  if (depotId) {
-    const depot = await prisma.depot.findUnique({ where: { id: depotId } });
-    if (!depot) return err("Depot not found", 404);
+  // Depot change enforcement
+  if (depotId !== undefined) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { depotId: true, depotSetAt: true, role: true },
+    });
+    const isAdmin = dbUser?.role === "admin" || dbUser?.role === "subAdmin";
+    if (!isAdmin && dbUser?.depotId && dbUser.depotId !== depotId && depotId !== null) {
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+      if (dbUser.depotSetAt && (Date.now() - dbUser.depotSetAt.getTime()) < sevenDaysMs) {
+        const unlocksAt = new Date(dbUser.depotSetAt.getTime() + sevenDaysMs);
+        return err(`Home depot can only be changed once every 7 days. Unlocks ${unlocksAt.toLocaleDateString("en-US", { month: "long", day: "numeric" })}.`, 403);
+      }
+    }
   }
 
   const updated = await prisma.user.update({
@@ -74,7 +86,11 @@ export async function PUT(req: NextRequest) {
       ...(lastName && { lastName: lastName.trim() }),
       ...(email && { email: email.toLowerCase().trim() }),
       ...(language && { language }),
-      ...(depotId !== undefined && { depotId }),
+      ...(jobTitle !== undefined && { jobTitle }),
+      ...(depotId !== undefined && {
+        depotId,
+        ...(depotId ? { depotSetAt: new Date() } : {}),
+      }),
     },
     include: { depot: true },
   });
@@ -88,5 +104,7 @@ export async function PUT(req: NextRequest) {
     depot: updated.depot,
     role: updated.role,
     language: updated.language,
+    jobTitle: updated.jobTitle,
+    depotSetAt: updated.depotSetAt?.toISOString() ?? null,
   });
 }

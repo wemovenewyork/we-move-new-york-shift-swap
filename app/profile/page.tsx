@@ -65,6 +65,15 @@ export default function ProfilePage() {
   if (!user) return null;
   const depot = user.depot ?? depots.find(d => d.id === user.depotId) ?? null;
 
+  const depotLocked = (() => {
+    if (!user.depotSetAt || !user.depotId) return false;
+    if (user.role === "admin" || user.role === "subAdmin") return false;
+    return (Date.now() - new Date(user.depotSetAt).getTime()) < 7 * 24 * 60 * 60 * 1000;
+  })();
+  const depotUnlocksAt = user.depotSetAt
+    ? new Date(new Date(user.depotSetAt).getTime() + 7 * 24 * 60 * 60 * 1000)
+    : null;
+
   return (
     <div style={{ minHeight: "100vh", background: C.bg }}>
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.8)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,.06)", padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -121,7 +130,8 @@ export default function ProfilePage() {
                 id="prof-depot"
                 value={depotId}
                 onChange={e => setDepotId(e.target.value)}
-                style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.bd}`, background: C.s, color: depotId ? C.white : C.m, fontSize: 14, cursor: "pointer", appearance: "auto" }}
+                disabled={depotLocked}
+                style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.bd}`, background: C.s, color: depotId ? C.white : C.m, fontSize: 14, cursor: depotLocked ? "not-allowed" : "pointer", appearance: "auto", opacity: depotLocked ? 0.6 : 1 }}
               >
                 <option value="">— Select your home depot —</option>
                 {["Manhattan","Brooklyn","Bronx","Queens","Staten Island"].map(borough => {
@@ -134,6 +144,11 @@ export default function ProfilePage() {
                   );
                 })}
               </select>
+              {depotLocked && depotUnlocksAt && (
+                <div style={{ fontSize: 11, color: C.gold, marginTop: 6, lineHeight: 1.5 }}>
+                  🔒 Locked until {depotUnlocksAt.toLocaleDateString("en-US", { month: "long", day: "numeric" })}
+                </div>
+              )}
             </div>
             <button onClick={saveProfile} disabled={saving} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 15, fontWeight: 700, color: C.bg }}>
               {saving ? "Saving..." : "Save Changes"}

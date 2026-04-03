@@ -66,6 +66,8 @@ export interface User {
   termsVersion?: string | null;
   reputation?: RepScore;
   inviteCodes?: { code: string; isValid: boolean }[];
+  jobTitle?: string | null;
+  depotSetAt?: string | null;
 }
 
 export interface Announcement {

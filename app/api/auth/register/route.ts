@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
   if (!await rateLimit(`register:${ip}`, 5, 3_600_000)) return err("Too many registration attempts — try again in an hour", 429);
 
-  const { firstName, lastName, email, password, inviteCode, depotId } = await req.json();
+  const { firstName, lastName, email, password, inviteCode } = await req.json();
 
-  if (!firstName || !lastName || !email || !password || !inviteCode || !depotId) {
+  if (!firstName || !lastName || !email || !password || !inviteCode) {
     return err("All fields are required", 400);
   }
   if (!email.includes("@")) return err("Invalid email", 400);
@@ -33,10 +33,6 @@ export async function POST(req: NextRequest) {
   const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (existing) return err("Email already registered", 409);
 
-  // Validate depot
-  const depot = await prisma.depot.findUnique({ where: { id: depotId } });
-  if (!depot) return err("Invalid depot selected", 400);
-
   const passwordHash = await bcrypt.hash(password, 10);
   const verifyToken = crypto.randomBytes(32).toString("hex");
 
@@ -46,7 +42,6 @@ export async function POST(req: NextRequest) {
       passwordHash,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      depotId: depot.id,
       verified: true, // TODO: set to false once Resend domain is verified
       emailVerifyToken: verifyToken,
       emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
