@@ -246,6 +246,7 @@ enum ReportStatus {
 enum UserRole {
   operator
   depotRep
+  subAdmin
   admin
 }
 

@@ -12,7 +12,7 @@ export async function GET(
   try { token = requireUser(req); } catch { return err("Unauthorized", 401); }
 
   const admin = await prisma.user.findUnique({ where: { id: token.userId } });
-  if (!admin || admin.role !== "admin") return err("Forbidden", 403);
+  if (!admin || !["admin", "subAdmin"].includes(admin.role)) return err("Forbidden", 403);
 
   const { id } = await params;
 
@@ -36,11 +36,13 @@ export async function GET(
     reviews: reviews.map(r => r.rating),
   });
 
+  const isSubAdmin = admin.role === "subAdmin";
+
   return ok({
     id: u.id,
     firstName: u.firstName,
     lastName: u.lastName,
-    email: u.email,
+    email: isSubAdmin ? null : u.email,
     role: u.role,
     createdAt: u.createdAt,
     depot: u.depot,

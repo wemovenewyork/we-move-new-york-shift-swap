@@ -162,7 +162,16 @@ export default function ProfilePage() {
 
             {/* Push Notifications */}
             <div style={{ background: "rgba(255,255,255,.03)", borderRadius: 14, padding: 14, border: `1px solid ${C.bd}` }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: "uppercase", letterSpacing: 2, marginBottom: 10 }}>Notifications</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: "uppercase", letterSpacing: 2 }}>Notifications</div>
+                <button
+                  onClick={() => router.push("/notifications")}
+                  style={{ background: "none", border: `1px solid ${C.bd}`, borderRadius: 8, padding: "4px 12px", cursor: "pointer", fontSize: 11, fontWeight: 600, color: C.m, display: "flex", alignItems: "center", gap: 6 }}
+                >
+                  <Icon n="bell" s={12} c={C.m} />
+                  View all
+                </button>
+              </div>
               <NotifToggle />
             </div>
           </div>

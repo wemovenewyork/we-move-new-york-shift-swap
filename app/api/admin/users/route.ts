@@ -9,8 +9,9 @@ export async function GET(req: NextRequest) {
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
   const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
-  if (!dbUser || dbUser.role !== "admin") return err("Forbidden", 403);
+  if (!dbUser || !["admin", "subAdmin"].includes(dbUser.role)) return err("Forbidden", 403);
 
+  const isSubAdmin = dbUser.role === "subAdmin";
   const url = new URL(req.url);
   const q = url.searchParams.get("q") ?? "";
 
@@ -19,14 +20,16 @@ export async function GET(req: NextRequest) {
       OR: [
         { firstName: { contains: q, mode: "insensitive" } },
         { lastName: { contains: q, mode: "insensitive" } },
-        { email: { contains: q, mode: "insensitive" } },
+        ...(!isSubAdmin ? [{ email: { contains: q, mode: "insensitive" as const } }] : []),
       ],
     } : undefined,
     orderBy: { createdAt: "desc" },
     take: 100,
     select: {
       id: true, firstName: true, lastName: true,
-      email: true, role: true, createdAt: true,
+      // subAdmin does not see email addresses
+      ...(isSubAdmin ? {} : { email: true }),
+      role: true, createdAt: true,
       depot: { select: { name: true, code: true } },
     },
   });

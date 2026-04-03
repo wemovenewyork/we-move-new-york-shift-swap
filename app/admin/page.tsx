@@ -22,7 +22,7 @@ interface Report {
 
 interface AdminUser {
   id: string; firstName: string; lastName: string; email: string;
-  role: "operator" | "depotRep" | "admin"; createdAt: string;
+  role: "operator" | "depotRep" | "subAdmin" | "admin"; createdAt: string;
   depot: { name: string; code: string } | null;
 }
 
@@ -32,7 +32,7 @@ interface InviteCode {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  operator: C.blue, depotRep: C.gold, admin: PURPLE,
+  operator: C.blue, depotRep: C.gold, subAdmin: "#F97316", admin: PURPLE,
 };
 
 const lb: React.CSSProperties = { display: "block", marginBottom: 6, fontSize: 11, fontWeight: 700, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
@@ -74,18 +74,18 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
-    if (!loading && user && user.role !== "admin") router.replace("/depots");
+    if (!loading && user && !["admin", "subAdmin"].includes(user.role)) router.replace("/depots");
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (!user || user.role !== "admin") return;
+    if (!user || !["admin", "subAdmin"].includes(user.role)) return;
     api.get<Stats>("/admin/stats").then(setStats).catch(() => {});
     api.get<Report[]>("/admin/reports").then(setReports).catch(() => {});
     api.get<{ id: string; name: string; code: string }[]>("/depots").then(setDepots).catch(() => {});
   }, [user]);
 
   useEffect(() => {
-    if ((tab !== "users" && !(tab === "broadcast" && bcTarget === "user")) || !user || user.role !== "admin") return;
+    if ((tab !== "users" && !(tab === "broadcast" && bcTarget === "user")) || !user || !["admin", "subAdmin"].includes(user.role)) return;
     api.get<AdminUser[]>(`/admin/users${userQ ? `?q=${encodeURIComponent(userQ)}` : ""}`).then(setUsers).catch(() => {});
   }, [tab, userQ, user, bcTarget]);
 
@@ -206,7 +206,8 @@ export default function AdminPage() {
     } finally { setBusy(null); }
   };
 
-  if (!user || user.role !== "admin") return null;
+  const isSubAdmin = user?.role === "subAdmin";
+  if (!user || !["admin", "subAdmin"].includes(user.role)) return null;
 
   const statCards = stats ? [
     { l: "Users", v: stats.totalUsers, c: C.blue },
@@ -226,7 +227,7 @@ export default function AdminPage() {
         </button>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: C.white }}>Admin Dashboard</div>
-          <div style={{ fontSize: 10, color: PURPLE, letterSpacing: 2, textTransform: "uppercase" }}>System Overview</div>
+          <div style={{ fontSize: 10, color: isSubAdmin ? "#F97316" : PURPLE, letterSpacing: 2, textTransform: "uppercase" }}>{isSubAdmin ? "Sub Admin" : "System Overview"}</div>
         </div>
         <div style={{ width: 36, height: 36, borderRadius: 10, background: PURPLE + "18", border: `1px solid ${PURPLE}33`, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon n="shield" s={18} c={PURPLE} />
@@ -247,9 +248,9 @@ export default function AdminPage() {
         )}
 
         {/* Tabs */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", gap: 4, background: C.s, borderRadius: 12, padding: 4, marginBottom: 16 }}>
-          {(["reports", "users", "invites", "audit", "broadcast"] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{ padding: "10px 4px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, background: tab === t ? PURPLE + "22" : "transparent", color: tab === t ? PURPLE : C.m, boxShadow: tab === t ? `inset 0 0 0 1px ${PURPLE}44` : "none" }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${isSubAdmin ? 3 : 5}, 1fr)`, gap: 4, background: C.s, borderRadius: 12, padding: 4, marginBottom: 16 }}>
+          {(["reports", "users", ...(isSubAdmin ? [] : ["invites", "audit"]), "broadcast"] as const).map(t => (
+            <button key={t} onClick={() => setTab(t as typeof tab)} style={{ padding: "10px 4px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, background: tab === t ? PURPLE + "22" : "transparent", color: tab === t ? PURPLE : C.m, boxShadow: tab === t ? `inset 0 0 0 1px ${PURPLE}44` : "none" }}>
               {t === "reports" ? `Reports${stats?.pendingReports ? ` (${stats.pendingReports})` : ""}` : t === "users" ? "Users" : t === "invites" ? "Invites" : t === "audit" ? "Audit" : "Broadcast"}
             </button>
           ))}
@@ -321,21 +322,27 @@ export default function AdminPage() {
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{u.firstName} {u.lastName}</div>
-                          <div style={{ fontSize: 11, color: C.m, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</div>
+                          {!isSubAdmin && u.email && <div style={{ fontSize: 11, color: C.m, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</div>}
                           {u.depot && <div style={{ fontSize: 10, color: C.gold, marginTop: 2 }}>{u.depot.name}</div>}
                         </div>
                       </button>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-                        <select
-                          value={u.role}
-                          disabled={isBusy || isConfirming}
-                          onChange={e => handleRoleChange(u.id, e.target.value)}
-                          style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${rc}44`, background: rc + "12", color: rc, fontSize: 12, fontWeight: 700, cursor: "pointer", appearance: "auto", opacity: isBusy || isConfirming ? 0.5 : 1 }}
-                        >
-                          <option value="operator">Operator</option>
-                          <option value="depotRep">Depot Rep</option>
-                          <option value="admin">Admin</option>
-                        </select>
+                        {!isSubAdmin && (
+                          <select
+                            value={u.role}
+                            disabled={isBusy || isConfirming}
+                            onChange={e => handleRoleChange(u.id, e.target.value)}
+                            style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${rc}44`, background: rc + "12", color: rc, fontSize: 12, fontWeight: 700, cursor: "pointer", appearance: "auto", opacity: isBusy || isConfirming ? 0.5 : 1 }}
+                          >
+                            <option value="operator">Operator</option>
+                            <option value="depotRep">Depot Rep</option>
+                            <option value="subAdmin">Sub Admin</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        )}
+                        {isSubAdmin && (
+                          <span style={{ padding: "4px 10px", borderRadius: 8, background: rc + "18", border: `1px solid ${rc}33`, fontSize: 11, fontWeight: 700, color: rc }}>{u.role}</span>
+                        )}
                         {u.role === "depotRep" && u.depot && pendingDepot[u.id] === undefined && (
                           <div style={{ fontSize: 10, fontWeight: 600, color: C.gold, textAlign: "right" }}>{u.depot.name} ({u.depot.code})</div>
                         )}
@@ -358,7 +365,7 @@ export default function AdminPage() {
                             </button>
                           </div>
                         )}
-                        {!isSelf && !pendingDepot[u.id] !== undefined && (
+                        {!isSubAdmin && !isSelf && !pendingDepot[u.id] !== undefined && (
                           <button
                             onClick={() => setDeleteConfirm(isConfirming ? null : u.id)}
                             disabled={isBusy}
@@ -460,7 +467,7 @@ export default function AdminPage() {
             <div>
               <label style={lb}>Send To</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-                {(["all", "depot", "user"] as const).map(t => (
+                {(["all", "depot", "user"] as const).filter(t => !(isSubAdmin && t === "all")).map(t => (
                   <button
                     key={t}
                     onClick={() => setBcTarget(t)}
@@ -576,7 +583,7 @@ export default function AdminPage() {
                     </div>
                     <div>
                       <div style={{ fontSize: 17, fontWeight: 800, color: C.white }}>{profileData.firstName} {profileData.lastName}</div>
-                      <div style={{ fontSize: 12, color: C.m, marginTop: 2 }}>{profileData.email}</div>
+                      {profileData.email && !isSubAdmin && <div style={{ fontSize: 12, color: C.m, marginTop: 2 }}>{profileData.email}</div>}
                       <span style={{ display: "inline-block", marginTop: 4, padding: "2px 10px", borderRadius: 8, background: rc + "18", border: `1px solid ${rc}33`, fontSize: 11, fontWeight: 700, color: rc }}>
                         {profileData.role}
                       </span>
