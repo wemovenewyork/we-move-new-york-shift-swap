@@ -11,7 +11,6 @@ import DepotBadge from "@/components/ui/DepotBadge";
 import MsgModal from "@/components/ui/MsgModal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import BottomNav from "@/components/ui/BottomNav";
-import FAB from "@/components/ui/FAB";
 import Toast from "@/components/ui/Toast";
 import Icon from "@/components/ui/Icon";
 import Footer from "@/components/ui/Footer";
@@ -322,7 +321,6 @@ export default function BrowsePage() {
         <Footer />
       </main>
 
-      <FAB onClick={() => router.push(`/depot/${code}/post`)} />
       <BottomNav active="browse" depotCode={code} lang={user?.language} />
       {msgModal && <MsgModal swap={msgModal} onSend={handleSend} onClose={() => setMsgModal(null)} />}
       {confirm && <ConfirmModal title={confirm.title} text={confirm.text} onConfirm={confirm.action} onCancel={() => setConfirm(null)} />}
