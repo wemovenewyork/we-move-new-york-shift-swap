@@ -31,6 +31,25 @@ function getToday() {
   const day = d.getDate().toString().padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
+
+function isPastDate(dateStr: string): boolean {
+  if (!dateStr) return false;
+  const today = getToday();
+  return dateStr < today;
+}
+
+// Returns true if the date+time combination is in the past.
+// Time is optional — if omitted, only the date is checked.
+function isPastDateTime(dateStr: string, timeStr?: string): boolean {
+  if (!dateStr) return false;
+  if (isPastDate(dateStr)) return true;
+  if (dateStr > getToday()) return false;
+  // dateStr === today
+  if (!timeStr) return false;
+  const now = new Date();
+  const [h, m] = timeStr.split(":").map(Number);
+  return h < now.getHours() || (h === now.getHours() && m <= now.getMinutes());
+}
 function getDayFromDate(dateStr: string): string {
   if (!dateStr) return "";
   const d = new Date(dateStr + "T12:00");
@@ -219,6 +238,23 @@ export default function PostSwapPage() {
   const toDay = getDayFromDate(f.toDate);
   const today = getToday();
 
+  // Clear any times that are now in the past after a date change
+  const clearPastTimes = (next: FormState, dateField: "date" | "fromDate"): FormState => {
+    const d = dateField === "date" ? next.date : next.fromDate;
+    if (!d || d > today) return next;
+    // date is today — clear times already past
+    const clearIfPast = (t: string) => (t && isPastDateTime(d, t) ? "" : t);
+    return {
+      ...next,
+      startTime: clearIfPast(next.startTime),
+      clearTime: clearIfPast(next.clearTime),
+      swingStart: clearIfPast(next.swingStart),
+      swingEnd: clearIfPast(next.swingEnd),
+    };
+  };
+
+  const [dateError, setDateError] = useState("");
+
   const validate = () => {
     if (!f.details.trim()) return false;
     if (f.category === "work" && !f.date) return false;
@@ -227,8 +263,29 @@ export default function PostSwapPage() {
     return true;
   };
 
+  // Hard validation of dates/times before submit
+  const validatePast = (): string => {
+    if (f.category === "work") {
+      if (f.date && isPastDate(f.date)) return "Swap date cannot be in the past.";
+      if (f.startTime && isPastDateTime(f.date, f.startTime)) return "Start time is in the past.";
+      if (f.clearTime && isPastDateTime(f.date, f.clearTime)) return "Clear time is in the past.";
+      if (f.swingStart && isPastDateTime(f.date, f.swingStart)) return "Swing start is in the past.";
+      if (f.swingEnd && isPastDateTime(f.date, f.swingEnd)) return "Swing end is in the past.";
+    }
+    if (f.category === "daysoff") {
+      if (f.fromDate && isPastDate(f.fromDate)) return "From date cannot be in the past.";
+      if (f.toDate && isPastDate(f.toDate)) return "To date cannot be in the past.";
+      if (f.startTime && isPastDateTime(f.fromDate, f.startTime)) return "Start time is in the past.";
+      if (f.clearTime && isPastDateTime(f.fromDate, f.clearTime)) return "Clear time is in the past.";
+    }
+    return "";
+  };
+
   const handleSubmit = async () => {
     if (!validate()) { setShowErrors(true); return; }
+    const pastErr = validatePast();
+    if (pastErr) { setDateError(pastErr); return; }
+    setDateError("");
     setSubmitting(true);
     try {
       const payload = {
@@ -317,7 +374,11 @@ export default function PostSwapPage() {
                   type="date"
                   value={f.date}
                   min={today}
-                  onChange={e => sF({ ...f, date: e.target.value })}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val && isPastDate(val)) return;
+                    sF(clearPastTimes({ ...f, date: val }, "date"));
+                  }}
                   style={{ ...dateInputStyle, ...(showErrors && !f.date ? { borderColor: C.red + "66" } : {}) }}
                 />
               </div>
@@ -344,7 +405,11 @@ export default function PostSwapPage() {
                     type="date"
                     value={f.fromDate}
                     min={today}
-                    onChange={e => sF({ ...f, fromDate: e.target.value })}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val && isPastDate(val)) return;
+                      sF(clearPastTimes({ ...f, fromDate: val }, "fromDate"));
+                    }}
                     style={{ ...dateInputStyle, ...(showErrors && !f.fromDate ? { borderColor: C.red + "66" } : {}) }}
                   />
                   {fromDay && <div style={{ fontSize: 12, color: C.gold, marginTop: 6, fontWeight: 600 }}>📅 {fromDay}</div>}
@@ -361,7 +426,11 @@ export default function PostSwapPage() {
                   type="date"
                   value={f.toDate}
                   min={f.fromDate || today}
-                  onChange={e => sF({ ...f, toDate: e.target.value })}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val && isPastDate(val)) return;
+                    sF({ ...f, toDate: val });
+                  }}
                   style={dateInputStyle}
                 />
                 {toDay && <div style={{ fontSize: 12, color: C.blue, marginTop: 6, fontWeight: 600 }}>📅 {toDay}</div>}
@@ -411,6 +480,12 @@ export default function PostSwapPage() {
             <label htmlFor="post-contact" style={lb}>Contact (optional)</label>
             <input id="post-contact" value={f.contact} onChange={e => sF({ ...f, contact: e.target.value })} placeholder="Phone or see dispatcher" style={{ fontSize: 16 }} />
           </div>
+
+          {dateError && (
+            <div role="alert" style={{ padding: "10px 14px", borderRadius: 12, background: C.red + "15", border: `1px solid ${C.red}33`, fontSize: 13, color: C.red }}>
+              {dateError}
+            </div>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10, marginTop: 8 }}>
             <button onClick={() => router.back()} style={{ padding: 16, borderRadius: 14, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 15, fontWeight: 600 }}>Cancel</button>
