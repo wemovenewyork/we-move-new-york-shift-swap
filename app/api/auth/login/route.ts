@@ -9,59 +9,64 @@ const MAX_ATTEMPTS = 10;
 const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!await rateLimit(`login:${ip}`, 10, 60_000)) return err("Too many attempts — try again in a minute", 429);
+  try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+    if (!await rateLimit(`login:${ip}`, 10, 60_000)) return err("Too many attempts — try again in a minute", 429);
 
-  const { email, password } = await req.json();
-  if (!email || !password) return err("Email and password required", 400);
+    const { email, password } = await req.json();
+    if (!email || !password) return err("Email and password required", 400);
 
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-  if (!user) return err("Invalid email or password", 401);
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    if (!user) return err("Invalid email or password", 401);
 
-  // Check email verification
-  if (!user.verified) return err("Please verify your email before signing in. Check your inbox.", 403);
+    // Check email verification
+    if (!user.verified) return err("Please verify your email before signing in. Check your inbox.", 403);
 
-  // Check account lockout
-  if (user.lockedUntil && user.lockedUntil > new Date()) {
-    const mins = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
-    return err(`Account locked — too many failed attempts. Try again in ${mins} minute${mins !== 1 ? "s" : ""}.`, 423);
-  }
+    // Check account lockout
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const mins = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
+      return err(`Account locked — too many failed attempts. Try again in ${mins} minute${mins !== 1 ? "s" : ""}.`, 423);
+    }
 
-  const valid = await bcrypt.compare(password, user.passwordHash);
+    const valid = await bcrypt.compare(password, user.passwordHash);
 
-  if (!valid) {
-    const attempts = user.loginAttempts + 1;
-    const locked = attempts >= MAX_ATTEMPTS;
+    if (!valid) {
+      const attempts = user.loginAttempts + 1;
+      const locked = attempts >= MAX_ATTEMPTS;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          loginAttempts: attempts,
+          ...(locked ? { lockedUntil: new Date(Date.now() + LOCKOUT_MS) } : {}),
+        },
+      });
+      if (locked) return err("Account locked — too many failed attempts. Try again in 15 minutes.", 423);
+      return err("Invalid email or password", 401);
+    }
+
+    // Successful login — reset lockout counters
     await prisma.user.update({
       where: { id: user.id },
-      data: {
-        loginAttempts: attempts,
-        ...(locked ? { lockedUntil: new Date(Date.now() + LOCKOUT_MS) } : {}),
+      data: { loginAttempts: 0, lockedUntil: null },
+    });
+
+    const payload = { userId: user.id, email: user.email };
+    return ok({
+      accessToken: signAccessToken(payload),
+      refreshToken: signRefreshToken(payload),
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        depotId: user.depotId,
+        role: user.role,
+        language: user.language,
+        termsVersion: user.termsVersion,
       },
     });
-    if (locked) return err("Account locked — too many failed attempts. Try again in 15 minutes.", 423);
-    return err("Invalid email or password", 401);
+  } catch (e: unknown) {
+    console.error("[login] unexpected error:", e);
+    return err("An unexpected error occurred. Please try again.", 500);
   }
-
-  // Successful login — reset lockout counters
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { loginAttempts: 0, lockedUntil: null },
-  });
-
-  const payload = { userId: user.id, email: user.email };
-  return ok({
-    accessToken: signAccessToken(payload),
-    refreshToken: signRefreshToken(payload),
-    user: {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      depotId: user.depotId,
-      role: user.role,
-      language: user.language,
-      termsVersion: user.termsVersion,
-    },
-  });
 }
