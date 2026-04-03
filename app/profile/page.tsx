@@ -13,6 +13,8 @@ import Toast from "@/components/ui/Toast";
 import NotifToggle from "@/components/ui/NotifToggle";
 import InboxIcon from "@/components/ui/InboxIcon";
 import NotifIcon from "@/components/ui/NotifIcon";
+import CountUp from "@/components/ui/CountUp";
+import ProgressRing from "@/components/ui/ProgressRing";
 
 const lb: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: 12, fontWeight: 600, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
 
@@ -91,7 +93,10 @@ export default function ProfilePage() {
           </div>
           <div style={{ fontSize: 20, fontWeight: 800, color: C.white }}>{fn} {ln}</div>
           <div style={{ fontSize: 12, color: C.m, marginTop: 4 }}>{email}</div>
-          <div style={{ marginTop: 8 }}><RepBadge rep={user.reputation} size="small" /></div>
+          <div style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <ProgressRing score={user.reputation?.score ?? 0} size={48} strokeWidth={4} />
+            <RepBadge rep={user.reputation} size="small" />
+          </div>
           {depot && (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, padding: "4px 12px", borderRadius: 8, background: C.s, border: `1px solid ${C.bd}` }}>
               <DepotBadge depot={depot} size={20} />
@@ -146,7 +151,7 @@ export default function ProfilePage() {
               </select>
               {depotLocked && depotUnlocksAt && (
                 <div style={{ fontSize: 11, color: C.gold, marginTop: 6, lineHeight: 1.5 }}>
-                  🔒 Locked until {depotUnlocksAt.toLocaleDateString("en-US", { month: "long", day: "numeric" })}
+                  <span className="lock-icon jiggle-hover">🔒</span> Locked until {depotUnlocksAt.toLocaleDateString("en-US", { month: "long", day: "numeric" })}
                 </div>
               )}
             </div>

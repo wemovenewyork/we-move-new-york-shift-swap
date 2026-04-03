@@ -11,6 +11,7 @@ import Icon from "@/components/ui/Icon";
 import Toast from "@/components/ui/Toast";
 import NotifIcon from "@/components/ui/NotifIcon";
 import InboxIcon from "@/components/ui/InboxIcon";
+import { playClick, playSuccess } from "@/lib/sound";
 
 const lb: React.CSSProperties = {
   display: "block", marginBottom: 6, fontSize: 11, fontWeight: 600,
@@ -193,6 +194,7 @@ export default function PostSwapPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [f, sF] = useState<FormState>({
     category: "work", details: "", contact: "",
     date: "", run: "", route: "",
@@ -284,6 +286,7 @@ export default function PostSwapPage() {
   };
 
   const handleSubmit = async () => {
+    playClick();
     if (!validate()) { setShowErrors(true); return; }
     const pastErr = validatePast();
     if (pastErr) { setDateError(pastErr); return; }
@@ -315,6 +318,8 @@ export default function PostSwapPage() {
         await api.post("/swaps", payload);
         showToast("Swap posted!");
       }
+      playSuccess();
+      setSubmitted(true);
       setTimeout(() => router.push(`/depot/${code}/swaps`), 600);
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Failed to post swap");
@@ -333,6 +338,9 @@ export default function PostSwapPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg }}>
+      <style>{`
+        @keyframes rippleOut { from { transform: scale(0); opacity: 0.6; } to { transform: scale(2.5); opacity: 0; } }
+      `}</style>
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.75)", borderBottom: `1px solid ${C.bd}`, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={() => router.push(`/depot/${code}`)} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="back" s={16} /></button>
         <DepotBadge depot={depot} size={38} />
@@ -491,8 +499,19 @@ export default function PostSwapPage() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10, marginTop: 8 }}>
             <button onClick={() => router.back()} style={{ padding: 16, borderRadius: 14, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 15, fontWeight: 600 }}>Cancel</button>
-            <button onClick={handleSubmit} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 15, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1 }}>
-              {submitting ? "Saving..." : editId ? "Save Changes" : "Post Swap"}
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || submitted}
+              style={{ position: "relative", overflow: "hidden", padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: submitted ? "#2ED573" : `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 15, fontWeight: 700, color: submitted ? "#fff" : C.bg, opacity: submitting ? 0.7 : 1, transition: "background 0.3s ease" }}
+            >
+              {submitted ? (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle" }}><polyline points="20 6 9 17 4 12"/></svg>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                    <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "rgba(255,255,255,0.4)", animation: "rippleOut 0.6s ease-out forwards" }} />
+                  </div>
+                </>
+              ) : submitting ? "Saving..." : editId ? "Save Changes" : "Post Swap"}
             </button>
           </div>
         </div>

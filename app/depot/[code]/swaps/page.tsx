@@ -19,6 +19,8 @@ import PostAnnouncementModal from "@/components/ui/PostAnnouncementModal";
 import NotifIcon from "@/components/ui/NotifIcon";
 import InboxIcon from "@/components/ui/InboxIcon";
 import FirstSwapBanner from "@/components/ui/FirstSwapBanner";
+import CountUp from "@/components/ui/CountUp";
+import { playClick } from "@/lib/sound";
 
 export default function BrowsePage() {
   const { user, loading } = useAuth();
@@ -235,7 +237,7 @@ export default function BrowsePage() {
             </button>
           </>
         )}
-        <button onClick={() => router.push(`/depot/${code}/post`)} style={{ padding: "8px 18px", borderRadius: 10, border: "none", cursor: "pointer", background: "#D1AD38", fontSize: 13, fontWeight: 700, color: "#010028", flexShrink: 0 }}>+ Post</button>
+        <button onClick={() => { playClick(); router.push(`/depot/${code}/post`); }} style={{ padding: "8px 18px", borderRadius: 10, border: "none", cursor: "pointer", background: "#D1AD38", fontSize: 13, fontWeight: 700, color: "#010028", flexShrink: 0 }}>+ Post</button>
       </div>
 
       <main id="main-content" style={{ maxWidth: 720, margin: "0 auto", padding: "0 20px" }}>
@@ -290,7 +292,7 @@ export default function BrowsePage() {
               <button key={x.id} onClick={() => setCat(cat === x.id ? "all" : x.id)} style={{ padding: "12px 10px", borderRadius: 12, border: "none", cursor: "pointer", textAlign: "left", background: cat === x.id ? m.bg : "rgba(255,255,255,.025)", backdropFilter: "blur(8px)", boxShadow: cat === x.id ? `inset 0 0 0 1.5px ${m.bd2}, 0 0 12px ${m.c}10` : `inset 0 0 0 1px rgba(255,255,255,.05)` }}>
                 <Icon n={x.ic} s={18} c={cat === x.id ? m.c : C.m} />
                 <div style={{ fontSize: 11, fontWeight: 700, color: cat === x.id ? m.c : C.white, marginTop: 4 }}>{x.l}</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: cat === x.id ? m.c : C.m }}>{ct}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: cat === x.id ? m.c : C.m }}><CountUp value={ct} /></div>
               </button>
             );
           })}

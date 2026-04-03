@@ -2,6 +2,7 @@
 
 import { RepScore } from "@/types";
 import { C } from "@/constants/colors";
+import CountUp from "./CountUp";
 
 interface Props {
   rep?: RepScore | null;
@@ -27,7 +28,7 @@ export default function RepBadge({ rep, size = "small" }: Props) {
         <span style={{ padding: "3px 10px", borderRadius: 8, background: s.color + "18", border: "1px solid " + s.color + "33", fontSize: 11, fontWeight: 700, color: s.color }}>{s.label}</span>
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 12 }}>
-        <span style={{ fontSize: 36, fontWeight: 800, color: s.color }}>{s.score}</span>
+        <span style={{ fontSize: 36, fontWeight: 800, color: s.color }}><CountUp value={s.score} /></span>
         <span style={{ fontSize: 14, color: C.m }}>/100</span>
       </div>
       <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>

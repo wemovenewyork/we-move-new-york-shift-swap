@@ -11,6 +11,7 @@ import Icon from "@/components/ui/Icon";
 import InboxIcon from "@/components/ui/InboxIcon";
 import NotifIcon from "@/components/ui/NotifIcon";
 import PushBanner from "@/components/ui/PushBanner";
+import { playClick } from "@/lib/sound";
 
 export default function ActionPage() {
   const { user, loading } = useAuth();
@@ -20,6 +21,7 @@ export default function ActionPage() {
   const [depot, setDepot] = useState<Depot | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [unread, setUnread] = useState(0);
+  const [logoSpin, setLogoSpin] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -50,11 +52,23 @@ export default function ActionPage() {
 
   return (
     <div className="page-enter" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <style>{`
+        @keyframes rotateLogo { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes rotateFast { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
       <div style={{ background: "rgba(1,0,40,.75)", borderBottom: `1px solid ${C.bd}`, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={() => router.push("/depots")} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon n="back" s={16} />
         </button>
-        <DepotBadge depot={depot} size={38} />
+        <div
+          onClick={() => {
+            setLogoSpin(true);
+            setTimeout(() => setLogoSpin(false), 1000);
+          }}
+          style={{ cursor: "pointer", animation: logoSpin ? "rotateFast 0.4s linear infinite" : "rotateLogo 8s linear infinite" }}
+        >
+          <DepotBadge depot={depot} size={38} />
+        </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{depot.name}</div>
           <div style={{ fontSize: 10, color: C.m }}>{depot.operator}</div>
@@ -72,7 +86,7 @@ export default function ActionPage() {
           {options.map(o => (
             <button
               key={o.k}
-              onClick={() => router.push(o.href)}
+              onClick={() => { playClick(); router.push(o.href); }}
               onMouseEnter={() => setHovered(o.k)}
               onMouseLeave={() => setHovered(null)}
               style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", padding: "18px 20px", borderRadius: 16, border: "none", cursor: "pointer", textAlign: "left", transition: "all .25s", background: hovered === o.k ? o.cl + "12" : "rgba(255,255,255,.025)", backdropFilter: "blur(8px)", boxShadow: hovered === o.k ? `0 12px 40px rgba(0,0,0,.2), inset 0 0 0 1px ${o.cl}33` : `inset 0 0 0 1px rgba(255,255,255,.05)`, transform: hovered === o.k ? "translateY(-3px)" : "none" }}

@@ -1,11 +1,13 @@
 "use client";
 
+import { useState, useRef } from "react";
 import { Swap, User } from "@/types";
 import { C, CM, STC, SWAP_TYPES } from "@/constants/colors";
 import { useAuth } from "@/lib/AuthContext";
 import { useT } from "@/lib/i18n";
 import Icon from "./Icon";
 import RepBadge from "./RepBadge";
+import { playClick, playPop } from "@/lib/sound";
 
 const ft = (t?: string | null) => {
   if (!t) return "";
@@ -55,6 +57,15 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
   const activeLabel = activeAgo(s.posterLastActive);
   const st2 = STC[s.status] ?? STC.open;
   const isNew = lastVisit && new Date(s.createdAt).getTime() > lastVisit - 3600000;
+  const [tapped, setTapped] = useState(false);
+  const tappedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const categoryGlow: Record<string, string> = {
+    work: "#0249B5",
+    daysoff: "#D1AD38",
+    vacation: "#00C9A7",
+  };
+  const glowColor = categoryGlow[s.category] ?? "#0249B5";
 
   const statusLabel: Record<string, string> = {
     open: tr("status.open"),
@@ -65,10 +76,16 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
 
   return (
     <div
-      style={{ background: "rgba(255,255,255,.03)", backdropFilter: "blur(12px)", borderRadius: 18, padding: 20, border: "1px solid rgba(255,255,255,.06)", transition: "all .3s cubic-bezier(.4,0,.2,1)", cursor: onClick ? "pointer" : "default", borderLeft: "3px solid transparent", opacity: !own && s.status !== "open" ? 0.62 : 1 }}
-      onMouseEnter={e => { const el = e.currentTarget; el.style.transform = "translateY(-2px)"; el.style.borderColor = m.c + "33"; el.style.boxShadow = `0 8px 32px rgba(0,0,0,.3),0 0 0 1px ${m.c}15`; el.style.borderLeftColor = m.c + "44"; }}
-      onMouseLeave={e => { const el = e.currentTarget; el.style.transform = ""; el.style.borderColor = "rgba(255,255,255,.06)"; el.style.boxShadow = ""; el.style.borderLeftColor = "transparent"; }}
-      onClick={onClick}
+      style={{ background: "rgba(255,255,255,.03)", backdropFilter: "blur(12px)", borderRadius: 18, padding: 20, border: "1px solid rgba(255,255,255,.06)", transition: "all .3s cubic-bezier(.4,0,.2,1)", cursor: onClick ? "pointer" : "default", borderLeft: "3px solid transparent", opacity: !own && s.status !== "open" ? 0.62 : 1, transform: tapped ? "scale(0.97)" : "" }}
+      onMouseEnter={e => { const el = e.currentTarget; el.style.transform = "translateY(-2px)"; el.style.borderColor = m.c + "33"; el.style.boxShadow = `0 8px 32px ${glowColor}20`; el.style.borderLeftColor = m.c + "44"; }}
+      onMouseLeave={e => { const el = e.currentTarget; el.style.transform = tapped ? "scale(0.97)" : ""; el.style.borderColor = "rgba(255,255,255,.06)"; el.style.boxShadow = ""; el.style.borderLeftColor = "transparent"; }}
+      onClick={() => {
+        playClick();
+        setTapped(true);
+        if (tappedTimer.current) clearTimeout(tappedTimer.current);
+        tappedTimer.current = setTimeout(() => setTapped(false), 120);
+        onClick?.();
+      }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -202,7 +219,7 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
             <>
               {onToggleSave && s.status === "open" && (
                 <button
-                  onClick={() => onToggleSave(s, !s.saved)}
+                  onClick={() => { playPop(); onToggleSave(s, !s.saved); }}
                   title={s.saved ? "Unsave" : "Save swap"}
                   aria-label={s.saved ? "Unsave swap" : "Save swap"}
                   style={{ padding: "4px 8px", borderRadius: 8, border: `1px solid ${s.saved ? C.gold + "55" : C.bd}`, background: s.saved ? C.gold + "18" : "transparent", cursor: "pointer", color: s.saved ? C.gold : C.m, display: "flex", alignItems: "center" }}

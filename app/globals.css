@@ -127,6 +127,35 @@ a:focus-visible { outline: 2px solid #D1AD38; outline-offset: 2px; }
 /* Form error shake */
 .shake { animation: shake .5s ease; }
 
+/* Page slide transitions */
+.page-slide-in  { animation: slideInRight .3s cubic-bezier(.4,0,.2,1) both; }
+.page-slide-out { animation: slideOutLeft .3s cubic-bezier(.4,0,.2,1) both; }
+@keyframes slideInRight  { from { opacity:0; transform: translateX(40px); } to { opacity:1; transform: translateX(0); } }
+@keyframes slideOutLeft  { from { opacity:1; transform: translateX(0); }    to { opacity:0; transform: translateX(-40px); } }
+
+/* Lock jiggle on hover */
+@keyframes jiggle { 0%,100%{transform:rotate(0deg)} 25%{transform:rotate(-8deg)} 75%{transform:rotate(8deg)} }
+.jiggle-hover:hover { animation: jiggle .4s ease; }
+.lock-icon { display:inline-block; }
+
+/* Ripple out */
+@keyframes rippleOut { from{transform:scale(0);opacity:.5} to{transform:scale(2.5);opacity:0} }
+
+/* Pulse badge */
+@keyframes pulseBadge { 0%,100%{box-shadow:0 0 0 0 rgba(209,173,56,.4)} 50%{box-shadow:0 0 0 6px rgba(209,173,56,0)} }
+
+/* Logo rotate */
+@keyframes rotateLogo { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+/* Typing bounce */
+@keyframes typingBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+/* Number tick */
+@keyframes numberTick { from{transform:translateY(8px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+/* Button success morph */
+@keyframes successMorph { 0%{transform:scale(1)} 50%{transform:scale(.95)} 100%{transform:scale(1)} }
+
 /* Shimmer skeleton */
 @keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
 .skeleton {

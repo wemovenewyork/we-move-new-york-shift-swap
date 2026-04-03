@@ -6,6 +6,7 @@ import { Swap, SwapAgreement } from "@/types";
 import { C } from "@/constants/colors";
 import Icon from "./Icon";
 import Confetti from "./Confetti";
+import { playClick, playChime } from "@/lib/sound";
 
 interface Props {
   swap: Swap;
@@ -61,6 +62,7 @@ export default function AgreementPanel({ swap, agreement, isOwner, currentUserId
       const updated = await api.patch<SwapAgreement>(`/swaps/${swap.id}/agreement`, { action, note: note || undefined });
       if (updated.status === "completed") {
         setShowConfetti(true);
+        playChime();
       }
       onUpdate(updated);
     } catch (e: unknown) {
@@ -73,7 +75,7 @@ export default function AgreementPanel({ swap, agreement, isOwner, currentUserId
     return (
       <div style={{ marginTop: 16 }}>
         <button
-          onClick={onPropose}
+          onClick={() => { playClick(); onPropose(); }}
           style={{ width: "100%", padding: "16px 20px", borderRadius: 16, border: `1px solid #00C9A744`, background: "rgba(0,201,167,.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 15, fontWeight: 700, color: "#00C9A7" }}
         >
           <Icon n="agree" s={18} c="#00C9A7" />
@@ -185,7 +187,7 @@ export default function AgreementPanel({ swap, agreement, isOwner, currentUserId
             <button onClick={() => act("cancel")} disabled={busy} style={{ padding: 12, borderRadius: 12, border: "1px solid #EF444433", background: "#EF444412", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#EF4444", opacity: busy ? 0.6 : 1 }}>
               <Icon n="del" s={14} c="#EF4444" /> Cancel
             </button>
-            <button onClick={() => act("confirm")} disabled={busy} style={{ padding: 12, borderRadius: 12, border: "none", background: `linear-gradient(135deg,#00C9A7,#00C9A7cc)`, cursor: "pointer", fontSize: 13, fontWeight: 700, color: "#fff", opacity: busy ? 0.6 : 1 }}>
+            <button onClick={() => { playClick(); act("confirm"); }} disabled={busy} style={{ padding: 12, borderRadius: 12, border: "none", background: `linear-gradient(135deg,#00C9A7,#00C9A7cc)`, cursor: "pointer", fontSize: 13, fontWeight: 700, color: "#fff", opacity: busy ? 0.6 : 1 }}>
               <Icon n="chk" s={14} c="#fff" /> Confirm
             </button>
           </div>
