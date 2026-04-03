@@ -17,7 +17,8 @@ export default function NotifIcon() {
     const interval = setInterval(poll, 30_000);
     const onVisible = () => { if (document.visibilityState === "visible") poll(); };
     document.addEventListener("visibilitychange", onVisible);
-    return () => { clearInterval(interval); document.removeEventListener("visibilitychange", onVisible); };
+    window.addEventListener("focus", poll);
+    return () => { clearInterval(interval); document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("focus", poll); };
   }, []);
 
   return (

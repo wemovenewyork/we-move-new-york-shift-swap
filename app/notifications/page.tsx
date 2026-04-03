@@ -86,6 +86,7 @@ export default function NotificationsPage() {
     if (!n.read) {
       setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
       setUnread(prev => Math.max(0, prev - 1));
+      api.patch(`/notifications/${n.id}`, {}).catch(() => {});
     }
     if (n.url) router.push(n.url);
   };
