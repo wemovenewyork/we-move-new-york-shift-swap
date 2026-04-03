@@ -38,6 +38,7 @@ export default function ActionPage() {
     { k: "post", ic: "edit", t: "Post a Swap", cl: C.gold, href: `/depot/${code}/post` },
     { k: "my", ic: "usr", t: "My Posts", cl: "#00C9A7", href: `/depot/${code}/my` },
     { k: "messages", ic: "msg", t: "Messages", cl: "#C084FC", href: `/depot/${code}/messages`, badge: unread },
+    { k: "saved", ic: "saved", t: "Saved Swaps", cl: C.gold, href: `/depot/${code}/saved` },
     { k: "matches", ic: "match", t: "Mutual Matches", cl: "#F59E0B", href: `/depot/${code}/matches` },
     { k: "history", ic: "clk", t: "My Swap History", cl: "#60A5FA", href: `/depot/${code}/history` },
     ...(user?.role === "depotRep" || user?.role === "admin"

@@ -8,7 +8,7 @@ import { C } from "@/constants/colors";
 import { useT } from "@/lib/i18n";
 
 interface Props {
-  active: "browse" | "post" | "my" | "messages";
+  active: "browse" | "post" | "my" | "messages" | "saved";
   depotCode: string;
   lang?: string;
 }

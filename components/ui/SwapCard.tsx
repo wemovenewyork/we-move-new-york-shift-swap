@@ -32,16 +32,28 @@ interface Props {
   onEdit?: (s: Swap) => void;
   onReport?: (s: Swap) => void;
   onSaveTemplate?: (s: Swap) => void;
+  onToggleSave?: (s: Swap, saved: boolean) => void;
   lastVisit?: number;
   onClick?: () => void;
 }
 
-export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onInterest, onEdit, onReport, onSaveTemplate, lastVisit, onClick }: Props) {
+const activeAgo = (d?: string | null) => {
+  if (!d) return null;
+  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  if (s < 300) return "Active now";
+  if (s < 3600) return `Active ${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `Active ${Math.floor(s / 3600)}h ago`;
+  if (s < 604800) return `Active ${Math.floor(s / 86400)}d ago`;
+  return null; // older than a week — don't show
+};
+
+export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onInterest, onEdit, onReport, onSaveTemplate, onToggleSave, lastVisit, onClick }: Props) {
   const { user: authUser } = useAuth();
   const tr = useT(authUser?.language);
   const m = CM[s.category] ?? CM.work;
   const co = SWAP_TYPES.find(x => x.id === s.category);
   const own = user && s.userId === user.id;
+  const activeLabel = activeAgo(s.posterLastActive);
   const st2 = STC[s.status] ?? STC.open;
   const isNew = lastVisit && new Date(s.createdAt).getTime() > lastVisit - 3600000;
 
@@ -73,6 +85,11 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onIn
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <span style={{ fontSize: 17, fontWeight: 700, color: C.white }}>{s.posterName}</span>
         <RepBadge rep={s.reputation} size="small" />
+        {activeLabel && (
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#00C9A7", background: "rgba(0,201,167,.12)", border: "1px solid rgba(0,201,167,.25)", borderRadius: 6, padding: "2px 6px", letterSpacing: .5 }}>
+            {activeLabel}
+          </span>
+        )}
       </div>
       <p style={{ fontSize: 13, color: "rgba(255,255,255,.6)", lineHeight: 1.5, marginTop: 6 }}>{s.details}</p>
 
@@ -181,6 +198,16 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onIn
             </>
           ) : (
             <>
+              {onToggleSave && s.status === "open" && (
+                <button
+                  onClick={() => onToggleSave(s, !s.saved)}
+                  title={s.saved ? "Unsave" : "Save swap"}
+                  aria-label={s.saved ? "Unsave swap" : "Save swap"}
+                  style={{ padding: "4px 8px", borderRadius: 8, border: `1px solid ${s.saved ? C.gold + "55" : C.bd}`, background: s.saved ? C.gold + "18" : "transparent", cursor: "pointer", color: s.saved ? C.gold : C.m, display: "flex", alignItems: "center" }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill={s.saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+                </button>
+              )}
               {onReport && (
                 <button onClick={() => onReport(s)} title={tr("action.report")} aria-label={tr("action.report")} style={{ padding: "4px 6px", borderRadius: 6, border: `1px solid ${C.bd}`, background: "transparent", cursor: "pointer", color: C.m, display: "flex", alignItems: "center", opacity: 0.5 }}><Icon n="inf" s={11} /></button>
               )}

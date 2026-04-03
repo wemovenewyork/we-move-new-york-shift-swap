@@ -30,6 +30,7 @@ export default function Icon({ n, s = 20, c = "currentColor" }: IconProps) {
     bell: <svg style={st} viewBox="0 0 24 24"><path {...p} d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" /></svg>,
     shield: <svg style={st} viewBox="0 0 24 24"><path {...p} d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
     agree: <svg style={st} viewBox="0 0 24 24"><path {...p} d="M9 11l3 3L22 4" /><path {...p} d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>,
+    saved: <svg style={st} viewBox="0 0 24 24"><path {...p} d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>,
   };
   return (icons[n] ?? null) as React.ReactElement | null;
 }

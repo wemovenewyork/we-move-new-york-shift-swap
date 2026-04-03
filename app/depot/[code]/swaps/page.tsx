@@ -20,6 +20,7 @@ import FlexibleStrip from "@/components/ui/FlexibleStrip";
 import PostAnnouncementModal from "@/components/ui/PostAnnouncementModal";
 import NotifIcon from "@/components/ui/NotifIcon";
 import InboxIcon from "@/components/ui/InboxIcon";
+import FirstSwapBanner from "@/components/ui/FirstSwapBanner";
 
 export default function BrowsePage() {
   const { user, loading } = useAuth();
@@ -149,6 +150,17 @@ export default function BrowsePage() {
     }});
   };
 
+  const handleToggleSave = async (swap: Swap, save: boolean) => {
+    try {
+      if (save) {
+        await api.post(`/swaps/${swap.id}/save`, {});
+      } else {
+        await api.delete(`/swaps/${swap.id}/save`, {});
+      }
+      setSwaps(p => p.map(s => s.id === swap.id ? { ...s, saved: save } : s));
+    } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed"); }
+  };
+
   const handleSend = async (swap: Swap, text: string) => {
     try {
       await api.post(`/users/${swap.userId}/message`, { text });
@@ -211,6 +223,8 @@ export default function BrowsePage() {
 
       <main id="main-content" style={{ maxWidth: 720, margin: "0 auto", padding: "0 20px" }}>
         <h2 style={{ fontSize: 22, fontWeight: 800, background: `linear-gradient(135deg,${C.white},${C.gold}88)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", padding: "18px 0 8px" }}>Available Swaps</h2>
+
+        <FirstSwapBanner depotCode={code} />
 
         {/* Announcements */}
         <AnnouncementBanner
@@ -289,6 +303,7 @@ export default function BrowsePage() {
                 onInterest={s.status === "open" ? setMsgModal : undefined}
                 onEdit={s.userId === user?.id ? (sw) => router.push(`/depot/${code}/post?edit=${sw.id}`) : undefined}
                 onReport={handleReport}
+                onToggleSave={s.userId !== user?.id ? handleToggleSave : undefined}
                 lastVisit={lastVisit}
                 onClick={s.status === "open" ? () => router.push(`/depot/${code}/swaps/${s.id}`) : undefined}
               />

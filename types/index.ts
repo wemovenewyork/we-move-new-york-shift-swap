@@ -36,6 +36,8 @@ export interface Swap {
   createdAt: string;
   updatedAt: string;
   reputation?: RepScore;
+  saved?: boolean;
+  posterLastActive?: string | null;
 }
 
 export interface RepScore {

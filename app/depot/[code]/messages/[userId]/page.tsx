@@ -215,6 +215,20 @@ export default function ThreadPage() {
 
       {/* Reply input */}
       <div style={{ position: "sticky", bottom: 0, background: "rgba(1,0,40,.9)", backdropFilter: "blur(24px)", borderTop: `1px solid ${C.bd}`, padding: "12px 16px", maxWidth: 560, width: "100%", margin: "0 auto", boxSizing: "border-box" }}>
+        {/* Quick reply templates */}
+        {!text && (
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, scrollbarWidth: "none" }}>
+            {["Still available?", "What days work?", "Interested!", "Let's do it!", "Can we talk?"].map(t => (
+              <button
+                key={t}
+                onClick={() => { setText(t); inputRef.current?.focus(); }}
+                style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 20, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.m, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        )}
         <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
           <textarea
             ref={inputRef}

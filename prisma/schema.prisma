@@ -47,6 +47,8 @@ model User {
   announcements      Announcement[]
   auditLogs          AuditLog[]
   notifications      Notification[]
+  savedSwaps         SavedSwap[]
+  lastActiveAt       DateTime? @map("last_active_at")
 
   @@map("users")
 }
@@ -113,9 +115,22 @@ model Swap {
   reviews    Review[]
   reports    Report[]
   agreements SwapAgreement[]
+  savedBy    SavedSwap[]
 
   @@index([depotId, status, createdAt(sort: Desc)])
   @@map("swaps")
+}
+
+model SavedSwap {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  swapId    String   @map("swap_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  swap      Swap     @relation(fields: [swapId], references: [id], onDelete: Cascade)
+  @@unique([userId, swapId])
+  @@index([userId])
+  @@map("saved_swaps")
 }
 
 model Message {

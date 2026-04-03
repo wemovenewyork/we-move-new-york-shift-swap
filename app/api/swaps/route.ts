@@ -6,6 +6,7 @@ import { ok, err } from "@/lib/apiResponse";
 import { SwapCategory, SwapStatus } from "@prisma/client";
 import { calcScore } from "@/lib/reputation";
 import { notifyMany } from "@/lib/notifyUser";
+import { touchLastActive } from "@/lib/touchLastActive";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
 
   const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
   if (!dbUser?.depotId) return err("Set your depot first", 400);
+  touchLastActive(user.userId);
 
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category");
@@ -58,22 +60,26 @@ export async function GET(req: NextRequest) {
     orderBy,
     take: limit,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-    include: { user: { select: { id: true, firstName: true, lastName: true } } },
+    include: { user: { select: { id: true, firstName: true, lastName: true, lastActiveAt: true } } },
   });
 
-  // Batch-fetch reputation for all unique poster users
+  // Batch-fetch reputation + saved status for current user
   const userIds = [...new Set(swaps.map(s => s.userId))];
-  const [reps, reviews] = await Promise.all([
+  const [reps, reviews, savedSwaps] = await Promise.all([
     prisma.reputation.findMany({ where: { userId: { in: userIds } } }),
     prisma.review.findMany({ where: { reviewedId: { in: userIds } }, select: { reviewedId: true, rating: true } }),
+    prisma.savedSwap.findMany({ where: { userId: user.userId, swapId: { in: swaps.map(s => s.id) } }, select: { swapId: true } }),
   ]);
 
+  const savedSet = new Set(savedSwaps.map(s => s.swapId));
   const repMap = Object.fromEntries(reps.map(r => [r.userId, r]));
   const reviewMap: Record<string, number[]> = {};
   reviews.forEach(r => { (reviewMap[r.reviewedId] ??= []).push(r.rating); });
 
   const swapsWithRep = swaps.map(s => ({
     ...s,
+    saved: savedSet.has(s.id),
+    posterLastActive: s.user?.lastActiveAt ?? null,
     reputation: calcScore({
       completed: repMap[s.userId]?.completed ?? 0,
       cancelled: repMap[s.userId]?.cancelled ?? 0,
