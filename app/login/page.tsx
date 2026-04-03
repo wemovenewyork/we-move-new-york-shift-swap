@@ -10,6 +10,22 @@ import MagneticButton from "@/components/ui/MagneticButton";
 
 const lb: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: 12, fontWeight: 600, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
 
+function pwStrength(pw: string): { score: number; label: string; color: string } {
+  let score = 0;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const levels = [
+    { label: "", color: "transparent" },
+    { label: "Weak", color: "#FF4757" },
+    { label: "Fair", color: "#FB923C" },
+    { label: "Good", color: "#D1AD38" },
+    { label: "Strong", color: "#2ED573" },
+  ];
+  return { score, ...levels[score] };
+}
+
 export default function LoginPage() {
   const { login, user, loading } = useAuth();
   const router = useRouter();
@@ -27,12 +43,15 @@ export default function LoginPage() {
     typeof window !== "undefined" ? (new URLSearchParams(window.location.search).get("invite") ?? "") : ""
   );
   const [showPw, setShowPw] = useState(false); const [showPw2, setShowPw2] = useState(false);
-  const [err, setErr] = useState(""); const [shaking, setShaking] = useState(false); const [submitting, setSubmitting] = useState(false);
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [err, setErr] = useState(""); const [fieldErrs, setFieldErrs] = useState<Record<string, string>>({});
+  const [shaking, setShaking] = useState(false); const [submitting, setSubmitting] = useState(false);
+  const [showConsentFlow, setShowConsentFlow] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
   const [acceptingTerms, setAcceptingTerms] = useState(false);
   const CURRENT_TERMS_VERSION = "2026-04-02";
+
+  const strength = pwStrength(pw);
 
   const setErrWithShake = (msg: string) => {
     setErr(msg);
@@ -41,7 +60,7 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    if (!loading && user && !showDisclaimer && !showTerms) {
+    if (!loading && user && !showConsentFlow && !showTerms) {
       if (user.termsVersion !== CURRENT_TERMS_VERSION) {
         setShowTerms(true);
       } else if (!user.depotId) {
@@ -50,24 +69,41 @@ export default function LoginPage() {
         router.replace(user.depot?.code ? `/depot/${user.depot.code}` : "/depots");
       }
     }
-  }, [user, loading, router, showDisclaimer, showTerms]);
+  }, [user, loading, router, showConsentFlow, showTerms]);
+
+  const validateRegister = () => {
+    const errs: Record<string, string> = {};
+    if (!fn.trim()) errs.fn = "Required";
+    if (!ln.trim()) errs.ln = "Required";
+    if (!em.trim()) errs.em = "Required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) errs.em = "Enter a valid email";
+    if (!pw) errs.pw = "Required";
+    else if (pw.length < 12) errs.pw = "Must be at least 12 characters";
+    if (!pw2) errs.pw2 = "Required";
+    else if (pw !== pw2) errs.pw2 = "Passwords don't match";
+    if (!invCode.trim()) errs.inv = "Required — ask a fellow operator";
+    setFieldErrs(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   const doSignIn = async () => {
-    if (!em || !pw) { setErrWithShake("Fill in all fields"); return; }
-    setSubmitting(true); setErr("");
+    const errs: Record<string, string> = {};
+    if (!em.trim()) errs.em = "Required";
+    if (!pw) errs.pw = "Required";
+    if (Object.keys(errs).length) { setFieldErrs(errs); setShaking(true); setTimeout(() => setShaking(false), 500); return; }
+    setSubmitting(true); setErr(""); setFieldErrs({});
     try {
       const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; language: string } }>("/auth/login", { email: em, password: pw });
       login(data.accessToken, data.refreshToken, data.user as Parameters<typeof login>[2]);
-      setShowDisclaimer(true);
+      setShowConsentFlow(true);
     } catch (e: unknown) {
       setErrWithShake(e instanceof Error ? e.message : "Login failed");
     } finally { setSubmitting(false); }
   };
 
   const doRegister = async () => {
-    if (!fn || !ln || !em || !pw || !pw2 || !invCode) { setErrWithShake("Fill in all fields"); return; }
-    if (pw !== pw2) { setErrWithShake("Passwords do not match"); return; }
-    setSubmitting(true); setErr("");
+    if (!validateRegister()) { setShaking(true); setTimeout(() => setShaking(false), 500); return; }
+    setSubmitting(true); setErr(""); setFieldErrs({});
     try {
       const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; role: string; language: string; flexibleMode: boolean } }>("/auth/register", { firstName: fn, lastName: ln, email: em, password: pw, inviteCode: invCode });
       login(data.accessToken, data.refreshToken, data.user as Parameters<typeof login>[2]);
@@ -101,7 +137,11 @@ export default function LoginPage() {
 
         {mode === "signin" ? (
           <div style={{ display: "grid", gap: 14 }}>
-            <div><label htmlFor="signin-email" style={lb}>Email</label><input id="signin-email" type="email" value={em} onChange={e => { setEm(e.target.value); setErr(""); }} placeholder="you@example.com" /></div>
+            <div>
+              <label htmlFor="signin-email" style={lb}>Email</label>
+              <input id="signin-email" type="email" autoFocus value={em} onChange={e => { setEm(e.target.value); setErr(""); setFieldErrs(p => ({ ...p, em: "" })); }} placeholder="you@example.com" style={fieldErrs.em ? { borderColor: C.red + "88" } : {}} />
+              {fieldErrs.em && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.em}</div>}
+            </div>
             <div>
               <label htmlFor="signin-pw" style={lb}>Password</label>
               <div style={{ position: "relative" }}>
@@ -118,38 +158,75 @@ export default function LoginPage() {
           </div>
         ) : (
           <div style={{ display: "grid", gap: 14 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div><label htmlFor="reg-fn" style={lb}>First Name</label><input id="reg-fn" value={fn} onChange={e => { setFn(e.target.value); setErr(""); }} placeholder="John" /></div>
-              <div><label htmlFor="reg-ln" style={lb}>Last Name</label><input id="reg-ln" value={ln} onChange={e => { setLn(e.target.value); setErr(""); }} placeholder="Williams" /></div>
+            <div style={{ fontSize: 12, color: C.m, textAlign: "center", marginBottom: 4 }}>Takes about 60 seconds · 3 quick steps</div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 14 }}>
+              {["Account", "Profile", "Done"].map((s, i) => (
+                <div key={s} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 20, height: 20, borderRadius: "50%", background: i === 0 ? C.gold : "rgba(255,255,255,.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: i === 0 ? C.bg : C.m }}>{i + 1}</div>
+                  <span style={{ fontSize: 11, color: i === 0 ? C.white : C.m, fontWeight: i === 0 ? 600 : 400 }}>{s}</span>
+                  {i < 2 && <div style={{ width: 16, height: 1, background: "rgba(255,255,255,.1)" }} />}
+                </div>
+              ))}
             </div>
-            <div><label htmlFor="reg-email" style={lb}>Email</label><input id="reg-email" type="email" value={em} onChange={e => { setEm(e.target.value); setErr(""); }} placeholder="you@example.com" /></div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div>
+                <label htmlFor="reg-fn" style={lb}>First Name</label>
+                <input id="reg-fn" autoFocus value={fn} onChange={e => { setFn(e.target.value); setFieldErrs(p => ({ ...p, fn: "" })); }} placeholder="John" style={fieldErrs.fn ? { borderColor: C.red + "88" } : {}} />
+                {fieldErrs.fn && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.fn}</div>}
+              </div>
+              <div>
+                <label htmlFor="reg-ln" style={lb}>Last Name</label>
+                <input id="reg-ln" value={ln} onChange={e => { setLn(e.target.value); setFieldErrs(p => ({ ...p, ln: "" })); }} placeholder="Williams" style={fieldErrs.ln ? { borderColor: C.red + "88" } : {}} />
+                {fieldErrs.ln && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.ln}</div>}
+              </div>
+            </div>
+            <div>
+              <label htmlFor="reg-email" style={lb}>Work Email</label>
+              <input id="reg-email" type="email" value={em} onChange={e => { setEm(e.target.value); setFieldErrs(p => ({ ...p, em: "" })); }} placeholder="you@example.com" style={fieldErrs.em ? { borderColor: C.red + "88" } : {}} />
+              {fieldErrs.em && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.em}</div>}
+            </div>
             <div>
               <label htmlFor="reg-pw" style={lb}>Create Password</label>
               <div style={{ position: "relative" }}>
-                <input id="reg-pw" type={showPw ? "text" : "password"} value={pw} onChange={e => { setPw(e.target.value); setErr(""); }} placeholder="Min 12 chars" style={{ paddingRight: 44 }} />
+                <input id="reg-pw" type={showPw ? "text" : "password"} value={pw} onChange={e => { setPw(e.target.value); setFieldErrs(p => ({ ...p, pw: "" })); }} placeholder="Min 12 characters" style={{ paddingRight: 44, ...(fieldErrs.pw ? { borderColor: C.red + "88" } : {}) }} />
                 <button type="button" aria-label={showPw ? "Hide password" : "Show password"} onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 6, cursor: "pointer", color: C.white, fontSize: 11, fontWeight: 700, padding: "3px 8px", lineHeight: "16px" }}>{showPw ? "Hide" : "Show"}</button>
               </div>
+              {pw && (
+                <div style={{ marginTop: 6 }}>
+                  <div style={{ display: "flex", gap: 3, marginBottom: 3 }}>
+                    {[1,2,3,4].map(i => <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= strength.score ? strength.color : "rgba(255,255,255,.08)", transition: "background .2s" }} />)}
+                  </div>
+                  {strength.label && <div style={{ fontSize: 11, color: strength.color }}>{strength.label}</div>}
+                </div>
+              )}
+              {fieldErrs.pw && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.pw}</div>}
             </div>
             <div>
-              <label htmlFor="reg-pw2" style={lb}>Verify Password</label>
+              <label htmlFor="reg-pw2" style={lb}>Confirm Password</label>
               <div style={{ position: "relative" }}>
-                <input id="reg-pw2" type={showPw2 ? "text" : "password"} value={pw2} onChange={e => { setPw2(e.target.value); setErr(""); }} placeholder="Re-enter" style={{ paddingRight: 44 }} />
+                <input id="reg-pw2" type={showPw2 ? "text" : "password"} value={pw2} onChange={e => { setPw2(e.target.value); setFieldErrs(p => ({ ...p, pw2: "" })); }} placeholder="Re-enter password" style={{ paddingRight: 44, ...(fieldErrs.pw2 ? { borderColor: C.red + "88" } : {}) }} />
                 <button type="button" aria-label={showPw2 ? "Hide password" : "Show password"} onClick={() => setShowPw2(v => !v)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 6, cursor: "pointer", color: C.white, fontSize: 11, fontWeight: 700, padding: "3px 8px", lineHeight: "16px" }}>{showPw2 ? "Hide" : "Show"}</button>
+                {pw2 && pw && <div style={{ position: "absolute", right: 60, top: "50%", transform: "translateY(-50%)", fontSize: 14 }}>{pw === pw2 ? "✓" : "✗"}</div>}
               </div>
+              {fieldErrs.pw2 && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.pw2}</div>}
             </div>
-            <div><label htmlFor="reg-invite" style={lb}>Invite Code</label><input id="reg-invite" value={invCode} onChange={e => { setInvCode(e.target.value.toUpperCase()); setErr(""); }} placeholder="e.g. WMNY-DEMO1" style={{ letterSpacing: 2, textTransform: "uppercase" }} /></div>
-            <div style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: "1px solid " + C.bd }}>
-              <div style={{ fontSize: 10, color: C.m, lineHeight: 1.6 }}>Need an invite code? Ask a fellow operator who already uses the app, or use a seed code: WMNY-2024A, WMNY-2024B, WMNY-2024C</div>
+            <div>
+              <label htmlFor="reg-invite" style={lb}>Invite Code</label>
+              <input id="reg-invite" value={invCode} onChange={e => { setInvCode(e.target.value.toUpperCase()); setFieldErrs(p => ({ ...p, inv: "" })); }} placeholder="e.g. WMNY-DEMO1" style={{ letterSpacing: 2, textTransform: "uppercase", ...(fieldErrs.inv ? { borderColor: C.red + "88" } : {}) }} />
+              {fieldErrs.inv
+                ? <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.inv}</div>
+                : <div style={{ fontSize: 11, color: C.m, marginTop: 4 }}>Ask a fellow operator, or use: WMNY-2024A · WMNY-2024B</div>
+              }
             </div>
             <MagneticButton onClick={doRegister} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 16, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1, width: "100%" }}>
-              {submitting ? "Creating account..." : "Create Account"}
+              {submitting ? "Creating account..." : "Create Account →"}
             </MagneticButton>
           </div>
         )}
 
       </div>
 
-      {showDisclaimer && (
+      {showConsentFlow && (
         <div
           role="dialog"
           aria-modal="true"
@@ -184,11 +261,11 @@ export default function LoginPage() {
             </div>
 
             <button
-              onClick={() => { setShowDisclaimer(false); setShowTerms(true); }}
+              onClick={() => { setShowConsentFlow(false); setShowTerms(true); }}
               autoFocus
               style={{ width: "100%", padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}cc)`, fontSize: 16, fontWeight: 800, color: C.bg }}
             >
-              I Understand
+              I Understand — View Terms →
             </button>
           </div>
         </div>
