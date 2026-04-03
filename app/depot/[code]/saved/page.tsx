@@ -41,7 +41,7 @@ export default function SavedSwapsPage() {
 
   const handleToggleSave = async (swap: Swap) => {
     try {
-      await api.delete(`/swaps/${swap.id}/save`, {});
+      await api.del(`/swaps/${swap.id}/save`);
       setSwaps(prev => prev.filter(s => s.id !== swap.id));
     } catch { showToast("Failed to unsave"); }
   };

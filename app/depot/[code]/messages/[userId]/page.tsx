@@ -127,7 +127,7 @@ export default function ThreadPage() {
   const deleteMessage = async (id: string) => {
     setDeleting(true);
     try {
-      await api.delete(`/messages/${id}`, {});
+      await api.del(`/messages/${id}`);
       setMessages(prev => prev.filter(m => m.id !== id));
       setDeleteTarget(null);
     } catch (e: unknown) {

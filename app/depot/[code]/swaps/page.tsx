@@ -154,7 +154,7 @@ export default function BrowsePage() {
       if (save) {
         await api.post(`/swaps/${swap.id}/save`, {});
       } else {
-        await api.delete(`/swaps/${swap.id}/save`, {});
+        await api.del(`/swaps/${swap.id}/save`);
       }
       setSwaps(p => p.map(s => s.id === swap.id ? { ...s, saved: save } : s));
     } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed"); }
