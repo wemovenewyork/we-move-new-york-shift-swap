@@ -236,7 +236,7 @@ export default function ThreadPage() {
             disabled={!text.trim() || sending || sent}
             aria-label="Send message"
             style={{
-              width: 44, height: 44, borderRadius: 14, border: "none", cursor: "pointer",
+              width: sent ? 88 : 44, height: sent ? 88 : 44, borderRadius: sent ? 20 : 14, border: "none", cursor: "pointer",
               background: sent
                 ? "rgba(0,201,167,.18)"
                 : text.trim() && !sending
@@ -248,7 +248,7 @@ export default function ThreadPage() {
             }}
           >
             {sent
-              ? <Icon n="chk" s={18} c="#00C9A7" />
+              ? <Icon n="chk" s={36} c="#00C9A7" />
               : <Icon n="arr" s={18} c={text.trim() && !sending ? C.bg : C.m} />
             }
           </button>
