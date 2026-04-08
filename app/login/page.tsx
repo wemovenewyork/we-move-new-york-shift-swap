@@ -34,9 +34,14 @@ export default function LoginPage() {
     if (typeof window === "undefined") return true;
     return !sessionStorage.getItem("intro-seen");
   });
-  const [mode, setMode] = useState<"signin" | "register">(() =>
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("invite") ? "register" : "signin"
-  );
+  const [mode, setMode] = useState<"signin" | "register" | "dispatcher">(() => {
+    if (typeof window === "undefined") return "signin";
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("dispatcher") === "1") return "dispatcher";
+    if (params.get("invite")) return "register";
+    return "signin";
+  });
+  const [dispBadge, setDispBadge] = useState("");
   const [em, setEm] = useState(""); const [pw, setPw] = useState("");
   const [fn, setFn] = useState(""); const [ln, setLn] = useState(""); const [pw2, setPw2] = useState("");
   const [invCode, setInvCode] = useState(() =>
@@ -105,7 +110,28 @@ export default function LoginPage() {
     if (!validateRegister()) { setShaking(true); setTimeout(() => setShaking(false), 500); return; }
     setSubmitting(true); setErr(""); setFieldErrs({});
     try {
-      const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; role: string; language: string; flexibleMode: boolean } }>("/auth/register", { firstName: fn, lastName: ln, email: em, password: pw, inviteCode: invCode });
+      const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; role: string; language: string; flexibleMode: boolean }; pendingVerification?: boolean }>("/auth/register", { firstName: fn, lastName: ln, email: em, password: pw, inviteCode: invCode });
+      login(data.accessToken, data.refreshToken, data.user as Parameters<typeof login>[2]);
+      window.location.href = "/setup-profile";
+    } catch (e: unknown) {
+      setErrWithShake(e instanceof Error ? e.message : "Registration failed");
+    } finally { setSubmitting(false); }
+  };
+
+  const doDispatcherRegister = async () => {
+    const errs: Record<string, string> = {};
+    if (!fn.trim()) errs.fn = "Required";
+    if (!ln.trim()) errs.ln = "Required";
+    if (!em.trim()) errs.em = "Required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) errs.em = "Enter a valid email";
+    if (!pw) errs.pw = "Required";
+    else if (pw.length < 12) errs.pw = "Must be at least 12 characters";
+    if (!pw2) errs.pw2 = "Required";
+    else if (pw !== pw2) errs.pw2 = "Passwords don't match";
+    if (Object.keys(errs).length) { setFieldErrs(errs); setShaking(true); setTimeout(() => setShaking(false), 500); return; }
+    setSubmitting(true); setErr(""); setFieldErrs({});
+    try {
+      const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; role: string; language: string; flexibleMode: boolean } }>("/auth/register", { firstName: fn, lastName: ln, email: em, password: pw, role: "dispatcher", dispatcherBadge: dispBadge || undefined });
       login(data.accessToken, data.refreshToken, data.user as Parameters<typeof login>[2]);
       window.location.href = "/setup-profile";
     } catch (e: unknown) {
@@ -122,13 +148,13 @@ export default function LoginPage() {
           <div style={{ width: 64, height: 64, borderRadius: "50%", background: `conic-gradient(from 45deg,${C.navy},${C.blue},${C.navy})`, display: "inline-flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.gold}`, marginBottom: 14 }}>
             <div style={{ fontWeight: 800, fontSize: 11, color: C.gold, textAlign: "center", lineHeight: 1.1 }}>WM<br />NY</div>
           </div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: C.white }}>{mode === "signin" ? "Sign In" : "Create Account"}</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: C.white }}>{mode === "signin" ? "Sign In" : mode === "dispatcher" ? "Dispatcher Sign Up" : "Create Account"}</h1>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, background: C.s, borderRadius: 12, padding: 4, marginBottom: 18 }}>
-          {(["signin", "register"] as const).map(t => (
-            <button key={t} onClick={() => { setMode(t); setErr(""); }} style={{ padding: 10, borderRadius: 10, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 600, background: mode === t ? C.gold : "transparent", color: mode === t ? C.bg : C.m }}>
-              {t === "signin" ? "Sign In" : "Register"}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, background: C.s, borderRadius: 12, padding: 4, marginBottom: 18 }}>
+          {(["signin", "register", "dispatcher"] as const).map(t => (
+            <button key={t} onClick={() => { setMode(t); setErr(""); setFieldErrs({}); }} style={{ padding: 10, borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: mode === t ? C.gold : "transparent", color: mode === t ? C.bg : C.m }}>
+              {t === "signin" ? "Sign In" : t === "register" ? "Register" : "Dispatcher"}
             </button>
           ))}
         </div>
@@ -156,7 +182,7 @@ export default function LoginPage() {
               Forgot password?
             </button>
           </div>
-        ) : (
+        ) : mode === "register" ? (
           <div style={{ display: "grid", gap: 14 }}>
             <div style={{ fontSize: 12, color: C.m, textAlign: "center", marginBottom: 4 }}>Takes about 60 seconds · 3 quick steps</div>
             <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 14 }}>
@@ -222,7 +248,53 @@ export default function LoginPage() {
               {submitting ? "Creating account..." : "Create Account →"}
             </MagneticButton>
           </div>
-        )}
+        ) : mode === "dispatcher" ? (
+          <div style={{ display: "grid", gap: 14 }}>
+            <div style={{ padding: "12px 14px", borderRadius: 12, background: "#22D3EE12", border: "1px solid #22D3EE22", fontSize: 12, color: "#22D3EE", lineHeight: 1.6 }}>
+              🚌 Dispatcher accounts require admin verification before you can post open work. You&apos;ll be able to log in right away, but posting will be unlocked once verified.
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div>
+                <label style={lb}>First Name</label>
+                <input autoFocus value={fn} onChange={e => { setFn(e.target.value); setFieldErrs(p => ({ ...p, fn: "" })); }} placeholder="John" style={fieldErrs.fn ? { borderColor: C.red + "88" } : {}} />
+                {fieldErrs.fn && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.fn}</div>}
+              </div>
+              <div>
+                <label style={lb}>Last Name</label>
+                <input value={ln} onChange={e => { setLn(e.target.value); setFieldErrs(p => ({ ...p, ln: "" })); }} placeholder="Williams" style={fieldErrs.ln ? { borderColor: C.red + "88" } : {}} />
+                {fieldErrs.ln && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.ln}</div>}
+              </div>
+            </div>
+            <div>
+              <label style={lb}>Work Email</label>
+              <input type="email" value={em} onChange={e => { setEm(e.target.value); setFieldErrs(p => ({ ...p, em: "" })); }} placeholder="you@mta.nyc.gov" style={fieldErrs.em ? { borderColor: C.red + "88" } : {}} />
+              {fieldErrs.em && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.em}</div>}
+            </div>
+            <div>
+              <label style={lb}>Employee / Badge Number <span style={{ color: C.m, fontWeight: 400 }}>(optional)</span></label>
+              <input value={dispBadge} onChange={e => setDispBadge(e.target.value)} placeholder="e.g. D-1042" />
+            </div>
+            <div>
+              <label style={lb}>Create Password</label>
+              <div style={{ position: "relative" }}>
+                <input type={showPw ? "text" : "password"} value={pw} onChange={e => { setPw(e.target.value); setFieldErrs(p => ({ ...p, pw: "" })); }} placeholder="Min 12 characters" style={{ paddingRight: 44, ...(fieldErrs.pw ? { borderColor: C.red + "88" } : {}) }} />
+                <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 6, cursor: "pointer", color: C.white, fontSize: 11, fontWeight: 700, padding: "3px 8px", lineHeight: "16px" }}>{showPw ? "Hide" : "Show"}</button>
+              </div>
+              {fieldErrs.pw && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.pw}</div>}
+            </div>
+            <div>
+              <label style={lb}>Confirm Password</label>
+              <div style={{ position: "relative" }}>
+                <input type={showPw2 ? "text" : "password"} value={pw2} onChange={e => { setPw2(e.target.value); setFieldErrs(p => ({ ...p, pw2: "" })); }} placeholder="Re-enter password" style={{ paddingRight: 44, ...(fieldErrs.pw2 ? { borderColor: C.red + "88" } : {}) }} />
+                <button type="button" onClick={() => setShowPw2(v => !v)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 6, cursor: "pointer", color: C.white, fontSize: 11, fontWeight: 700, padding: "3px 8px", lineHeight: "16px" }}>{showPw2 ? "Hide" : "Show"}</button>
+              </div>
+              {fieldErrs.pw2 && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.pw2}</div>}
+            </div>
+            <MagneticButton onClick={doDispatcherRegister} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,#22D3EE,#0EA5E9)`, fontSize: 16, fontWeight: 700, color: "#fff", opacity: submitting ? 0.7 : 1, width: "100%" }}>
+              {submitting ? "Creating account..." : "Request Dispatcher Access →"}
+            </MagneticButton>
+          </div>
+        ) : null}
 
       </div>
 

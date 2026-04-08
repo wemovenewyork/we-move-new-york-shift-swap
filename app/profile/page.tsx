@@ -141,8 +141,10 @@ export default function ProfilePage() {
   const depot = user.depot ?? depots.find(d => d.id === user.depotId) ?? null;
 
   const depotLocked = (() => {
-    if (!user.depotSetAt || !user.depotId) return false;
+    if (!user.depotId) return false;
     if (user.role === "admin" || user.role === "subAdmin") return false;
+    if (user.role === "dispatcher") return true; // dispatchers are permanently locked
+    if (!user.depotSetAt) return false;
     return (Date.now() - new Date(user.depotSetAt).getTime()) < 7 * 24 * 60 * 60 * 1000;
   })();
   const depotUnlocksAt = user.depotSetAt
@@ -267,9 +269,12 @@ export default function ProfilePage() {
                   );
                 })}
               </select>
-              {depotLocked && depotUnlocksAt && (
+              {depotLocked && (
                 <div style={{ fontSize: 11, color: C.gold, marginTop: 6, lineHeight: 1.5 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle",marginRight:4}}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Locked until {depotUnlocksAt.toLocaleDateString("en-US", { month: "long", day: "numeric" })}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle",marginRight:4}}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                  {user.role === "dispatcher"
+                    ? "Dispatchers are permanently assigned to one depot"
+                    : depotUnlocksAt ? `Locked until ${depotUnlocksAt.toLocaleDateString("en-US", { month: "long", day: "numeric" })}` : "Locked"}
                 </div>
               )}
             </div>

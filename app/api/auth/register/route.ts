@@ -12,11 +12,14 @@ export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
   if (!await rateLimit(`register:${ip}`, 5, 3_600_000)) return err("Too many registration attempts — try again in an hour", 429);
 
-  const { firstName, lastName, email, password, inviteCode } = await req.json();
+  const { firstName, lastName, email, password, inviteCode, role: requestedRole, dispatcherBadge } = await req.json();
 
-  if (!firstName || !lastName || !email || !password || !inviteCode) {
+  const isDispatcher = requestedRole === "dispatcher";
+
+  if (!firstName || !lastName || !email || !password) {
     return err("All fields are required", 400);
   }
+  if (!isDispatcher && !inviteCode) return err("Invite code is required", 400);
   if (!email.includes("@")) return err("Invalid email", 400);
   if (password.length < 12) return err("Password must be at least 12 characters", 400);
 
@@ -26,9 +29,20 @@ export async function POST(req: NextRequest) {
   const hasSpecialOrMixed = /[^a-zA-Z0-9]/.test(password) || (hasLetter && hasNumber);
   if (!hasSpecialOrMixed) return err("Password must contain letters and numbers", 400);
 
-  const codeUpper = inviteCode.trim().toUpperCase();
-  const invite = await prisma.inviteCode.findUnique({ where: { code: codeUpper } });
-  if (!invite || !invite.isValid) return err("Invalid invite code", 400);
+  let invitedById: string | undefined;
+  let newCodes: string[] = [];
+
+  if (!isDispatcher) {
+    const codeUpper = inviteCode.trim().toUpperCase();
+    const invite = await prisma.inviteCode.findUnique({ where: { code: codeUpper } });
+    if (!invite || !invite.isValid) return err("Invalid invite code", 400);
+    invitedById = invite.createdBy;
+
+    // Consume invite code after user creation (below)
+    // Store for use after user is created
+    (req as unknown as Record<string, unknown>).__inviteCode = codeUpper;
+    (req as unknown as Record<string, unknown>).__inviteId = invite.id;
+  }
 
   const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (existing) return err("Email already registered", 409);
@@ -42,33 +56,38 @@ export async function POST(req: NextRequest) {
       passwordHash,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      verified: true, // TODO: set to false once Resend domain is verified
+      role: isDispatcher ? "dispatcher" : "operator",
+      dispatcherBadge: isDispatcher && dispatcherBadge ? dispatcherBadge.trim() : null,
+      verified: true,
       emailVerifyToken: verifyToken,
       emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      invitedBy: invite.createdBy,
+      ...(invitedById ? { invitedBy: invitedById } : {}),
     },
   });
 
-  // Consume invite code
-  await prisma.inviteCode.update({
-    where: { code: codeUpper },
-    data: { isValid: false, usedBy: user.id },
-  });
+  if (!isDispatcher) {
+    const codeUpper = (inviteCode as string).trim().toUpperCase();
+    // Consume invite code
+    await prisma.inviteCode.update({
+      where: { code: codeUpper },
+      data: { isValid: false, usedBy: user.id },
+    });
 
-  // Generate 3 new invite codes for new user
-  const newCodes: string[] = [];
-  for (let i = 0; i < 3; i++) {
-    let code = genInviteCode();
-    // Retry on collision
-    while (await prisma.inviteCode.findUnique({ where: { code } })) {
-      code = genInviteCode();
+    // Generate 3 new invite codes for new operator
+    for (let i = 0; i < 3; i++) {
+      let code = genInviteCode();
+      while (await prisma.inviteCode.findUnique({ where: { code } })) {
+        code = genInviteCode();
+      }
+      await prisma.inviteCode.create({ data: { code, createdBy: user.id } });
+      newCodes.push(code);
     }
-    await prisma.inviteCode.create({ data: { code, createdBy: user.id } });
-    newCodes.push(code);
   }
 
-  // Initialize reputation
-  await prisma.reputation.create({ data: { userId: user.id } });
+  // Initialize reputation (operators only)
+  if (!isDispatcher) {
+    await prisma.reputation.create({ data: { userId: user.id } });
+  }
 
   // Send verification email
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://we-move-ny-shift-swap.vercel.app";
@@ -103,8 +122,10 @@ export async function POST(req: NextRequest) {
       depotId: user.depotId,
       role: user.role,
       language: user.language,
+      dispatcherVerified: user.dispatcherVerified,
     },
-    inviteCodes: newCodes,
+    ...(newCodes.length > 0 ? { inviteCodes: newCodes } : {}),
     emailVerificationRequired: true,
+    ...(isDispatcher ? { pendingVerification: true } : {}),
   }, 201);
 }

@@ -367,6 +367,23 @@ export default function BrowsePage() {
             );
           })}
         </div>
+        {/* Open Work filter button */}
+        {(() => {
+          const owCount = catCounts["open_work"] ?? 0;
+          const owSel = cat === "open_work";
+          const owM = CM.open_work;
+          if (owCount === 0 && !owSel) return null;
+          return (
+            <button onClick={() => setCat(owSel ? "all" : "open_work")} style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "none", cursor: "pointer", textAlign: "left", marginBottom: 10, background: owSel ? owM.bg : "rgba(34,211,238,.04)", backdropFilter: "blur(8px)", boxShadow: owSel ? `inset 0 0 0 1.5px ${owM.bd2}, 0 0 12px ${owM.c}10` : `inset 0 0 0 1px rgba(34,211,238,.15)`, display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontSize: 20 }}>🚌</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: owSel ? owM.c : "#22D3EE" }}>Open Work</div>
+                <div style={{ fontSize: 10, color: C.m }}>Dispatcher-posted shifts needing coverage</div>
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: owSel ? owM.c : "#22D3EE" }}><CountUp value={owCount} /></div>
+            </button>
+          );
+        })()}
 
         <div style={{ display: "flex", gap: 6, marginBottom: 10, overflowX: "auto", paddingBottom: 4 }}>
           {[{ k: "", l: "All" }, { k: "am", l: "AM Shifts" }, { k: "pm", l: "PM Shifts" }, { k: "weekend", l: "Weekend" }, { k: "thisweek", l: "This Week" }].map(f => (

@@ -22,8 +22,14 @@ interface Report {
 
 interface AdminUser {
   id: string; firstName: string; lastName: string; email: string;
-  role: "operator" | "depotRep" | "subAdmin" | "admin"; createdAt: string;
+  role: "operator" | "dispatcher" | "depotRep" | "subAdmin" | "admin"; createdAt: string;
   lastActiveAt: string | null; suspendedUntil: string | null;
+  depot: { name: string; code: string } | null;
+}
+
+interface DispatcherUser {
+  id: string; firstName: string; lastName: string; email: string;
+  dispatcherVerified: boolean; dispatcherBadge: string | null; createdAt: string;
   depot: { name: string; code: string } | null;
 }
 
@@ -33,7 +39,7 @@ interface InviteCode {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  operator: C.blue, depotRep: C.gold, subAdmin: "#F97316", admin: PURPLE,
+  operator: C.blue, dispatcher: "#22D3EE", depotRep: C.gold, subAdmin: "#F97316", admin: PURPLE,
 };
 
 const lb: React.CSSProperties = { display: "block", marginBottom: 6, fontSize: 11, fontWeight: 700, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
@@ -41,7 +47,8 @@ const lb: React.CSSProperties = { display: "block", marginBottom: 6, fontSize: 1
 export default function AdminPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [tab, setTab] = useState<"reports" | "users" | "invites" | "audit" | "broadcast">("reports");
+  const [tab, setTab] = useState<"reports" | "users" | "dispatchers" | "invites" | "audit" | "broadcast">("reports");
+  const [dispatchers, setDispatchers] = useState<DispatcherUser[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -106,6 +113,22 @@ export default function AdminPage() {
     if (tab !== "audit" || !user || user.role !== "admin") return;
     api.get<typeof auditLogs>("/admin/audit-log").then(setAuditLogs).catch(() => {});
   }, [tab, user]);
+
+  useEffect(() => {
+    if (tab !== "dispatchers" || !user || !["admin", "subAdmin"].includes(user.role)) return;
+    api.get<DispatcherUser[]>("/admin/dispatchers").then(setDispatchers).catch(() => {});
+  }, [tab, user]);
+
+  const handleVerifyDispatcher = async (userId: string, verified: boolean) => {
+    setBusy(userId + "_disp");
+    try {
+      await api.patch("/admin/dispatchers", { userId, verified });
+      setDispatchers(prev => prev.map(d => d.id === userId ? { ...d, dispatcherVerified: verified } : d));
+      showToast(verified ? "Dispatcher verified" : "Dispatcher unverified");
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Failed");
+    } finally { setBusy(null); }
+  };
 
   const handleGenerate = async () => {
     setBusy("gen");
@@ -317,13 +340,19 @@ export default function AdminPage() {
         )}
 
         {/* Tabs */}
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${isSubAdmin ? 3 : 5}, 1fr)`, gap: 4, background: C.s, borderRadius: 12, padding: 4, marginBottom: 16 }}>
-          {(["reports", "users", ...(isSubAdmin ? [] : ["invites", "audit"]), "broadcast"] as const).map(t => (
-            <button key={t} onClick={() => setTab(t as typeof tab)} style={{ padding: "10px 4px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, background: tab === t ? PURPLE + "22" : "transparent", color: tab === t ? PURPLE : C.m, boxShadow: tab === t ? `inset 0 0 0 1px ${PURPLE}44` : "none" }}>
-              {t === "reports" ? `Reports${stats?.pendingReports ? ` (${stats.pendingReports})` : ""}` : t === "users" ? "Users" : t === "invites" ? "Invites" : t === "audit" ? "Audit" : "Broadcast"}
-            </button>
-          ))}
-        </div>
+        {(() => {
+          const tabs = ["reports", "users", "dispatchers", ...(isSubAdmin ? [] : ["invites", "audit"]), "broadcast"] as const;
+          const pendingDispCount = dispatchers.filter(d => !d.dispatcherVerified).length;
+          return (
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${tabs.length}, 1fr)`, gap: 4, background: C.s, borderRadius: 12, padding: 4, marginBottom: 16 }}>
+              {tabs.map(t => (
+                <button key={t} onClick={() => setTab(t as typeof tab)} style={{ padding: "10px 4px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, background: tab === t ? PURPLE + "22" : "transparent", color: tab === t ? PURPLE : C.m, boxShadow: tab === t ? `inset 0 0 0 1px ${PURPLE}44` : "none" }}>
+                  {t === "reports" ? `Reports${stats?.pendingReports ? ` (${stats.pendingReports})` : ""}` : t === "users" ? "Users" : t === "dispatchers" ? `Dispatchers${pendingDispCount > 0 ? ` (${pendingDispCount})` : ""}` : t === "invites" ? "Invites" : t === "audit" ? "Audit" : "Broadcast"}
+                </button>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Reports tab */}
         {tab === "reports" && (
@@ -362,6 +391,61 @@ export default function AdminPage() {
                     <button onClick={() => handleReport(r.id, "remove")} disabled={isBusy} style={{ padding: "9px 12px", borderRadius: 10, border: `1px solid ${C.red}44`, background: C.red + "12", color: C.red, cursor: "pointer", fontSize: 12, fontWeight: 700, opacity: isBusy ? 0.5 : 1 }}>
                       Remove Swap
                     </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Dispatchers tab */}
+        {tab === "dispatchers" && (
+          <div style={{ display: "grid", gap: 10 }}>
+            {dispatchers.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "48px 20px", color: C.m }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>🚌</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.white, marginTop: 4 }}>No dispatchers registered</div>
+                <div style={{ fontSize: 12, color: C.m, marginTop: 6 }}>Dispatchers will appear here when they sign up.</div>
+              </div>
+            ) : dispatchers.map(d => {
+              const isBusy = busy === d.id + "_disp";
+              return (
+                <div key={d.id} style={{ background: "rgba(255,255,255,.03)", borderRadius: 14, border: `1px solid ${d.dispatcherVerified ? "#22D3EE22" : C.gold + "33"}`, padding: 16 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: "#22D3EE18", border: "1px solid #22D3EE33", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <span style={{ fontSize: 18 }}>🚌</span>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{d.firstName} {d.lastName}</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: d.dispatcherVerified ? "#22D3EE22" : C.gold + "22", color: d.dispatcherVerified ? "#22D3EE" : C.gold }}>
+                          {d.dispatcherVerified ? "✓ Verified" : "Pending"}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 12, color: C.m }}>{d.email}</div>
+                      {d.dispatcherBadge && <div style={{ fontSize: 11, color: C.m, marginTop: 2 }}>Badge: {d.dispatcherBadge}</div>}
+                      {d.depot && <div style={{ fontSize: 11, color: C.m, marginTop: 2 }}>Depot: {d.depot.name} ({d.depot.code})</div>}
+                      <div style={{ fontSize: 10, color: C.m, marginTop: 4 }}>Registered {new Date(d.createdAt).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                    {!d.dispatcherVerified ? (
+                      <button
+                        disabled={isBusy}
+                        onClick={() => handleVerifyDispatcher(d.id, true)}
+                        style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", cursor: "pointer", background: "#22D3EE22", color: "#22D3EE", fontSize: 12, fontWeight: 700, opacity: isBusy ? 0.6 : 1 }}
+                      >
+                        {isBusy ? "Verifying…" : "✓ Verify Dispatcher"}
+                      </button>
+                    ) : (
+                      <button
+                        disabled={isBusy}
+                        onClick={() => handleVerifyDispatcher(d.id, false)}
+                        style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: `1px solid ${C.bd}`, cursor: "pointer", background: "transparent", color: C.m, fontSize: 12, fontWeight: 700, opacity: isBusy ? 0.6 : 1 }}
+                      >
+                        Revoke Verification
+                      </button>
+                    )}
                   </div>
                 </div>
               );

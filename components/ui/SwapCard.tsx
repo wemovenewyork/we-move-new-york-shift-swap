@@ -68,10 +68,12 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
   const [tapped, setTapped] = useState(false);
   const tappedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const isOpenWork = s.category === "open_work";
   const categoryGlow: Record<string, string> = {
     work: "#0249B5",
     daysoff: "#D1AD38",
     vacation: "#00C9A7",
+    open_work: "#22D3EE",
   };
   const glowColor = categoryGlow[s.category] ?? "#0249B5";
 
@@ -97,7 +99,13 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
     >
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: m.c, letterSpacing: 1, textTransform: "uppercase" }}>{co?.f}</span>
+          {isOpenWork ? (
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 800, color: "#22D3EE", letterSpacing: 1, textTransform: "uppercase", padding: "2px 8px", borderRadius: 6, background: "rgba(34,211,238,.12)", border: "1px solid rgba(34,211,238,.25)" }}>
+              🚌 Open Work
+            </span>
+          ) : (
+            <span style={{ fontSize: 10, fontWeight: 700, color: m.c, letterSpacing: 1, textTransform: "uppercase" }}>{co?.f}</span>
+          )}
           {isNew && <span style={{ padding: "1px 6px", borderRadius: 4, background: C.gold, color: C.bg, fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>{tr("browse.new")}</span>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -116,8 +124,14 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <span style={{ fontSize: 17, fontWeight: 700, color: C.white }}>{s.posterName}{s.posterVerified && <VerifiedBadge size={14} />}</span>
-        <RepBadge rep={s.reputation} size="small" />
-        {activeLabel && (
+        {isOpenWork ? (
+          <span style={{ fontSize: 9, fontWeight: 800, color: "#22D3EE", background: "rgba(34,211,238,.12)", border: "1px solid rgba(34,211,238,.3)", borderRadius: 6, padding: "2px 7px", letterSpacing: .5 }}>
+            Dispatcher
+          </span>
+        ) : (
+          <RepBadge rep={s.reputation} size="small" />
+        )}
+        {activeLabel && !isOpenWork && (
           <span style={{ fontSize: 9, fontWeight: 700, color: "#00C9A7", background: "rgba(0,201,167,.12)", border: "1px solid rgba(0,201,167,.25)", borderRadius: 6, padding: "2px 6px", letterSpacing: .5 }}>
             {activeLabel}
           </span>

@@ -23,6 +23,7 @@ export const CM = {
   work: { c: C.blue, bg: C.blue + "18", bd2: C.blue + "33" },
   daysoff: { c: C.gold, bg: C.gs, bd2: C.gg },
   vacation: { c: "#00C9A7", bg: "rgba(0,201,167,.1)", bd2: "rgba(0,201,167,.25)" },
+  open_work: { c: "#22D3EE", bg: "rgba(34,211,238,.1)", bd2: "rgba(34,211,238,.25)" },
 } as const;
 
 export const STC = {

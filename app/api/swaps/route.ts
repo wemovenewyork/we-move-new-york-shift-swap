@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
   // Build where clause
   const andClauses: Record<string, unknown>[] = [{ depotId: dbUser.depotId }];
-  if (category && ["work", "daysoff", "vacation"].includes(category)) {
+  if (category && ["work", "daysoff", "vacation", "open_work"].includes(category)) {
     andClauses.push({ category: category as SwapCategory });
   }
   if (status && ["open", "pending", "filled", "expired"].includes(status)) {
@@ -107,12 +107,26 @@ export async function POST(req: NextRequest) {
   });
   if (!dbUser?.depotId) return err("Set your depot first", 400);
 
+  // Dispatchers must be verified before posting
+  if (dbUser.role === "dispatcher" && !dbUser.dispatcherVerified) {
+    return err("Your dispatcher account is pending verification by an admin", 403);
+  }
+
   const body = await req.json();
   const { category, details, contact, date, run, route, startTime, clearTime,
     swingStart, swingEnd, fromDay, fromDate, toDay, toDate, vacationHave, vacationWant } = body;
 
   if (!category || !details) return err("Category and details are required", 400);
   if (details.length > 500) return err("Details must be 500 characters or fewer", 400);
+
+  // Only dispatchers can post open work
+  if (category === "open_work" && dbUser.role !== "dispatcher") {
+    return err("Only verified dispatchers can post open work", 403);
+  }
+  // Dispatchers can only post open work
+  if (dbUser.role === "dispatcher" && category !== "open_work") {
+    return err("Dispatchers can only post open work", 403);
+  }
 
   const fiveMinutesAgo = new Date(Date.now() - 300_000);
   const dupe = await prisma.swap.findFirst({
@@ -151,10 +165,17 @@ export async function POST(req: NextRequest) {
     where: { depotId: dbUser.depotId, id: { not: user.userId }, pushSubscriptions: { some: {} } },
     select: { id: true },
   });
-  const categoryLabel = swap.category === "work" ? "Work" : swap.category === "daysoff" ? "Days Off" : "Vacation";
+  const categoryLabel =
+    swap.category === "work" ? "Work"
+    : swap.category === "daysoff" ? "Days Off"
+    : swap.category === "vacation" ? "Vacation"
+    : "Open Work";
+  const isOpenWork = swap.category === "open_work";
   await notifyMany(depotUsers.map(u => u.id), {
-    title: `New ${categoryLabel} swap posted`,
-    body: `${posterName} posted a new swap — check the board`,
+    title: isOpenWork ? `Open Work posted — ${posterName}` : `New ${categoryLabel} swap posted`,
+    body: isOpenWork
+      ? `${posterName} (Dispatcher) posted open work that needs coverage`
+      : `${posterName} posted a new swap — check the board`,
     url: `/depot/${dbUser.depot!.code}/swaps/${swap.id}`,
   });
 

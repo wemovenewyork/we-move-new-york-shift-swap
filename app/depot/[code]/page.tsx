@@ -27,6 +27,7 @@ export default function ActionPage() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [unread, setUnread] = useState(0);
   const [stats, setStats] = useState<{ completed: number; active: number } | null>(null);
+  const [openWorkCount, setOpenWorkCount] = useState(0);
   const [logoSpin, setLogoSpin] = useState(false);
   const [muted, setMuted] = useState(() => typeof window !== "undefined" ? isMuted() : false);
   const [showTip, setShowTip] = useState(() => typeof window !== "undefined" && !localStorage.getItem("onboarding-done"));
@@ -42,6 +43,9 @@ export default function ActionPage() {
     api.get<Depot>(`/depots/${code}`).then(setDepot).catch(() => router.replace("/depots"));
     api.get<{ unreadCount: number }>("/messages").then(d => setUnread(d.unreadCount)).catch(() => {});
     api.get<{ completed: number; active: number }>(`/depots/${code}/stats`).then(setStats).catch(() => {});
+    api.get<{ swaps: { id: string }[]; total?: number }>("/swaps?category=open_work&status=open&limit=50")
+      .then(d => setOpenWorkCount(d.swaps.length))
+      .catch(() => {});
   }, [code, router]);
 
   if (!depot) return null;
@@ -128,6 +132,26 @@ export default function ActionPage() {
             </div>
           </div>
         )}
+        {openWorkCount > 0 && (
+          <button
+            onClick={() => { playClick(); router.push(`/depot/${code}/swaps?category=open_work`); }}
+            style={{ width: "100%", marginBottom: 16, padding: "16px 20px", borderRadius: 16, border: "none", cursor: "pointer", textAlign: "left", background: "rgba(34,211,238,.08)", boxShadow: "inset 0 0 0 1.5px rgba(34,211,238,.35), 0 0 24px rgba(34,211,238,.08)", display: "flex", alignItems: "center", gap: 14 }}
+          >
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(34,211,238,.15)", border: "1px solid rgba(34,211,238,.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 22 }}>
+              🚌
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#22D3EE", marginBottom: 2 }}>
+                {openWorkCount} open shift{openWorkCount !== 1 ? "s" : ""} need{openWorkCount === 1 ? "s" : ""} coverage
+              </div>
+              <div style={{ fontSize: 11, color: "rgba(34,211,238,.7)" }}>
+                Dispatcher posted · Tap to view open work
+              </div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        )}
+
         <div style={{ display: "grid", gap: 10, width: "100%" }}>
           {options.map(o => (
             <button
