@@ -1,9 +1,17 @@
 import type { Metadata } from "next";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
 import MeshBackground from "@/components/ui/MeshBackground";
 import OfflineBanner from "@/components/ui/OfflineBanner";
 import AnalyticsProvider from "@/components/ui/AnalyticsProvider";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-poppins",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "We Move New York — Shift Swap",
@@ -18,13 +26,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={poppins.variable}>
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="theme-color" content="#010028" />
       </head>
-      <body>
+      <body className={poppins.className}>
         <MeshBackground />
         <a href="#main-content" className="skip-link">Skip to main content</a>
         <OfflineBanner />
