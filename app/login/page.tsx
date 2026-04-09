@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
 import { C } from "@/constants/colors";
@@ -144,9 +145,14 @@ export default function LoginPage() {
   return (
     <main id="main-content" className="page-enter" style={{ minHeight: "100vh", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 20px", overflowY: "auto" }}>
       <div className={shaking ? "shake" : ""} style={{ maxWidth: 400, width: "100%", background: "rgba(255,255,255,.02)", backdropFilter: "blur(16px)", borderRadius: 28, border: "1px solid rgba(255,255,255,.06)", padding: 32, boxShadow: "0 24px 80px rgba(0,0,0,.3)" }}>
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={{ width: 64, height: 64, borderRadius: "50%", background: `conic-gradient(from 45deg,${C.navy},${C.blue},${C.navy})`, display: "inline-flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.gold}`, marginBottom: 14 }}>
-            <div style={{ fontWeight: 800, fontSize: 11, color: C.gold, textAlign: "center", lineHeight: 1.1 }}>WM<br />NY</div>
+        <style>{`
+          @keyframes loginBusFloat { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-8px) rotate(1deg); } }
+          @keyframes loginBusDriveIn { from { opacity:0; transform: translateX(-40px) scale(0.9); } to { opacity:1; transform: translateX(0) scale(1); } }
+          @keyframes loginBusGlow { 0%,100% { filter: drop-shadow(0 8px 20px rgba(0,102,204,0.4)); } 50% { filter: drop-shadow(0 14px 36px rgba(0,102,204,0.65)) drop-shadow(0 0 18px rgba(209,173,56,0.18)); } }
+        `}</style>
+        <div style={{ textAlign: "center", marginBottom: 20 }}>
+          <div style={{ animation: "loginBusDriveIn .7s cubic-bezier(.34,1.2,.64,1) both, loginBusFloat 5s ease-in-out 0.8s infinite, loginBusGlow 4s ease-in-out 0.8s infinite", display: "inline-block", marginBottom: 10 }}>
+            <Image src="/bus-logo.png" alt="We Move New York" width={320} height={152} style={{ width: 220, height: "auto", display: "block" }} priority />
           </div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: C.white }}>{mode === "signin" ? "Sign In" : mode === "dispatcher" ? "Dispatcher Sign Up" : "Create Account"}</h1>
         </div>
