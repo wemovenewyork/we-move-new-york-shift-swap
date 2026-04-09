@@ -32,6 +32,6 @@ export async function isRefreshTokenBlocked(tokenHash: string): Promise<boolean>
     const val = await store.get(`revoked:${tokenHash}`);
     return val === "1";
   } catch {
-    return false;
+    return true; // fail closed — if Redis is down, treat token as revoked
   }
 }

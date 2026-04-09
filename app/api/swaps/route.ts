@@ -118,6 +118,9 @@ export async function POST(req: NextRequest) {
 
   if (!category || !details) return err("Category and details are required", 400);
   if (details.length > 500) return err("Details must be 500 characters or fewer", 400);
+  if (contact && contact.length > 30) return err("Contact must be 30 characters or fewer", 400);
+  if (run && run.length > 20) return err("Run must be 20 characters or fewer", 400);
+  if (route && route.length > 20) return err("Route must be 20 characters or fewer", 400);
 
   // Only dispatchers can post open work
   if (category === "open_work" && dbUser.role !== "dispatcher") {

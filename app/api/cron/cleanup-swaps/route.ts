@@ -5,8 +5,9 @@ import { ok, err } from "@/lib/apiResponse";
 // POST /api/cron/cleanup-swaps
 // Deletes expired or filled swaps that have been in that state for 7+ days.
 export async function GET(req: NextRequest) {
+  const secret = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) return err("Unauthorized", 401);
+  if (!secret || auth !== `Bearer ${secret}`) return err("Unauthorized", 401);
 
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - 7);

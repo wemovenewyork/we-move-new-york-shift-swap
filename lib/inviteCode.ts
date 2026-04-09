@@ -1,9 +1,12 @@
+import { randomBytes } from "crypto";
+
 const CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 export function genInviteCode(): string {
-  let code = "WMNY-";
-  for (let i = 0; i < 5; i++) {
-    code += CHARS[Math.floor(Math.random() * CHARS.length)];
+  const bytes = randomBytes(8);
+  let suffix = "";
+  for (const byte of bytes) {
+    suffix += CHARS[byte % CHARS.length];
   }
-  return code;
+  return `WMNY-${suffix}`;
 }

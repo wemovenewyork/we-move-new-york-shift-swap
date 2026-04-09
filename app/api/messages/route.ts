@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
 
   const { swapId, text } = await req.json();
   if (!swapId || !text?.trim()) return err("swapId and text required", 400);
+  if (text.trim().length > 2000) return err("Message too long — max 2000 characters", 400);
 
   const swap = await prisma.swap.findUnique({ where: { id: swapId } });
   if (!swap) return err("Swap not found", 404);

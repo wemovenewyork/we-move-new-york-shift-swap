@@ -6,8 +6,9 @@ import { ok, err } from "@/lib/apiResponse";
 // Runs every morning at 7 AM — sends each subscribed operator a summary of
 // new open swaps posted in their depot in the last 24 hours.
 export async function GET(req: NextRequest) {
+  const secret = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) return err("Unauthorized", 401);
+  if (!secret || auth !== `Bearer ${secret}`) return err("Unauthorized", 401);
 
   const since = new Date(Date.now() - 86_400_000);
 

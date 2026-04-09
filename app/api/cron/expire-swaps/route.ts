@@ -4,8 +4,9 @@ import { ok, err } from "@/lib/apiResponse";
 import { notifyUser } from "@/lib/notifyUser";
 
 export async function GET(req: NextRequest) {
+  const secret = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) return err("Unauthorized", 401);
+  if (!secret || auth !== `Bearer ${secret}`) return err("Unauthorized", 401);
 
   const now = new Date();
 
