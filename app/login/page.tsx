@@ -334,7 +334,7 @@ export default function LoginPage() {
                 All swap agreements are <strong style={{ color: C.white }}>between operators only</strong>. It is your responsibility to ensure any swap complies with your collective bargaining agreement, depot rules, and all applicable MTA policies before submitting to your dispatcher.
               </p>
               <p style={{ margin: 0 }}>
-                By continuing, you confirm you are an authorized MTA bus operator and agree to use this app in accordance with your employment obligations.
+                By continuing, you confirm you are an authorized bus operator and agree to use this app in accordance with your employment obligations.
               </p>
             </div>
 
