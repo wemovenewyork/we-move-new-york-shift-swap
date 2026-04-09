@@ -31,6 +31,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="theme-color" content="#010028" />
+      </head>
+      <body className={poppins.className}>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-RJV2G8G06H"
           strategy="afterInteractive"
@@ -41,8 +43,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           gtag('js', new Date());
           gtag('config', 'G-RJV2G8G06H');
         `}</Script>
-      </head>
-      <body className={poppins.className}>
         <MeshBackground />
         <a href="#main-content" className="skip-link">Skip to main content</a>
         <OfflineBanner />
