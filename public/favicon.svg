@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bg" cx="40%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#0249B5"/>
+      <stop offset="100%" stop-color="#000082"/>
+    </radialGradient>
+  </defs>
+  <!-- Circle background -->
+  <circle cx="32" cy="32" r="31" fill="url(#bg)"/>
+  <!-- Gold ring -->
+  <circle cx="32" cy="32" r="31" fill="none" stroke="#D1AD38" stroke-width="2"/>
+  <!-- WM NY text -->
+  <text x="32" y="22" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="11" fill="#D1AD38" letter-spacing="1">WE</text>
+  <text x="32" y="35" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="11" fill="#D1AD38" letter-spacing="1">MOVE</text>
+  <text x="32" y="48" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="11" fill="#D1AD38" letter-spacing="1">NY</text>
+</svg>
