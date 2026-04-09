@@ -1,15 +1,17 @@
 import jwt from "jsonwebtoken";
 import { NextRequest } from "next/server";
 
-const ACCESS_SECRET = process.env.JWT_SECRET;
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
-const RESET_SECRET = process.env.JWT_RESET_SECRET;
-
-if (!ACCESS_SECRET || !REFRESH_SECRET || !RESET_SECRET) {
-  throw new Error(
-    "JWT_SECRET, JWT_REFRESH_SECRET, and JWT_RESET_SECRET environment variables must be set"
-  );
+function requireEnv(name: string): string {
+  const val = process.env[name];
+  if (!val) throw new Error(`Missing required environment variable: ${name}`);
+  return val;
 }
+
+// Lazy getters — checked at call time, not module load, so builds don't fail
+// when env vars are absent (they will fail loudly at runtime instead).
+const getAccessSecret = () => requireEnv("JWT_SECRET");
+const getRefreshSecret = () => requireEnv("JWT_REFRESH_SECRET");
+const getResetSecret = () => requireEnv("JWT_RESET_SECRET");
 
 export interface TokenPayload {
   userId: string;
@@ -17,19 +19,19 @@ export interface TokenPayload {
 }
 
 export function signAccessToken(payload: TokenPayload): string {
-  return jwt.sign(payload, ACCESS_SECRET!, { expiresIn: "15m" });
+  return jwt.sign(payload, getAccessSecret(), { expiresIn: "15m" });
 }
 
 export function signRefreshToken(payload: TokenPayload): string {
-  return jwt.sign(payload, REFRESH_SECRET!, { expiresIn: "7d" });
+  return jwt.sign(payload, getRefreshSecret(), { expiresIn: "7d" });
 }
 
 export function verifyAccessToken(token: string): TokenPayload {
-  return jwt.verify(token, ACCESS_SECRET!) as TokenPayload;
+  return jwt.verify(token, getAccessSecret()) as TokenPayload;
 }
 
 export function verifyRefreshToken(token: string): TokenPayload {
-  return jwt.verify(token, REFRESH_SECRET!) as TokenPayload;
+  return jwt.verify(token, getRefreshSecret()) as TokenPayload;
 }
 
 export function getTokenFromRequest(req: NextRequest): string | null {
@@ -60,11 +62,11 @@ export function requireUser(req: NextRequest): TokenPayload {
 // Separate secret for password-reset tokens — compromise of ACCESS_SECRET
 // cannot be used to forge reset tokens and vice versa.
 export function signResetToken(userId: string): string {
-  return jwt.sign({ userId, type: "reset" }, RESET_SECRET!, { expiresIn: "1h" });
+  return jwt.sign({ userId, type: "reset" }, getResetSecret(), { expiresIn: "1h" });
 }
 
 export function verifyResetToken(token: string): { userId: string } {
-  const payload = jwt.verify(token, RESET_SECRET!) as { userId: string; type: string };
+  const payload = jwt.verify(token, getResetSecret()) as { userId: string; type: string };
   if (payload.type !== "reset") throw new Error("Invalid token type");
   return { userId: payload.userId };
 }
