@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
 import MeshBackground from "@/components/ui/MeshBackground";
@@ -30,6 +31,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="theme-color" content="#010028" />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-RJV2G8G06H"
+          strategy="afterInteractive"
+        />
+        <Script id="ga-init" strategy="afterInteractive">{`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-RJV2G8G06H');
+        `}</Script>
       </head>
       <body className={poppins.className}>
         <MeshBackground />

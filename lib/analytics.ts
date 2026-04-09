@@ -1,25 +1,23 @@
 "use client";
-// Analytics wrapper — swap PostHog for any other tool by changing this file only.
-// All calls are no-ops if NEXT_PUBLIC_POSTHOG_KEY is not set or if window is undefined.
+// Analytics wrapper — Google Analytics 4
+// All calls are no-ops if window/gtag is not available.
 
-import posthog from "posthog-js";
+const GA_ID = "G-RJV2G8G06H";
 
-let initialized = false;
+declare global {
+  interface Window {
+    gtag: (...args: unknown[]) => void;
+    dataLayer: unknown[];
+  }
+}
+
+function gtag(...args: unknown[]) {
+  if (typeof window === "undefined" || typeof window.gtag !== "function") return;
+  window.gtag(...args);
+}
 
 export function initAnalytics() {
-  if (typeof window === "undefined") return;
-  if (initialized) return;
-  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-  if (!key) return;
-  posthog.init(key, {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
-    capture_pageview: false,
-    capture_pageleave: true,
-    persistence: "localStorage",
-    autocapture: false,
-    respect_dnt: true,
-  });
-  initialized = true;
+  // gtag is initialized via the script tag in layout.tsx — nothing to do here.
 }
 
 export function identifyUser(userId: string, props: {
@@ -28,23 +26,23 @@ export function identifyUser(userId: string, props: {
   language?: string;
   jobTitle?: string;
 }) {
-  if (typeof window === "undefined" || !initialized) return;
-  posthog.identify(userId, props);
+  if (typeof window === "undefined") return;
+  gtag("set", "user_properties", props);
+  gtag("config", GA_ID, { user_id: userId });
 }
 
 export function resetAnalytics() {
-  if (typeof window === "undefined" || !initialized) return;
-  posthog.reset();
+  if (typeof window === "undefined") return;
+  gtag("set", "user_properties", {});
 }
 
 export function track(event: string, props?: Record<string, unknown>) {
-  if (typeof window === "undefined" || !initialized) return;
-  posthog.capture(event, props);
+  gtag("event", event, props);
 }
 
 // Typed event helpers
 export const analytics = {
-  pageView: (path: string) => track("$pageview", { $current_url: path }),
+  pageView: (path: string) => gtag("event", "page_view", { page_path: path, send_to: GA_ID }),
 
   // Auth
   signupStarted: () => track("signup_started"),
