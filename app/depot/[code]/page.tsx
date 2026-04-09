@@ -52,13 +52,13 @@ export default function ActionPage() {
 
   const lang = user?.language ?? "en";
   const options = [
-    { k: "browse", ic: "list", label: t("browse", lang) || "View Available Swaps", cl: C.blue, href: `/depot/${code}/swaps`, count: depot.openSwaps ?? 0 },
+    { k: "browse", ic: "list", label: t("browse", lang) || "Browse Swaps", cl: C.blue, href: `/depot/${code}/swaps`, count: depot.openSwaps ?? 0 },
     { k: "post", ic: "edit", label: t("post", lang) || "Post a Swap", cl: C.gold, href: `/depot/${code}/post` },
-    { k: "my", ic: "usr", label: t("my", lang) || "My Posts", cl: "#00C9A7", href: `/depot/${code}/my` },
-    { k: "messages", ic: "msg", label: t("messages", lang) || "Messages", cl: "#C084FC", href: `/depot/${code}/messages`, badge: unread },
-    { k: "saved", ic: "saved", label: t("saved", lang) || "Saved Swaps", cl: C.gold, href: `/depot/${code}/saved` },
-    { k: "matches", ic: "match", label: t("matches", lang) || "Mutual Matches", cl: "#F59E0B", href: `/depot/${code}/matches` },
-    { k: "history", ic: "clk", label: t("history", lang) || "My Swap History", cl: "#60A5FA", href: `/depot/${code}/history` },
+    { k: "my", ic: "usr", label: t("my", lang) || "My Posted Swaps", cl: "#00C9A7", href: `/depot/${code}/my` },
+    { k: "messages", ic: "msg", label: t("messages", lang) || "My Messages", cl: "#C084FC", href: `/depot/${code}/messages`, badge: unread },
+    { k: "saved", ic: "saved", label: t("saved", lang) || "My Saved Swaps", cl: C.gold, href: `/depot/${code}/saved` },
+    { k: "matches", ic: "match", label: t("matches", lang) || "My Matches", cl: "#F59E0B", href: `/depot/${code}/matches` },
+    { k: "history", ic: "clk", label: t("history", lang) || "My History", cl: "#60A5FA", href: `/depot/${code}/history` },
     ...(user?.role === "depotRep" || user?.role === "admin"
       ? [{ k: "rep", ic: "shield", label: "Rep Dashboard", cl: "#C084FC", href: `/depot/${code}/rep` }]
       : []),

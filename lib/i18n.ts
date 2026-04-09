@@ -3,10 +3,20 @@ export type Lang = "en" | "es" | "ht" | "zh";
 const translations: Record<Lang, Record<string, string>> = {
   en: {
     // Nav
-    "nav.swaps": "Swaps",
-    "nav.post": "Post",
-    "nav.messages": "Messages",
+    "nav.swaps": "Browse Swaps",
+    "nav.post": "Post a Swap",
+    "nav.messages": "My Messages",
     "nav.profile": "Profile",
+    "nav.my": "My Posted Swaps",
+    "nav.matches": "My Matches",
+    // Depot action menu (English)
+    "browse": "Browse Swaps",
+    "post": "Post a Swap",
+    "my": "My Posted Swaps",
+    "messages": "My Messages",
+    "saved": "My Saved Swaps",
+    "matches": "My Matches",
+    "history": "My History",
     // Browse
     "browse.title": "Swap Board",
     "browse.search": "Search swaps...",

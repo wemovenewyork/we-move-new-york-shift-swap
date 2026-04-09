@@ -32,8 +32,8 @@ export default function BottomNav({ active, depotCode, lang }: Props) {
 
   const items = [
     { k: "browse", ic: "list", l: tr("nav.swaps"), href: `/depot/${depotCode}/swaps` },
-    { k: "matches", ic: "match", l: "Matches", href: `/depot/${depotCode}/matches` },
-    { k: "my", ic: "usr", l: "My", href: `/depot/${depotCode}/my` },
+    { k: "matches", ic: "match", l: tr("nav.matches"), href: `/depot/${depotCode}/matches` },
+    { k: "my", ic: "usr", l: tr("nav.my"), href: `/depot/${depotCode}/my` },
     { k: "messages", ic: "msg", l: tr("nav.messages"), href: `/depot/${depotCode}/messages`, badge: unread },
   ];
 
