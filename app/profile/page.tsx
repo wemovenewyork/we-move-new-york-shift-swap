@@ -104,13 +104,17 @@ export default function ProfilePage() {
   };
 
   const handleDownload = async () => {
-    const res = await fetch("/api/users/me/export", { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } });
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "my-wmny-data.json"; a.click();
-    URL.revokeObjectURL(url);
-    analytics.dataDownloaded();
+    try {
+      const data = await api.get<unknown>("/users/me/export");
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "my-wmny-data.json"; a.click();
+      URL.revokeObjectURL(url);
+      analytics.dataDownloaded();
+    } catch (e: unknown) {
+      console.error("Export failed", e);
+    }
   };
 
   const saveProfile = async () => {
