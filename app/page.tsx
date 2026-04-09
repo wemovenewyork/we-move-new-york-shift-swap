@@ -5,21 +5,39 @@ import { useRouter } from "next/navigation";
 import { C } from "@/constants/colors";
 import MagneticButton from "@/components/ui/MagneticButton";
 
+const IconArrows = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+  </svg>
+);
+
+const IconCalendar = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+  </svg>
+);
+
+const IconSun = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+  </svg>
+);
+
 const features = [
   {
-    icon: "🔄",
+    Icon: IconArrows,
     color: C.blue,
     title: "Swap Work Days",
     desc: "Trade shifts with operators at your depot",
   },
   {
-    icon: "📅",
+    Icon: IconCalendar,
     color: C.gold,
     title: "Swap Days Off",
     desc: "Coordinate RDOs without the runaround",
   },
   {
-    icon: "🌴",
+    Icon: IconSun,
     color: "#00C9A7",
     title: "Swap Vacation",
     desc: "Exchange vacation picks with mutual agreements",
@@ -82,7 +100,6 @@ export default function LandingPage() {
         @keyframes spinSlow { to { transform: translate(-50%, -60%) rotate(360deg); } }
         @keyframes logoGlow { 0%,100% { box-shadow: 0 0 40px ${C.gold}22, 0 0 80px ${C.gold}08; } 50% { box-shadow: 0 0 70px ${C.gold}40, 0 0 120px ${C.gold}18; } }
         @keyframes floatHero { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        @keyframes badgeIn { from { opacity:0; transform: scale(0.6) translateY(10px); } to { opacity:1; transform: scale(1) translateY(0); } }
       `}</style>
 
       {/* Logo */}
@@ -136,7 +153,7 @@ export default function LandingPage() {
           backgroundClip: "text",
           margin: 0,
         }}>
-          Shift Swap<br />Made Simple
+          Swapping Shifts<br />Made Simple
         </h1>
       </div>
 
@@ -152,7 +169,7 @@ export default function LandingPage() {
         transform: v ? "translateY(0)" : "translateY(20px)",
         transition: "all .6s ease .35s",
       }}>
-        Peer-to-peer shift coordination for NYC MTA bus operators. No paperwork, no middleman — just operators helping operators.
+        Peer-to-peer shift coordination for NYC bus operators. No paperwork, no middleman — just operators helping operators.
       </p>
 
       {/* Feature cards */}
@@ -183,7 +200,9 @@ export default function LandingPage() {
               boxShadow: `0 4px 24px ${f.color}10`,
             }}
           >
-            <span style={{ fontSize: 22, flexShrink: 0 }}>{f.icon}</span>
+            <span style={{ color: f.color, flexShrink: 0, display: "flex" }}>
+              <f.Icon />
+            </span>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 2 }}>{f.title}</div>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,.45)", lineHeight: 1.4 }}>{f.desc}</div>
@@ -266,7 +285,7 @@ export default function LandingPage() {
         opacity: v ? 1 : 0,
         transition: "opacity .5s ease 1s",
       }}>
-        Invite code required · For authorized MTA bus operators only
+        Invite code required · For authorized bus operators only
       </p>
     </main>
   );
