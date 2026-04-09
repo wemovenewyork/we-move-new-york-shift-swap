@@ -37,10 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Always attempt to restore session via HttpOnly cookie — the server
-    // will transparently refresh the access token if needed.
-    refreshUser().finally(() => setLoading(false));
-  }, [refreshUser]);
+    // Use a raw fetch for the initial session check so a missing/expired cookie
+    // silently sets user=null rather than triggering the api.ts redirect loop.
+    fetch("/api/users/me", { credentials: "include" })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data) setUser(data); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const login = (userData: User) => {
     setUser(userData);
