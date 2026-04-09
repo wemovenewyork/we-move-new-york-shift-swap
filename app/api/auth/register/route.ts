@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
     ...(newCodes.length > 0 ? { inviteCodes: newCodes } : {}),
     emailVerificationRequired: true,
     ...(isDispatcher ? { pendingVerification: true } : {}),
-  }, 201);
+  }, { status: 201 });
 
   const isProd = process.env.NODE_ENV === "production";
   res.cookies.set("accessToken", accessToken, {
