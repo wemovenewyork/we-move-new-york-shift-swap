@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { signAccessToken, signRefreshToken } from "@/lib/auth";
 import { genInviteCode } from "@/lib/inviteCode";
@@ -18,7 +19,10 @@ function escapeHtml(str: string): string {
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!await rateLimit(`register:${ip}`, 5, 3_600_000)) return err("Too many registration attempts — try again in an hour", 429);
+  if (!await rateLimit(`register:${ip}`, 5, 3_600_000)) {
+    Sentry.captureEvent({ message: "Register rate limit hit", level: "warning", tags: { ip } });
+    return err("Too many registration attempts — try again in an hour", 429);
+  }
 
   const { firstName, lastName, email, password, inviteCode, role: requestedRole, dispatcherBadge } = await req.json();
 

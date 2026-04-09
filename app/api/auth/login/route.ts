@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { signAccessToken, signRefreshToken } from "@/lib/auth";
 import { err } from "@/lib/apiResponse";
@@ -11,7 +12,14 @@ const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-    if (!await rateLimit(`login:${ip}`, 10, 60_000)) return err("Too many attempts — try again in a minute", 429);
+    if (!await rateLimit(`login:${ip}`, 10, 60_000)) {
+      Sentry.captureEvent({
+        message: "Login rate limit hit",
+        level: "warning",
+        tags: { ip },
+      });
+      return err("Too many attempts — try again in a minute", 429);
+    }
 
     const { email, password } = await req.json();
     if (!email || !password) return err("Email and password required", 400);
@@ -40,7 +48,15 @@ export async function POST(req: NextRequest) {
           ...(locked ? { lockedUntil: new Date(Date.now() + LOCKOUT_MS) } : {}),
         },
       });
-      if (locked) return err("Account locked — too many failed attempts. Try again in 15 minutes.", 423);
+      if (locked) {
+        Sentry.captureEvent({
+          message: "Account locked after repeated failed logins",
+          level: "warning",
+          tags: { ip },
+          extra: { email: user.email, userId: user.id },
+        });
+        return err("Account locked — too many failed attempts. Try again in 15 minutes.", 423);
+      }
       return err("Invalid email or password", 401);
     }
 

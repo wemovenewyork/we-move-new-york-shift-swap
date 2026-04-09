@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { signResetToken } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
@@ -17,7 +18,10 @@ function escapeHtml(str: string): string {
 // Accepts { email } — sends reset link if account exists. Always returns 200 to prevent enumeration.
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!await rateLimit(`forgot:${ip}`, 5, 60_000)) return err("Too many attempts — try again in a minute", 429);
+  if (!await rateLimit(`forgot:${ip}`, 5, 60_000)) {
+    Sentry.captureEvent({ message: "Forgot-password rate limit hit", level: "warning", tags: { ip } });
+    return err("Too many attempts — try again in a minute", 429);
+  }
 
   const { email } = await req.json();
   if (!email || typeof email !== "string") return err("Email required", 400);
