@@ -213,7 +213,7 @@ export default function LoginPage() {
               </div>
             </div>
             <div>
-              <label htmlFor="reg-email" style={lb}>Work Email</label>
+              <label htmlFor="reg-email" style={lb}>Email</label>
               <input id="reg-email" type="email" value={em} onChange={e => { setEm(e.target.value); setFieldErrs(p => ({ ...p, em: "" })); }} placeholder="you@example.com" style={fieldErrs.em ? { borderColor: C.red + "88" } : {}} />
               {fieldErrs.em && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.em}</div>}
             </div>
@@ -272,7 +272,7 @@ export default function LoginPage() {
               </div>
             </div>
             <div>
-              <label style={lb}>Work Email</label>
+              <label style={lb}>Email</label>
               <input type="email" value={em} onChange={e => { setEm(e.target.value); setFieldErrs(p => ({ ...p, em: "" })); }} placeholder="you@mta.nyc.gov" style={fieldErrs.em ? { borderColor: C.red + "88" } : {}} />
               {fieldErrs.em && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.em}</div>}
             </div>
