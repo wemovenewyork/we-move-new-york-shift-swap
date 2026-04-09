@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { C } from "@/constants/colors";
 import MagneticButton from "@/components/ui/MagneticButton";
 
@@ -171,6 +172,33 @@ export default function LandingPage() {
       }}>
         Peer-to-peer shift coordination for NYC bus operators. No paperwork, no middleman — just operators helping operators.
       </p>
+
+      {/* Bus flyer */}
+      <div style={{
+        opacity: v ? 1 : 0,
+        transform: v ? "translateY(0)" : "translateY(24px)",
+        transition: "all .7s cubic-bezier(.34,1.1,.64,1) .4s",
+        marginBottom: 36,
+        width: "100%",
+        maxWidth: 480,
+      }}>
+        <div style={{
+          borderRadius: 24,
+          overflow: "hidden",
+          border: `1px solid ${C.gold}20`,
+          boxShadow: `0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)`,
+          background: "#fff",
+        }}>
+          <Image
+            src="/new-flyer.png"
+            alt="We Move New York bus"
+            width={480}
+            height={320}
+            style={{ width: "100%", height: "auto", display: "block" }}
+            priority
+          />
+        </div>
+      </div>
 
       {/* Feature cards */}
       <div style={{
