@@ -394,7 +394,27 @@ export default function BrowsePage() {
         <div style={{ display: "grid", gap: 8, paddingBottom: 80 }}>
           {!swapsLoaded && swaps.length === 0 && (
             Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="skeleton" style={{ height: 90, borderRadius: 16 }} />
+              <div key={i} style={{ background: "rgba(255,255,255,.03)", borderRadius: 18, padding: 20, border: "1px solid rgba(255,255,255,.06)", opacity: 1 - i * 0.12, animation: `fadeIn .4s ease ${i * 0.07}s both` }}>
+                {/* Header row */}
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div className="skeleton" style={{ height: 16, width: "30%", borderRadius: 6 }} />
+                  <div className="skeleton" style={{ height: 20, width: 60, borderRadius: 20 }} />
+                </div>
+                {/* Name row */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                  <div className="skeleton" style={{ height: 18, width: "45%", borderRadius: 6 }} />
+                  <div className="skeleton" style={{ height: 16, width: 40, borderRadius: 8 }} />
+                </div>
+                {/* Details */}
+                <div className="skeleton" style={{ height: 13, width: "80%", borderRadius: 5, marginBottom: 6 }} />
+                <div className="skeleton" style={{ height: 13, width: "60%", borderRadius: 5, marginBottom: 14 }} />
+                {/* Shift block */}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <div className="skeleton" style={{ height: 44, flex: 1, borderRadius: 10 }} />
+                  <div className="skeleton" style={{ height: 44, width: 24, borderRadius: 6, alignSelf: "center" }} />
+                  <div className="skeleton" style={{ height: 44, flex: 1, borderRadius: 10 }} />
+                </div>
+              </div>
             ))
           )}
           {swapsLoaded && swaps.length === 0 && (

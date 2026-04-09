@@ -169,3 +169,60 @@ a:focus-visible { outline: 2px solid #D1AD38; outline-offset: 2px; }
   animation: shimmer 1.8s infinite;
   border-radius: 10px;
 }
+
+/* Spring entrance */
+@keyframes springIn {
+  0%   { opacity: 0; transform: scale(0.5) translateY(20px); }
+  60%  { transform: scale(1.06) translateY(-4px); }
+  80%  { transform: scale(0.97) translateY(2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.spring-in { animation: springIn .7s cubic-bezier(.34,1.56,.64,1) both; }
+
+/* Float */
+@keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.float-anim { animation: floatY 4s ease-in-out infinite; }
+
+/* Glow border pulse */
+@keyframes glowBorder {
+  0%,100% { box-shadow: 0 0 0 0 rgba(209,173,56,0); }
+  50%      { box-shadow: 0 0 24px 4px rgba(209,173,56,.35), 0 0 60px 8px rgba(209,173,56,.1); }
+}
+.glow-border { animation: glowBorder 2.5s ease-in-out infinite; }
+
+/* Slide up from bottom */
+@keyframes slideUpFade { from { opacity:0; transform:translateY(32px); } to { opacity:1; transform:translateY(0); } }
+.slide-up { animation: slideUpFade .55s cubic-bezier(.34,1.1,.64,1) both; }
+
+/* Ripple */
+@keyframes ripple { from { transform:scale(0); opacity:.5; } to { transform:scale(4); opacity:0; } }
+.ripple-origin { position:relative; overflow:hidden; }
+.ripple-origin .ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,.25);
+  pointer-events: none;
+  animation: ripple .6s ease-out forwards;
+  transform-origin: center;
+}
+
+/* Tab indicator glow */
+@keyframes tabGlow {
+  0%,100% { box-shadow: 0 0 8px rgba(209,173,56,.5); }
+  50%      { box-shadow: 0 0 18px rgba(209,173,56,.9); }
+}
+
+/* Fade-scale (modal/overlay entrance) */
+@keyframes fadeScale { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
+.fade-scale { animation: fadeScale .35s cubic-bezier(.34,1.1,.64,1) both; }
+
+/* Stagger helpers beyond 10 children */
+.card-enter:nth-child(11) { animation-delay: .44s; }
+.card-enter:nth-child(12) { animation-delay: .48s; }
+.card-enter:nth-child(13) { animation-delay: .52s; }
+.card-enter:nth-child(14) { animation-delay: .56s; }
+.card-enter:nth-child(15) { animation-delay: .60s; }
+
+/* Soft press depth on tap */
+@keyframes tapPress { 0%{transform:scale(1)} 40%{transform:scale(.96)} 100%{transform:scale(1)} }
+.tap-press:active { animation: tapPress .18s ease; }
