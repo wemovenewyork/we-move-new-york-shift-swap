@@ -99,8 +99,8 @@ export default function LoginPage() {
     if (Object.keys(errs).length) { setFieldErrs(errs); setShaking(true); setTimeout(() => setShaking(false), 500); return; }
     setSubmitting(true); setErr(""); setFieldErrs({});
     try {
-      const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; language: string } }>("/auth/login", { email: em, password: pw });
-      login(data.accessToken, data.refreshToken, data.user as Parameters<typeof login>[2]);
+      const data = await api.post<{ user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; language: string } }>("/auth/login", { email: em, password: pw });
+      login(data.user as Parameters<typeof login>[0]);
       setShowConsentFlow(true);
     } catch (e: unknown) {
       setErrWithShake(e instanceof Error ? e.message : "Login failed");
@@ -111,8 +111,8 @@ export default function LoginPage() {
     if (!validateRegister()) { setShaking(true); setTimeout(() => setShaking(false), 500); return; }
     setSubmitting(true); setErr(""); setFieldErrs({});
     try {
-      const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; role: string; language: string; flexibleMode: boolean }; pendingVerification?: boolean }>("/auth/register", { firstName: fn, lastName: ln, email: em, password: pw, inviteCode: invCode });
-      login(data.accessToken, data.refreshToken, data.user as Parameters<typeof login>[2]);
+      const data = await api.post<{ user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; role: string; language: string; flexibleMode: boolean }; pendingVerification?: boolean }>("/auth/register", { firstName: fn, lastName: ln, email: em, password: pw, inviteCode: invCode });
+      login(data.user as Parameters<typeof login>[0]);
       window.location.href = "/setup-profile";
     } catch (e: unknown) {
       setErrWithShake(e instanceof Error ? e.message : "Registration failed");
@@ -132,8 +132,8 @@ export default function LoginPage() {
     if (Object.keys(errs).length) { setFieldErrs(errs); setShaking(true); setTimeout(() => setShaking(false), 500); return; }
     setSubmitting(true); setErr(""); setFieldErrs({});
     try {
-      const data = await api.post<{ accessToken: string; refreshToken: string; user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; role: string; language: string; flexibleMode: boolean } }>("/auth/register", { firstName: fn, lastName: ln, email: em, password: pw, role: "dispatcher", dispatcherBadge: dispBadge || undefined });
-      login(data.accessToken, data.refreshToken, data.user as Parameters<typeof login>[2]);
+      const data = await api.post<{ user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; role: string; language: string; flexibleMode: boolean } }>("/auth/register", { firstName: fn, lastName: ln, email: em, password: pw, role: "dispatcher", dispatcherBadge: dispBadge || undefined });
+      login(data.user as Parameters<typeof login>[0]);
       window.location.href = "/setup-profile";
     } catch (e: unknown) {
       setErrWithShake(e instanceof Error ? e.message : "Registration failed");

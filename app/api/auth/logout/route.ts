@@ -1,5 +1,4 @@
-import { NextRequest } from "next/server";
-import { ok } from "@/lib/apiResponse";
+import { NextRequest, NextResponse } from "next/server";
 import { blockRefreshToken } from "@/lib/tokenBlocklist";
 import crypto from "crypto";
 
@@ -8,7 +7,7 @@ function hashToken(token: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const { refreshToken } = await req.json().catch(() => ({}));
+  const refreshToken = req.cookies.get("refreshToken")?.value;
 
   if (refreshToken) {
     try {
@@ -18,5 +17,11 @@ export async function POST(req: NextRequest) {
     } catch { /* non-fatal — token may be expired already */ }
   }
 
-  return ok({ loggedOut: true });
+  const res = NextResponse.json({ loggedOut: true });
+
+  // Clear both cookies
+  res.cookies.set("accessToken", "", { httpOnly: true, secure: true, sameSite: "strict", path: "/", maxAge: 0 });
+  res.cookies.set("refreshToken", "", { httpOnly: true, secure: true, sameSite: "strict", path: "/api/auth", maxAge: 0 });
+
+  return res;
 }

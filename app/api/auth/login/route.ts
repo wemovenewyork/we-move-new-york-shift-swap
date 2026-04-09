@@ -1,8 +1,8 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signAccessToken, signRefreshToken } from "@/lib/auth";
-import { ok, err } from "@/lib/apiResponse";
+import { err } from "@/lib/apiResponse";
 import { rateLimit } from "@/lib/rateLimit";
 
 const MAX_ATTEMPTS = 10;
@@ -51,9 +51,10 @@ export async function POST(req: NextRequest) {
     });
 
     const payload = { userId: user.id, email: user.email };
-    return ok({
-      accessToken: signAccessToken(payload),
-      refreshToken: signRefreshToken(payload),
+    const accessToken = signAccessToken(payload);
+    const refreshToken = signRefreshToken(payload);
+
+    const res = NextResponse.json({
       user: {
         id: user.id,
         firstName: user.firstName,
@@ -66,6 +67,24 @@ export async function POST(req: NextRequest) {
         termsVersion: user.termsVersion,
       },
     });
+
+    const isProd = process.env.NODE_ENV === "production";
+    res.cookies.set("accessToken", accessToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "strict",
+      path: "/",
+      maxAge: 900, // 15 minutes
+    });
+    res.cookies.set("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "strict",
+      path: "/api/auth",
+      maxAge: 604800, // 7 days
+    });
+
+    return res;
   } catch (e: unknown) {
     console.error("[login] unexpected error:", e);
     return err("An unexpected error occurred. Please try again.", 500);

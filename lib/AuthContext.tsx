@@ -2,13 +2,13 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { User } from "@/types";
-import { api, clearTokens } from "@/lib/api";
+import { api } from "@/lib/api";
 import { identifyUser, resetAnalytics } from "@/lib/analytics";
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (accessToken: string, refreshToken: string, userData: User) => void;
+  login: (userData: User) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
   updateUser: (u: User) => void;
@@ -37,16 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-    if (token) {
-      refreshUser().finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
+    // Always attempt to restore session via HttpOnly cookie — the server
+    // will transparently refresh the access token if needed.
+    refreshUser().finally(() => setLoading(false));
   }, [refreshUser]);
 
-  const login = (accessToken: string, refreshToken: string, userData: User) => {
-    api.setTokens(accessToken, refreshToken);
+  const login = (userData: User) => {
     setUser(userData);
     identifyUser(userData.id, {
       role: userData.role,
@@ -56,16 +52,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    // Revoke refresh token server-side before clearing locally
-    const refreshToken = typeof window !== "undefined" ? localStorage.getItem("refreshToken") : null;
-    if (refreshToken) {
-      fetch("/api/auth/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken }),
-      }).catch(() => {});
-    }
-    clearTokens();
+    // Revoke refresh token server-side and clear HttpOnly cookies
+    fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => {});
     resetAnalytics();
     setUser(null);
   };

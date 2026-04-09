@@ -2,41 +2,15 @@
 
 const BASE = "/api";
 
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("accessToken");
-}
-
-function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("refreshToken");
-}
-
-function setTokens(access: string, refresh: string) {
-  localStorage.setItem("accessToken", access);
-  localStorage.setItem("refreshToken", refresh);
-}
-
-export function clearTokens() {
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-}
-
-async function refreshTokens(): Promise<string | null> {
-  const refresh = getRefreshToken();
-  if (!refresh) return null;
+async function refreshTokens(): Promise<boolean> {
   try {
     const res = await fetch(`${BASE}/auth/refresh`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken: refresh }),
+      credentials: "include",
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    setTokens(data.accessToken, data.refreshToken);
-    return data.accessToken;
+    return res.ok;
   } catch {
-    return null;
+    return false;
   }
 }
 
@@ -45,24 +19,21 @@ async function request<T>(
   options: RequestInit = {},
   retry = true
 ): Promise<T> {
-  const token = getToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE}${path}`, { ...options, headers });
+  const res = await fetch(`${BASE}${path}`, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
 
   if (res.status === 401 && retry) {
-    if (!getToken()) {
-      const body = await res.json().catch(() => ({ error: "Request failed" }));
-      throw new Error(body.error ?? "Request failed");
-    }
-    const newToken = await refreshTokens();
-    if (newToken) return request<T>(path, options, false);
-    clearTokens();
-    window.location.href = "/login";
+    const refreshed = await refreshTokens();
+    if (refreshed) return request<T>(path, options, false);
+    if (typeof window !== "undefined") window.location.href = "/login";
     throw new Error("Session expired");
   }
 
@@ -85,6 +56,4 @@ export const api = {
   del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
   delete: <T>(path: string, body: unknown) =>
     request<T>(path, { method: "DELETE", body: JSON.stringify(body) }),
-  setTokens,
-  clearTokens,
 };

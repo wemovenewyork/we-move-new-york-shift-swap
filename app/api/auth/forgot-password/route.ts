@@ -5,6 +5,14 @@ import { sendEmail } from "@/lib/email";
 import { ok, err } from "@/lib/apiResponse";
 import { rateLimit } from "@/lib/rateLimit";
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 // POST /api/auth/forgot-password
 // Accepts { email } — sends reset link if account exists. Always returns 200 to prevent enumeration.
 export async function POST(req: NextRequest) {
@@ -27,7 +35,7 @@ export async function POST(req: NextRequest) {
       `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#010028;color:#fff;border-radius:16px">
         <h1 style="font-size:22px;font-weight:800;margin-bottom:8px">Reset your password</h1>
         <p style="color:rgba(255,255,255,.6);font-size:14px;line-height:1.6;margin-bottom:24px">
-          Hi ${user.firstName}, we received a request to reset your We Move NY password.
+          Hi ${escapeHtml(user.firstName)}, we received a request to reset your We Move NY password.
           This link expires in 1 hour.
         </p>
         <a href="${resetLink}" style="display:inline-block;padding:14px 28px;border-radius:12px;background:#D1AD38;color:#010028;font-weight:700;font-size:15px;text-decoration:none">
