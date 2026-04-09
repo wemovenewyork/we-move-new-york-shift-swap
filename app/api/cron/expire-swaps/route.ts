@@ -38,9 +38,9 @@ export async function GET(req: NextRequest) {
     data: { status: "expired" },
   });
 
-  // Notify each owner — fire and forget
+  // Notify each owner — awaited so serverless doesn't kill before DB write
   for (const swap of toExpire) {
-    notifyUser(swap.userId, {
+    await notifyUser(swap.userId, {
       title: "Your swap expired",
       body: `"${swap.details.substring(0, 60)}" — repost it to keep looking`,
       url: `/depot/${swap.depotId}/my`,

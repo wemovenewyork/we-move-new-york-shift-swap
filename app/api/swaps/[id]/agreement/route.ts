@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   await notifyUser(swap.userId, {
     title: "Someone wants to swap with you!",
     body: `${proposer?.firstName ?? "An operator"} proposed an agreement on your swap`,
-    url: `/depot/${depotCode?.code ?? ""}/swaps/${id}`,
+    url: `/depot/${depotCode?.code ?? swap.depotId}/swaps/${id}`,
   });
 
   return ok(agreement, 201);
@@ -99,7 +99,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const isUserA = agreement.userAId === user.userId;
 
   const swap = await prisma.swap.findUnique({ where: { id }, select: { depotId: true } });
-  const depotId = swap?.depotId ?? "";
+  const depot = swap?.depotId
+    ? await prisma.depot.findUnique({ where: { id: swap.depotId }, select: { code: true } })
+    : null;
+  const depotId = depot?.code ?? swap?.depotId ?? "";
 
   if (action === "cancel") {
     const updated = await prisma.swapAgreement.update({

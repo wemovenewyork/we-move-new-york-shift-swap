@@ -37,7 +37,7 @@ export async function PUT(
     });
     const ids = interestedUsers.map(m => m.fromUserId);
     if (ids.length > 0) {
-      notifyMany(ids, {
+      await notifyMany(ids, {
         title: "Swap has been filled",
         body: `A swap you were interested in has been filled — check the board for new ones`,
         url: `/depot/${swap.depotId}/swaps`,
