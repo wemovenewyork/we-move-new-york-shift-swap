@@ -72,7 +72,18 @@ export default function HelpPage() {
       <main id="main-content" style={{ maxWidth: 520, margin: "0 auto", padding: "28px 20px 100px" }}>
         <div style={{ marginBottom: 28 }}>
           <h1 style={{ fontSize: 26, fontWeight: 800, background: `linear-gradient(135deg,${C.white},${C.gold}88)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6 }}>Frequently Asked Questions</h1>
-          <p style={{ fontSize: 13, color: C.m, lineHeight: 1.6 }}>Everything you need to know about using We Move NY.</p>
+          <p style={{ fontSize: 13, color: C.m, lineHeight: 1.6, marginBottom: 16 }}>Everything you need to know about using We Move NY.</p>
+          <button
+            onClick={() => router.push("/how-it-works")}
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", borderRadius: 14, border: `1px solid ${C.gold}33`, background: `${C.gold}08`, cursor: "pointer", width: "100%" }}
+          >
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: `${C.gold}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>▶</div>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.white }}>How It Works</div>
+              <div style={{ fontSize: 11, color: C.m }}>Step-by-step visual guide</div>
+            </div>
+            <div style={{ marginLeft: "auto", color: C.m, fontSize: 16 }}>›</div>
+          </button>
         </div>
 
         {faqs.map((faq, i) => (

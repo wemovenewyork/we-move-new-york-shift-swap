@@ -222,6 +222,19 @@ export default function LandingPage() {
         </MagneticButton>
       </div>
 
+      {/* How it works link */}
+      <button
+        onClick={() => router.push("/how-it-works")}
+        style={{
+          background: "none", border: "none", cursor: "pointer",
+          fontSize: 12, color: "rgba(255,255,255,.35)", marginBottom: 16,
+          textDecoration: "underline", textUnderlineOffset: 3,
+          opacity: v ? 1 : 0, transition: "opacity .5s ease 1.05s",
+        }}
+      >
+        How does it work?
+      </button>
+
       {/* Fine print */}
       <p style={{
         fontSize: 11, color: "rgba(255,255,255,.28)", textAlign: "center",
