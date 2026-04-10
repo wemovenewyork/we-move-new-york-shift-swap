@@ -273,12 +273,8 @@ export default function LoginPage() {
             </div>
             <div>
               <label style={lb}>Email</label>
-              <input type="email" value={em} onChange={e => { setEm(e.target.value); setFieldErrs(p => ({ ...p, em: "" })); }} placeholder="you@mta.nyc.gov" style={fieldErrs.em ? { borderColor: C.red + "88" } : {}} />
+              <input type="email" value={em} onChange={e => { setEm(e.target.value); setFieldErrs(p => ({ ...p, em: "" })); }} placeholder="your@email.com" style={fieldErrs.em ? { borderColor: C.red + "88" } : {}} />
               {fieldErrs.em && <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.em}</div>}
-            </div>
-            <div>
-              <label style={lb}>Employee / Badge Number <span style={{ color: C.m, fontWeight: 400 }}>(optional)</span></label>
-              <input value={dispBadge} onChange={e => setDispBadge(e.target.value)} placeholder="e.g. D-1042" />
             </div>
             <div>
               <label style={lb}>Create Password</label>

@@ -45,7 +45,7 @@ const STEPS = [
     color: C.gold,
     title: "Message & Agree",
     desc: "Message the other operator directly to confirm details. When you're both ready, submit a formal swap agreement — one tap each.",
-    detail: "Messages are private between the two of you. The agreement records both operators' names, badge numbers, and the swap details.",
+    detail: "Messages are private between the two of you. The agreement records both operators' names and the swap details.",
     visual: <AgreementVisual />,
   },
   {
@@ -150,8 +150,8 @@ function AgreementVisual() {
       <div style={{ borderRadius: 14, border: `1px solid rgba(192,132,252,.2)`, background: "rgba(192,132,252,.05)", padding: 14 }}>
         <div style={{ fontSize: 10, color: "#C084FC", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Swap Agreement</div>
         {[
-          { label: "Operator A", value: "John D. · Badge 4821" },
-          { label: "Operator B", value: "Maria S. · Badge 3376" },
+          { label: "Operator A", value: "John D." },
+          { label: "Operator B", value: "Maria S." },
           { label: "Swap Date", value: "Monday, April 14" },
         ].map(f => (
           <div key={f.label} style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", fontSize: 11 }}>
