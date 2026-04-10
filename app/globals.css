@@ -29,7 +29,7 @@ input[type="date"] {
   -webkit-appearance: none;
   appearance: none;
   padding-right: 10px;
-  color-scheme: light;
+  color-scheme: dark;
 }
 select {
   appearance: none;
