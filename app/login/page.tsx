@@ -247,7 +247,7 @@ export default function LoginPage() {
               <input id="reg-invite" value={invCode} onChange={e => { setInvCode(e.target.value.toUpperCase()); setFieldErrs(p => ({ ...p, inv: "" })); }} placeholder="e.g. WMNY-DEMO1" style={{ letterSpacing: 2, textTransform: "uppercase", ...(fieldErrs.inv ? { borderColor: C.red + "88" } : {}) }} />
               {fieldErrs.inv
                 ? <div style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{fieldErrs.inv}</div>
-                : <div style={{ fontSize: 11, color: C.m, marginTop: 4 }}>Ask a fellow operator, or use: WMNY-2024A · WMNY-2024B</div>
+                : <div style={{ fontSize: 11, color: C.m, marginTop: 4 }}>Ask a fellow operator for their invite code</div>
               }
             </div>
             <MagneticButton onClick={doRegister} disabled={submitting} style={{ padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 16, fontWeight: 700, color: C.bg, opacity: submitting ? 0.7 : 1, width: "100%" }}>

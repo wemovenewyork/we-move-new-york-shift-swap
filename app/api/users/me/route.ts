@@ -59,6 +59,22 @@ export async function PUT(req: NextRequest) {
 
   const { firstName, lastName, email, language, depotId, jobTitle, avatarUrl } = await req.json();
 
+  // Validate avatarUrl — must be a real HTTPS URL, not an arbitrary internal address
+  if (avatarUrl !== undefined && avatarUrl !== null) {
+    try {
+      const parsed = new URL(avatarUrl);
+      if (parsed.protocol !== "https:") return err("Avatar URL must use HTTPS", 400);
+      // Block private/internal IP ranges and localhost
+      const host = parsed.hostname.toLowerCase();
+      const blocked = ["localhost", "127.0.0.1", "0.0.0.0", "169.254", "10.", "192.168.", "172.16."];
+      if (blocked.some(b => host === b || host.startsWith(b))) {
+        return err("Invalid avatar URL", 400);
+      }
+    } catch {
+      return err("Invalid avatar URL", 400);
+    }
+  }
+
   if (email) {
     const existing = await prisma.user.findFirst({
       where: { email: email.toLowerCase(), NOT: { id: user.userId } },
