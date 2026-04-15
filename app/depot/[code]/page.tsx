@@ -120,7 +120,7 @@ export default function ActionPage() {
           setShowTip(false);
         }} />
       )}
-      <main id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "24px 20px", maxWidth: 480, margin: "0 auto", width: "100%" }}>
+      <main id="main-content" tabIndex={-1} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "24px 20px", maxWidth: 480, margin: "0 auto", width: "100%" }}>
         <PushBanner />
         {stats && (
           <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: 12, marginBottom: 16 }}>

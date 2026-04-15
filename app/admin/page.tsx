@@ -326,7 +326,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <main id="main-content" style={{ maxWidth: 640, margin: "0 auto", padding: "20px 16px" }}>
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 640, margin: "0 auto", padding: "20px 16px" }}>
         {/* Stats grid */}
         {stats && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 20 }}>

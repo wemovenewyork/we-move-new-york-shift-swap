@@ -300,7 +300,7 @@ export default function BrowsePage() {
         <button onClick={() => { playClick(); router.push(`/depot/${code}/post`); }} style={{ padding: "7px 12px", borderRadius: 10, border: "none", cursor: "pointer", background: "#D1AD38", fontSize: 12, fontWeight: 700, color: "#010028", flexShrink: 0 }}>+ Post</button>
       </div>
 
-      <main id="main-content" style={{ maxWidth: 720, margin: "0 auto", padding: "0 20px" }}>
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 720, margin: "0 auto", padding: "0 20px" }}>
         <h2 style={{ fontSize: 22, fontWeight: 800, background: `linear-gradient(135deg,${C.white},${C.gold}88)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", padding: "18px 0 8px" }}>Available Swaps</h2>
 
         <FirstSwapBanner depotCode={code} />

@@ -69,7 +69,7 @@ export default function HelpPage() {
         <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: C.white }}>Help &amp; FAQ</div>
       </div>
 
-      <main id="main-content" style={{ maxWidth: 520, margin: "0 auto", padding: "28px 20px 100px" }}>
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 520, margin: "0 auto", padding: "28px 20px 100px" }}>
         <div style={{ marginBottom: 28 }}>
           <h1 style={{ fontSize: 26, fontWeight: 800, background: `linear-gradient(135deg,${C.white},${C.gold}88)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6 }}>Frequently Asked Questions</h1>
           <p style={{ fontSize: 13, color: C.m, lineHeight: 1.6, marginBottom: 16 }}>Everything you need to know about using We Move NY.</p>

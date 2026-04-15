@@ -146,7 +146,7 @@ export default function SwapDetailPage() {
         {!own && <button onClick={handleReport} aria-label="Report this swap" style={{ width: 36, height: 36, borderRadius: 10, border: "1px solid " + C.bd, background: C.s, color: C.m, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon n="inf" s={14} /></button>}
       </div>
 
-      <main id="main-content" style={{ maxWidth: 520, margin: "0 auto", padding: "24px 20px 100px" }}>
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 520, margin: "0 auto", padding: "24px 20px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, color: m.c }}>
             <Icon n={co?.ic || "swap"} s={18} />

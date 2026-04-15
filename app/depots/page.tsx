@@ -56,7 +56,7 @@ export default function DepotsPage() {
           <Icon n="usr" s={15} />
         </button>
       </div>
-      <main id="main-content" style={{ maxWidth: 720, margin: "0 auto", padding: "0 20px" }}>
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 720, margin: "0 auto", padding: "0 20px" }}>
         <div style={{ padding: "40px 0 28px", textAlign: "center" }}>
           <div style={{ fontSize: 14, color: C.gold, marginBottom: 10 }}>Welcome, {user?.firstName}</div>
           <h2 style={{ fontSize: "clamp(28px,7vw,46px)", fontWeight: 800, color: C.white, lineHeight: 1.1 }}>

@@ -151,7 +151,7 @@ export default function RepDashboardPage() {
         </div>
       </div>
 
-      <main id="main-content" style={{ maxWidth: 560, margin: "0 auto", padding: "20px 16px" }}>
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 560, margin: "0 auto", padding: "20px 16px" }}>
         {/* 30-day activity chart */}
         {analytics.length > 0 && (
           <div style={{ background: "rgba(255,255,255,.03)", borderRadius: 14, padding: 16, border: `1px solid ${C.bd}`, marginBottom: 16 }}>

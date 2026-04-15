@@ -164,7 +164,7 @@ export default function NotificationsPage() {
         </div>
       </div>
 
-      <main id="main-content" style={{ maxWidth: 520, margin: "0 auto", padding: "16px 20px 40px" }}>
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 520, margin: "0 auto", padding: "16px 20px 40px" }}>
         {fetching ? (
           <div style={{ display: "grid", gap: 8 }}>
             {[...Array(5)].map((_, i) => (

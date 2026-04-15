@@ -397,7 +397,7 @@ export default function PostSwapPage() {
         <InboxIcon />
       </div>
 
-      <main id="main-content" style={{ maxWidth: 480, margin: "0 auto", padding: "24px 16px 60px", width: "100%" }}>
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 480, margin: "0 auto", padding: "24px 16px 60px", width: "100%" }}>
         <h2 style={{ fontSize: 24, fontWeight: 800, background: `linear-gradient(135deg,${C.white},${C.gold}88)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 16 }}>
           {editId ? "Edit Swap" : "Post a Swap"}
         </h2>

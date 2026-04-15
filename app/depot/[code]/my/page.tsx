@@ -81,7 +81,7 @@ export default function MyPostsPage() {
         <button onClick={() => router.push(`/depot/${code}/history`)} style={{ padding: "6px 14px", borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.m, cursor: "pointer", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>History</button>
       </div>
 
-      <main id="main-content" style={{ maxWidth: 720, margin: "0 auto", padding: "16px 20px 50px" }}>
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 720, margin: "0 auto", padding: "16px 20px 50px" }}>
         {swaps.some(s => s.status === "expired") && (
           <div role="status" style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px", borderRadius: 14, background: "rgba(136,136,136,.08)", border: "1px solid rgba(136,136,136,.2)", marginBottom: 12 }}>
             <Icon n="clk" s={16} c="#888" />

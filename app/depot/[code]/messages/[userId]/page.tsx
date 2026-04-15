@@ -194,7 +194,7 @@ export default function ThreadPage() {
       </div>
 
       {/* Messages */}
-      <main id="main-content" style={{ flex: 1, maxWidth: 560, width: "100%", margin: "0 auto", padding: "16px 16px 0", overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+      <main id="main-content" tabIndex={-1} style={{ flex: 1, maxWidth: 560, width: "100%", margin: "0 auto", padding: "16px 16px 0", overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
         {messages.length === 0 && (
           <div style={{ textAlign: "center", padding: "60px 20px", color: C.m, fontSize: 13 }}>
             Start the conversation

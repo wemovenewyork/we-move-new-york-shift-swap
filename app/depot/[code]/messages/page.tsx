@@ -99,7 +99,7 @@ export default function MessagesPage() {
         )}
       </div>
 
-      <main id="main-content" style={{ maxWidth: 520, margin: "0 auto", padding: "16px 20px 90px" }}>
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 520, margin: "0 auto", padding: "16px 20px 90px" }}>
         {convos.length > 0 && (
           <div style={{ marginBottom: 12, position: "relative" }}>
             <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>

@@ -31,7 +31,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <main id="main-content" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
+    <main id="main-content" tabIndex={-1} style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
       <div style={{ maxWidth: 400, width: "100%", background: "rgba(255,255,255,.02)", backdropFilter: "blur(16px)", borderRadius: 28, border: "1px solid rgba(255,255,255,.06)", padding: 32, boxShadow: "0 24px 80px rgba(0,0,0,.3)" }}>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: C.white, marginBottom: 8 }}>Reset Password</h1>
 

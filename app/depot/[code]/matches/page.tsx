@@ -59,7 +59,7 @@ export default function MatchesPage() {
         </div>
       </div>
 
-      <main id="main-content" style={{ maxWidth: 520, margin: "0 auto", padding: "20px 16px 0" }}>
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 520, margin: "0 auto", padding: "20px 16px 0" }}>
         {fetching ? (
           <div style={{ textAlign: "center", paddingTop: 60, color: C.m, fontSize: 13 }}>Finding matches...</div>
         ) : matches.length === 0 ? (

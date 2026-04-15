@@ -164,7 +164,7 @@ export default function ProfilePage() {
         <InboxIcon />
       </div>
 
-      <main id="main-content" style={{ maxWidth: 440, margin: "0 auto", padding: "24px 20px 80px" }}>
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 440, margin: "0 auto", padding: "24px 20px 80px" }}>
         {/* Avatar */}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div

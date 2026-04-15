@@ -28,7 +28,7 @@ export default function TermsPage() {
         <div style={{ fontSize: 15, fontWeight: 700, color: C.white }}>Terms of Use</div>
       </div>
 
-      <main id="main-content" style={s.content}>
+      <main id="main-content" tabIndex={-1} style={s.content}>
         <h1 style={s.h1}>Terms of Use</h1>
         <p style={s.updated}>Last updated: April 1, 2026</p>
 

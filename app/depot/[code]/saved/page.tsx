@@ -63,7 +63,7 @@ export default function SavedSwapsPage() {
         <InboxIcon />
       </div>
 
-      <main id="main-content" style={{ maxWidth: 560, margin: "0 auto", padding: "16px 16px 90px" }}>
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 560, margin: "0 auto", padding: "16px 16px 90px" }}>
         {swaps.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 20px", color: C.m }}>
             <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,.04)", border: `1px solid ${C.bd}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
