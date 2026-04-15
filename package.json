@@ -26,13 +26,10 @@
     "jsonwebtoken": "^9.0.3",
     "next": "^16.2.3",
     "pg": "^8.20.0",
-    "posthog-js": "^1.364.6",
     "prisma": "^7.7.0",
     "qrcode.react": "^4.2.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3",
     "web-push": "^3.6.7"
   },
   "prisma": {

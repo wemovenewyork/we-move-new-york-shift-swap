@@ -2,8 +2,9 @@ import { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
+import { CURRENT_TERMS_VERSION } from "@/lib/termsVersion";
 
-export const CURRENT_TERMS_VERSION = "2026-04-02";
+export { CURRENT_TERMS_VERSION };
 
 export async function POST(req: NextRequest) {
   let user;

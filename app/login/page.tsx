@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
+import { CURRENT_TERMS_VERSION } from "@/lib/termsVersion";
 import { C } from "@/constants/colors";
 import Intro from "@/components/screens/Intro";
 import MagneticButton from "@/components/ui/MagneticButton";
@@ -55,7 +56,6 @@ export default function LoginPage() {
   const [showTerms, setShowTerms] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
   const [acceptingTerms, setAcceptingTerms] = useState(false);
-  const CURRENT_TERMS_VERSION = "2026-04-02";
 
   const strength = pwStrength(pw);
 
