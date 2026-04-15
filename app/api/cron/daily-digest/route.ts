@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization");
   if (!secret || auth !== `Bearer ${secret}`) return err("Unauthorized", 401);
 
+  try {
   const since = new Date(Date.now() - 86_400_000);
 
   // Group new swaps by depotId
@@ -62,4 +63,7 @@ export async function GET(req: NextRequest) {
   }
 
   return ok({ sent, cleaned: failed.length });
+  } catch (e) {
+    return err(`Cron failed: ${e instanceof Error ? e.message : "unknown error"}`, 500);
+  }
 }

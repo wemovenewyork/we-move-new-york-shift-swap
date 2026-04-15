@@ -6,8 +6,12 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
-  const { code } = await params;
-  const depot = await prisma.depot.findUnique({ where: { code: code.toUpperCase() } });
-  if (!depot) return err("Depot not found", 404);
-  return ok(depot);
+  try {
+    const { code } = await params;
+    const depot = await prisma.depot.findUnique({ where: { code: code.toUpperCase() } });
+    if (!depot) return err("Depot not found", 404);
+    return ok(depot);
+  } catch {
+    return err("Unable to load depot — please try again", 503);
+  }
 }

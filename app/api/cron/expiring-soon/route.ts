@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization");
   if (!secret || auth !== `Bearer ${secret}`) return err("Unauthorized", 401);
 
+  try {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(0, 0, 0, 0);
@@ -51,4 +52,7 @@ export async function GET(req: NextRequest) {
   }
 
   return ok({ notified });
+  } catch (e) {
+    return err(`Cron failed: ${e instanceof Error ? e.message : "unknown error"}`, 500);
+  }
 }

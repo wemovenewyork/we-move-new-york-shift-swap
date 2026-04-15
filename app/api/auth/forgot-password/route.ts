@@ -17,6 +17,7 @@ function escapeHtml(str: string): string {
 // POST /api/auth/forgot-password
 // Accepts { email } — sends reset link if account exists. Always returns 200 to prevent enumeration.
 export async function POST(req: NextRequest) {
+  try {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
   if (!await rateLimit(`forgot:${ip}`, 5, 60_000)) {
     Sentry.captureEvent({ message: "Forgot-password rate limit hit", level: "warning", tags: { ip } });
@@ -54,4 +55,7 @@ export async function POST(req: NextRequest) {
 
   // Always 200 to prevent account enumeration
   return ok({ message: "If that email exists, a reset link has been sent." });
+  } catch {
+    return ok({ message: "If that email exists, a reset link has been sent." });
+  }
 }

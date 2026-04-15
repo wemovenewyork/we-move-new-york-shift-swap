@@ -9,15 +9,19 @@ export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization");
   if (!secret || auth !== `Bearer ${secret}`) return err("Unauthorized", 401);
 
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 7);
+  try {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
 
-  const result = await prisma.swap.deleteMany({
-    where: {
-      status: { in: ["expired", "filled"] },
-      updatedAt: { lt: cutoff },
-    },
-  });
+    const result = await prisma.swap.deleteMany({
+      where: {
+        status: { in: ["expired", "filled"] },
+        updatedAt: { lt: cutoff },
+      },
+    });
 
-  return ok({ deleted: result.count });
+    return ok({ deleted: result.count });
+  } catch (e) {
+    return err(`Cron failed: ${e instanceof Error ? e.message : "unknown error"}`, 500);
+  }
 }
