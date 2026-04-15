@@ -46,8 +46,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           gtag('config', 'G-RJV2G8G06H');
         `}</Script>
         <MeshBackground />
-        <a href="#main-content" className="skip-link">Skip to main content</a>
-        <OfflineBanner />
+        <header>
+          <a href="#main-content" className="skip-link">Skip to main content</a>
+          <OfflineBanner />
+        </header>
         <AuthProvider>
           <AnalyticsProvider>
             <div style={{ position: "relative", zIndex: 1 }}>

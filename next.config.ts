@@ -11,11 +11,11 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://browser.sentry-cdn.com https://js.sentry-cdn.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://browser.sentry-cdn.com https://js.sentry-cdn.com https://www.googletagmanager.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self'",
-      "connect-src 'self' https://*.sentry.io https://browser.sentry-cdn.com https://normal-lacewing-75546.upstash.io",
+      "connect-src 'self' https://*.sentry.io https://browser.sentry-cdn.com https://normal-lacewing-75546.upstash.io https://www.google-analytics.com https://www.googletagmanager.com",
       "worker-src 'self' blob:",
       "frame-ancestors 'none'",
     ].join("; "),

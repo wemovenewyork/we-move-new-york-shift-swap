@@ -10,7 +10,7 @@ export default function DepotBadge({ depot, size = 44 }: Props) {
   if (depot.logoUrl) {
     return (
       <div style={{ width: size, height: size, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: C.bg, boxShadow: "0 2px 12px rgba(0,0,0,.5)" }}>
-        <img src={depot.logoUrl} alt={depot.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src={depot.logoUrl} alt={depot.name} width={size} height={size} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       </div>
     );
   }

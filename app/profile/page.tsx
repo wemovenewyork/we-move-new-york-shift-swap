@@ -173,7 +173,7 @@ export default function ProfilePage() {
             style={{ width: 90, height: 90, borderRadius: "50%", background: `linear-gradient(135deg,${C.navy},${C.blue})`, display: "inline-flex", alignItems: "center", justifyContent: "center", border: `3px solid ${C.gold}`, marginBottom: 12, boxShadow: `0 0 24px ${C.gold}22`, cursor: "pointer", position: "relative", overflow: "hidden" }}
           >
             {user.avatarUrl ? (
-              <img src={user.avatarUrl} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+              <img src={user.avatarUrl} alt="Avatar" width={90} height={90} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
             ) : (
               <span style={{ fontSize: 32, fontWeight: 800, color: C.gold }}>{fn.charAt(0)}{ln.charAt(0)}</span>
             )}
