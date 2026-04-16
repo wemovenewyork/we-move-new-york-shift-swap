@@ -1,7 +1,8 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
+import { parseBody, BODY_4KB } from "@/lib/parseBody";
 
 // PATCH /api/depots/:code/announcements/:aid → edit pinned/body/expiresAt
 // DELETE /api/depots/:code/announcements/:aid → delete
@@ -18,8 +19,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ co
   if (!ann) return err("Announcement not found", 404);
   if (dbUser.role === "depotRep" && ann.authorId !== user.userId) return err("You can only edit your own announcements", 403);
 
-  const body = await req.json();
-  const { text, pinned, expiresAt } = body;
+  const body = await parseBody(req, BODY_4KB);
+  if (body instanceof NextResponse) return body;
+  const { text, pinned, expiresAt } = body as { text?: string; pinned?: boolean; expiresAt?: string };
+
+  if (expiresAt) {
+    const exp = new Date(expiresAt);
+    if (isNaN(exp.getTime())) return err("Invalid expiresAt date", 400);
+    if (exp <= new Date()) return err("expiresAt must be in the future", 400);
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+    if (exp > oneYearFromNow) return err("expiresAt cannot be more than 1 year from now", 400);
+  }
 
   const updated = await prisma.announcement.update({
     where: { id: aid },

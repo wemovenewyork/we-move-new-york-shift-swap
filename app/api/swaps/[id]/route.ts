@@ -1,8 +1,9 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calcScore } from "@/lib/reputation";
 import { ok, err } from "@/lib/apiResponse";
+import { parseBody, BODY_16KB } from "@/lib/parseBody";
 
 async function getSwapWithRep(id: string) {
   const swap = await prisma.swap.findUnique({
@@ -56,7 +57,8 @@ export async function PUT(
   if (!swap) return err("Swap not found", 404);
   if (swap.userId !== user.userId) return err("Not authorized", 403);
 
-  const body = await req.json();
+  const body = await parseBody(req, BODY_16KB);
+  if (body instanceof NextResponse) return body;
   const { details, contact, date, run, route, startTime, clearTime,
     swingStart, swingEnd, fromDay, fromDate, toDay, toDate, vacationHave, vacationWant } = body;
 

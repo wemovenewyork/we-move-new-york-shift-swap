@@ -1,7 +1,8 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
+import { parseBody, BODY_2KB } from "@/lib/parseBody";
 
 export async function POST(
   req: NextRequest,
@@ -10,7 +11,10 @@ export async function POST(
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
   const { id } = await params;
-  const { reason } = await req.json();
+  const body = await parseBody(req, BODY_2KB);
+  if (body instanceof NextResponse) return body;
+  const { reason } = body as { reason?: string };
+  if (reason && reason.length > 500) return err("Reason must be 500 characters or fewer", 400);
 
   const swap = await prisma.swap.findUnique({ where: { id } });
   if (!swap) return err("Swap not found", 404);

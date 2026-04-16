@@ -1,8 +1,9 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { writeAuditLog } from "@/lib/audit";
+import { parseBody, BODY_2KB } from "@/lib/parseBody";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -44,7 +45,11 @@ export async function PATCH(req: NextRequest) {
   const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
   if (!dbUser || dbUser.role !== "admin") return err("Forbidden", 403);
 
-  const { userId, role, depotId, suspendedUntil, verifiedOperator } = await req.json();
+  const patchBody = await parseBody(req, BODY_2KB);
+  if (patchBody instanceof NextResponse) return patchBody;
+  const { userId, role, depotId, suspendedUntil, verifiedOperator } = patchBody as {
+    userId: string; role?: string; depotId?: string; suspendedUntil?: string; verifiedOperator?: boolean;
+  };
   if (!userId) return err("userId required", 400);
   if (userId === user.userId) return err("Cannot change your own role", 400);
 
@@ -94,7 +99,9 @@ export async function DELETE(req: NextRequest) {
   const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
   if (!dbUser || dbUser.role !== "admin") return err("Forbidden", 403);
 
-  const { userId } = await req.json();
+  const delBody = await parseBody(req, BODY_1KB);
+  if (delBody instanceof NextResponse) return delBody;
+  const { userId } = delBody as { userId: string };
   if (!userId) return err("userId required", 400);
   if (userId === user.userId) return err("Cannot delete your own account", 400);
 

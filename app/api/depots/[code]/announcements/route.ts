@@ -1,7 +1,8 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
+import { parseBody, BODY_4KB } from "@/lib/parseBody";
 
 // GET  /api/depots/:code/announcements  → active announcements for this depot
 // POST /api/depots/:code/announcements  → create (depotRep/admin only)
@@ -42,11 +43,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cod
     return err("You can only post announcements for your own depot", 403);
   }
 
-  const body = await req.json();
-  const { text, pinned, expiresAt } = body;
+  const body = await parseBody(req, BODY_4KB);
+  if (body instanceof NextResponse) return body;
+  const { text, pinned, expiresAt } = body as { text: string; pinned?: boolean; expiresAt?: string };
 
   if (!text?.trim()) return err("Announcement text is required", 400);
   if (text.length > 600) return err("Announcement must be 600 characters or fewer", 400);
+
+  if (expiresAt) {
+    const exp = new Date(expiresAt);
+    if (isNaN(exp.getTime())) return err("Invalid expiresAt date", 400);
+    if (exp <= new Date()) return err("expiresAt must be in the future", 400);
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+    if (exp > oneYearFromNow) return err("expiresAt cannot be more than 1 year from now", 400);
+  }
 
   const announcement = await prisma.announcement.create({
     data: {

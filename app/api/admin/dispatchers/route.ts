@@ -1,8 +1,9 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { writeAuditLog } from "@/lib/audit";
+import { parseBody, BODY_1KB } from "@/lib/parseBody";
 
 // GET /api/admin/dispatchers — list pending (unverified) dispatchers
 export async function GET(req: NextRequest) {
@@ -38,7 +39,9 @@ export async function PATCH(req: NextRequest) {
   const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
   if (!dbUser || !["admin", "subAdmin"].includes(dbUser.role)) return err("Forbidden", 403);
 
-  const { userId, verified } = await req.json();
+  const body = await parseBody(req, BODY_1KB);
+  if (body instanceof NextResponse) return body;
+  const { userId, verified } = body as { userId: string; verified: boolean };
   if (!userId || typeof verified !== "boolean") return err("userId and verified (boolean) required", 400);
 
   const target = await prisma.user.findUnique({

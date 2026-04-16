@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { signAccessToken, signRefreshToken } from "@/lib/auth";
 import { genInviteCode } from "@/lib/inviteCode";
 import { err } from "@/lib/apiResponse";
-import { rateLimit } from "@/lib/rateLimit";
+import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { parseBody, BODY_4KB } from "@/lib/parseBody";
 import { sendEmail } from "@/lib/email";
 
 function escapeHtml(str: string): string {
@@ -18,13 +19,18 @@ function escapeHtml(str: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req);
   if (!await rateLimit(`register:${ip}`, 5, 3_600_000)) {
     Sentry.captureEvent({ message: "Register rate limit hit", level: "warning", tags: { ip } });
     return err("Too many registration attempts — try again in an hour", 429);
   }
 
-  const { firstName, lastName, email, password, inviteCode, role: requestedRole, dispatcherBadge } = await req.json();
+  const body = await parseBody(req, BODY_4KB);
+  if (body instanceof NextResponse) return body;
+  const { firstName, lastName, email, password, inviteCode, role: requestedRole, dispatcherBadge } = body as {
+    firstName: string; lastName: string; email: string; password: string;
+    inviteCode?: string; role?: string; dispatcherBadge?: string;
+  };
 
   const isDispatcher = requestedRole === "dispatcher";
 
@@ -33,7 +39,12 @@ export async function POST(req: NextRequest) {
   }
   if (!isDispatcher && !inviteCode) return err("Invite code is required", 400);
   if (!email.includes("@")) return err("Invalid email", 400);
+  if (firstName.trim().length > 50) return err("First name must be 50 characters or fewer", 400);
+  if (lastName.trim().length > 50) return err("Last name must be 50 characters or fewer", 400);
+  if (inviteCode && inviteCode.length > 20) return err("Invalid invite code", 400);
+  if (dispatcherBadge && dispatcherBadge.length > 50) return err("Badge number must be 50 characters or fewer", 400);
   if (password.length < 12) return err("Password must be at least 12 characters", 400);
+  if (password.length > 128) return err("Password must be 128 characters or fewer", 400);
 
   // Reject passwords that are purely numeric or common patterns
   const hasLetter = /[a-zA-Z]/.test(password);
@@ -125,7 +136,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Send verification email — HTML-escape user-supplied name fields
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://we-move-ny-shift-swap.vercel.app";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) throw new Error("NEXT_PUBLIC_APP_URL is not set");
   const verifyLink = `${appUrl}/verify-email/${verifyToken}`;
   const safeFirstName = escapeHtml(user.firstName);
   sendEmail(

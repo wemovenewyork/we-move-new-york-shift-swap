@@ -1,8 +1,9 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { notifyMany } from "@/lib/notifyUser";
+import { parseBody, BODY_1KB } from "@/lib/parseBody";
 
 const VALID = ["open", "pending", "filled", "expired"] as const;
 type Status = (typeof VALID)[number];
@@ -14,7 +15,9 @@ export async function PUT(
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
   const { id } = await params;
-  const { status } = await req.json();
+  const body = await parseBody(req, BODY_1KB);
+  if (body instanceof NextResponse) return body;
+  const { status } = body as { status: string };
 
   if (!VALID.includes(status as Status)) return err("Invalid status", 400);
 

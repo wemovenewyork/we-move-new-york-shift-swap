@@ -16,7 +16,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self'",
-      "connect-src 'self' https://*.sentry.io https://browser.sentry-cdn.com https://normal-lacewing-75546.upstash.io https://www.google-analytics.com https://www.googletagmanager.com",
+      "connect-src 'self' https://*.sentry.io https://browser.sentry-cdn.com https://*.upstash.io https://www.google-analytics.com https://www.googletagmanager.com",
       "worker-src 'self' blob:",
       "frame-ancestors 'none'",
     ].join("; "),

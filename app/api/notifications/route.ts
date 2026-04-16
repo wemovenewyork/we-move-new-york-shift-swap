@@ -7,18 +7,25 @@ export async function GET(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
+  const { searchParams } = new URL(req.url);
+  const cursor = searchParams.get("cursor") ?? undefined;
+  const limitParam = parseInt(searchParams.get("limit") ?? "20", 10);
+  const limit = Math.min(Math.max(limitParam, 1), 50);
+
   const [notifications, unreadCount] = await Promise.all([
     prisma.notification.findMany({
       where: { userId: user.userId },
       orderBy: { createdAt: "desc" },
-      take: 50,
+      take: limit,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     }),
     prisma.notification.count({
       where: { userId: user.userId, read: false },
     }),
   ]);
 
-  return ok({ notifications, unreadCount });
+  const nextCursor = notifications.length < limit ? null : notifications[notifications.length - 1].id;
+  return ok({ notifications, unreadCount, nextCursor });
 }
 
 // DELETE /api/notifications  → delete all notifications for the user

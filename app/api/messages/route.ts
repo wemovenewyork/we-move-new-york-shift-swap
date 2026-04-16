@@ -1,9 +1,10 @@
-import { NextRequest } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { requireUser, checkActive } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
 import { notifyUserWithEmailFallback } from "@/lib/notifyUser";
+import { parseBody, BODY_4KB } from "@/lib/parseBody";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -24,7 +25,14 @@ export async function POST(req: NextRequest) {
     return err("Slow down! Max 5 messages per minute", 429);
   }
 
-  const { swapId, text } = await req.json();
+  const dbUser = await prisma.user.findUnique({ where: { id: user.userId }, select: { email: true, suspendedUntil: true } });
+  if (!dbUser) return err("User not found", 404);
+  const activeErr = checkActive(dbUser);
+  if (activeErr) return err(activeErr, 403);
+
+  const body = await parseBody(req, BODY_4KB);
+  if (body instanceof NextResponse) return body;
+  const { swapId, text } = body as { swapId: string; text: string };
   if (!swapId || !text?.trim()) return err("swapId and text required", 400);
   if (text.trim().length > 2000) return err("Message too long — max 2000 characters", 400);
 

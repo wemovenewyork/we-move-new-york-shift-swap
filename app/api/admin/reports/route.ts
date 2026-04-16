@@ -1,7 +1,8 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
+import { parseBody, BODY_1KB } from "@/lib/parseBody";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -34,7 +35,9 @@ export async function PATCH(req: NextRequest) {
   const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
   if (!dbUser || !["admin", "subAdmin"].includes(dbUser.role)) return err("Forbidden", 403);
 
-  const { reportId, action } = await req.json();
+  const body = await parseBody(req, BODY_1KB);
+  if (body instanceof NextResponse) return body;
+  const { reportId, action } = body as { reportId: string; action: string };
   if (!reportId || !["dismiss", "remove"].includes(action)) return err("Invalid request", 400);
 
   const report = await prisma.report.findUnique({ where: { id: reportId } });

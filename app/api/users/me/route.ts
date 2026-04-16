@@ -1,8 +1,9 @@
-import { NextRequest } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { requireUser, checkActive } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calcScore } from "@/lib/reputation";
 import { ok, err } from "@/lib/apiResponse";
+import { parseBody, BODY_16KB } from "@/lib/parseBody";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -57,7 +58,22 @@ export async function PUT(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
-  const { firstName, lastName, email, language, depotId, jobTitle, avatarUrl } = await req.json();
+  const body = await parseBody(req, BODY_16KB);
+  if (body instanceof NextResponse) return body;
+  const { firstName, lastName, email, language, depotId, jobTitle, avatarUrl } = body as {
+    firstName?: string; lastName?: string; email?: string; language?: string;
+    depotId?: string; jobTitle?: string; avatarUrl?: string;
+  };
+
+  const callerUser = await prisma.user.findUnique({ where: { id: user.userId }, select: { email: true, suspendedUntil: true } });
+  if (!callerUser) return err("User not found", 404);
+  const activeErr = checkActive(callerUser);
+  if (activeErr) return err(activeErr, 403);
+
+  if (firstName && firstName.trim().length > 50) return err("First name must be 50 characters or fewer", 400);
+  if (lastName && lastName.trim().length > 50) return err("Last name must be 50 characters or fewer", 400);
+  if (language && language.length > 10) return err("Invalid language value", 400);
+  if (jobTitle && jobTitle.length > 100) return err("Job title must be 100 characters or fewer", 400);
 
   // Validate avatarUrl — must be a real HTTPS URL, not an arbitrary internal address
   if (avatarUrl !== undefined && avatarUrl !== null) {

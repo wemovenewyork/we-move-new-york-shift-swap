@@ -1,8 +1,9 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { randomBytes } from "crypto";
+import { parseBody, BODY_1KB } from "@/lib/parseBody";
 
 function genCode(): string {
   return "WMNY-" + randomBytes(3).toString("hex").toUpperCase();
@@ -32,7 +33,9 @@ export async function POST(req: NextRequest) {
   const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
   if (!dbUser || dbUser.role !== "admin") return err("Forbidden", 403);
 
-  const { count = 1 } = await req.json();
+  const body = await parseBody(req, BODY_1KB);
+  if (body instanceof NextResponse) return body;
+  const { count = 1 } = body as { count?: number };
   if (typeof count !== "number" || count < 1 || count > 50) return err("Count must be 1–50", 400);
 
   const created = await Promise.all(
@@ -51,7 +54,9 @@ export async function DELETE(req: NextRequest) {
   const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
   if (!dbUser || dbUser.role !== "admin") return err("Forbidden", 403);
 
-  const { id } = await req.json();
+  const delBody = await parseBody(req, BODY_1KB);
+  if (delBody instanceof NextResponse) return delBody;
+  const { id } = delBody as { id: string };
   if (!id) return err("Code id required", 400);
 
   const code = await prisma.inviteCode.findUnique({ where: { id } });

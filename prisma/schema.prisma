@@ -144,7 +144,7 @@ model Message {
   swapId     String?  @map("swap_id")
   fromUserId String   @map("from_user_id")
   toUserId   String   @map("to_user_id")
-  text       String
+  text       String   @db.VarChar(2000)
   read       Boolean  @default(false)
   createdAt  DateTime @default(now()) @map("created_at")
 

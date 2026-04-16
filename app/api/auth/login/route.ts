@@ -4,14 +4,16 @@ import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { signAccessToken, signRefreshToken } from "@/lib/auth";
 import { err } from "@/lib/apiResponse";
-import { rateLimit } from "@/lib/rateLimit";
+import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { parseBody, BODY_1KB } from "@/lib/parseBody";
+import { writeAuditLog } from "@/lib/audit";
 
 const MAX_ATTEMPTS = 10;
 const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+    const ip = clientIp(req);
     if (!await rateLimit(`login:${ip}`, 10, 60_000)) {
       Sentry.captureEvent({
         message: "Login rate limit hit",
@@ -21,8 +23,11 @@ export async function POST(req: NextRequest) {
       return err("Too many attempts — try again in a minute", 429);
     }
 
-    const { email, password } = await req.json();
+    const body = await parseBody(req, BODY_1KB);
+    if (body instanceof NextResponse) return body;
+    const { email, password } = body as { email: string; password: string };
     if (!email || !password) return err("Email and password required", 400);
+    if (password.length > 128) return err("Password too long", 400);
 
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() }, include: { depot: true } });
     if (!user) return err("Invalid email or password", 401);
@@ -47,6 +52,14 @@ export async function POST(req: NextRequest) {
           loginAttempts: attempts,
           ...(locked ? { lockedUntil: new Date(Date.now() + LOCKOUT_MS) } : {}),
         },
+      });
+      writeAuditLog({
+        adminId: user.id,
+        action: "login_failed",
+        targetId: user.id,
+        targetType: "user",
+        detail: `Failed login attempt (${attempts}/${MAX_ATTEMPTS})${locked ? " — account locked" : ""}`,
+        ip,
       });
       if (locked) {
         Sentry.captureEvent({

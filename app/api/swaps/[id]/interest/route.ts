@@ -1,9 +1,10 @@
-import { NextRequest } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { requireUser, checkActive } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
 import { notifyUserWithEmailFallback } from "@/lib/notifyUser";
+import { parseBody, BODY_4KB } from "@/lib/parseBody";
 
 export async function POST(
   req: NextRequest,
@@ -17,8 +18,16 @@ export async function POST(
     return err("Slow down! Max 5 messages per minute", 429);
   }
 
-  const { text } = await req.json();
+  const dbUser = await prisma.user.findUnique({ where: { id: user.userId }, select: { email: true, suspendedUntil: true } });
+  if (!dbUser) return err("User not found", 404);
+  const activeErr = checkActive(dbUser);
+  if (activeErr) return err(activeErr, 403);
+
+  const body = await parseBody(req, BODY_4KB);
+  if (body instanceof NextResponse) return body;
+  const { text } = body as { text: string };
   if (!text?.trim()) return err("Message text required", 400);
+  if (text.trim().length > 2000) return err("Message too long — max 2000 characters", 400);
 
   const swap = await prisma.swap.findUnique({ where: { id } });
   if (!swap) return err("Swap not found", 404);
@@ -35,7 +44,8 @@ export async function POST(
 
   const senderName = sender ? `${sender.firstName} ${sender.lastName}` : "Someone";
   const depotCode = depot?.code ?? swap.depotId;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://we-move-ny-shift-swap.vercel.app";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) throw new Error("NEXT_PUBLIC_APP_URL is not set");
 
   const escapedSenderName = senderName.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const emailHtml = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#010028;color:#fff;border-radius:16px">

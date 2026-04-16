@@ -1,12 +1,15 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
+import { parseBody, BODY_1KB } from "@/lib/parseBody";
 
 export async function POST(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
-  const { with: counterpartId } = await req.json();
+  const body = await parseBody(req, BODY_1KB);
+  if (body instanceof NextResponse) return body;
+  const { with: counterpartId } = body as { with: string };
   if (!counterpartId) return err("counterpartId required", 400);
   await prisma.message.updateMany({
     where: { fromUserId: counterpartId, toUserId: user.userId, read: false },

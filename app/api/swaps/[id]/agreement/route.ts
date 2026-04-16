@@ -1,8 +1,10 @@
-import { NextRequest } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { requireUser, checkActive } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
 import { notifyUser } from "@/lib/notifyUser";
+import { parseBody, BODY_4KB } from "@/lib/parseBody";
 
 // POST /api/swaps/:id/agreement  → propose a formal agreement
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -10,13 +12,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
   const { id } = await params;
+
+  // Per-user per-swap: max 3 agreement attempts per hour
+  if (!await rateLimit(`agreement:${user.userId}:${id}`, 3, 3_600_000)) {
+    return err("Too many agreement attempts on this swap — try again later", 429);
+  }
+
+  const dbUser = await prisma.user.findUnique({ where: { id: user.userId }, select: { email: true, suspendedUntil: true } });
+  if (!dbUser) return err("User not found", 404);
+  const activeErr = checkActive(dbUser);
+  if (activeErr) return err(activeErr, 403);
+
   const swap = await prisma.swap.findUnique({ where: { id } });
   if (!swap) return err("Swap not found", 404);
   if (swap.status !== "open") return err("This swap is no longer open", 400);
   if (swap.userId === user.userId) return err("Cannot create agreement on your own swap", 400);
 
-  const body = await req.json();
-  const { note } = body;
+  const body = await parseBody(req, BODY_4KB);
+  if (body instanceof NextResponse) return body;
+  const { note } = body as { note?: string };
 
   const existing = await prisma.swapAgreement.findFirst({
     where: { swapId: id, status: { in: ["pending", "userA_confirmed"] } },
@@ -83,8 +97,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
   const { id } = await params;
-  const body = await req.json();
-  const { action, note } = body;
+  const body = await parseBody(req, BODY_4KB);
+  if (body instanceof NextResponse) return body;
+  const { action, note } = body as { action: string; note?: string };
 
   const agreement = await prisma.swapAgreement.findFirst({
     where: {

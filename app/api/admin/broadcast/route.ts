@@ -1,8 +1,9 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { notifyUser, notifyMany } from "@/lib/notifyUser";
+import { parseBody, BODY_4KB } from "@/lib/parseBody";
 
 // POST /api/admin/broadcast
 // body: { target: "all" | "user" | "depot", userId?: string, depotCode?: string, text: string }
@@ -15,7 +16,9 @@ export async function POST(req: NextRequest) {
 
   const isSubAdmin = admin.role === "subAdmin";
 
-  const { target, userId, depotCode, text } = await req.json();
+  const body = await parseBody(req, BODY_4KB);
+  if (body instanceof NextResponse) return body;
+  const { target, userId, depotCode, text } = body as { target: string; userId?: string; depotCode?: string; text: string };
 
   if (!text?.trim()) return err("Message text required", 400);
   if (text.trim().length > 1000) return err("Max 1000 characters", 400);

@@ -1,5 +1,5 @@
-import { NextRequest } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { requireUser, checkActive } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
@@ -7,6 +7,7 @@ import { SwapCategory, SwapStatus } from "@prisma/client";
 import { calcScore } from "@/lib/reputation";
 import { notifyMany } from "@/lib/notifyUser";
 import { touchLastActive } from "@/lib/touchLastActive";
+import { parseBody, BODY_16KB } from "@/lib/parseBody";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -106,19 +107,45 @@ export async function POST(req: NextRequest) {
     include: { depot: { select: { code: true } } },
   });
   if (!dbUser?.depotId) return err("Set your depot first", 400);
+  const activeErr = checkActive(dbUser);
+  if (activeErr) return err(activeErr, 403);
 
   // Dispatchers must be verified before posting
   if (dbUser.role === "dispatcher" && !dbUser.dispatcherVerified) {
     return err("Your dispatcher account is pending verification by an admin", 403);
   }
 
-  const body = await req.json();
+  const body = await parseBody(req, BODY_16KB);
+  if (body instanceof NextResponse) return body;
   const { category, details, contact, date, run, route, startTime, clearTime,
     swingStart, swingEnd, fromDay, fromDate, toDay, toDate, vacationHave, vacationWant } = body;
 
   if (!category || !details) return err("Category and details are required", 400);
+  const validCategories: string[] = ["work", "daysoff", "vacation", "open_work"];
+  if (!validCategories.includes(category as string)) return err("Invalid category", 400);
   if (details.length > 500) return err("Details must be 500 characters or fewer", 400);
-  if (contact && contact.length > 30) return err("Contact must be 30 characters or fewer", 400);
+  if (contact) {
+    if (contact.length > 30) return err("Contact must be 30 characters or fewer", 400);
+    // Must look like a phone number or email address
+    const isPhone = /^[\d\s\-()+.]{7,20}$/.test(contact.trim());
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.trim());
+    if (!isPhone && !isEmail) return err("Contact must be a phone number or email address", 400);
+  }
+
+  // Validate date fields — must be in the future, no more than 1 year out
+  const now = new Date();
+  const oneYearFromNow = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+  for (const [field, val] of [["date", date], ["fromDate", fromDate], ["toDate", toDate]] as [string, unknown][]) {
+    if (val) {
+      const d = new Date(val as string);
+      if (isNaN(d.getTime())) return err(`Invalid ${field}`, 400);
+      if (d < now) return err(`${field} must be in the future`, 400);
+      if (d > oneYearFromNow) return err(`${field} cannot be more than 1 year from now`, 400);
+    }
+  }
+  if (fromDate && toDate && new Date(toDate as string) < new Date(fromDate as string)) {
+    return err("toDate must be on or after fromDate", 400);
+  }
   if (run && run.length > 20) return err("Run must be 20 characters or fewer", 400);
   if (route && route.length > 20) return err("Route must be 20 characters or fewer", 400);
 
@@ -131,11 +158,15 @@ export async function POST(req: NextRequest) {
     return err("Dispatchers can only post open work", 403);
   }
 
-  const fiveMinutesAgo = new Date(Date.now() - 300_000);
-  const dupe = await prisma.swap.findFirst({
-    where: { userId: user.userId, details, createdAt: { gte: fiveMinutesAgo } },
+  // Normalise details for duplicate check: collapse whitespace and lowercase
+  const normalisedDetails = details.trim().replace(/\s+/g, " ").toLowerCase();
+  const thirtyMinutesAgo = new Date(Date.now() - 30 * 60_000);
+  const recentSwaps = await prisma.swap.findMany({
+    where: { userId: user.userId, category: category as string, createdAt: { gte: thirtyMinutesAgo } },
+    select: { details: true },
   });
-  if (dupe) return err("Duplicate: you already posted this swap recently", 409);
+  const isDupe = recentSwaps.some(s => s.details.trim().replace(/\s+/g, " ").toLowerCase() === normalisedDetails);
+  if (isDupe) return err("Duplicate: you already posted this swap recently", 409);
 
   const posterName = `${dbUser.firstName} ${dbUser.lastName}`;
 

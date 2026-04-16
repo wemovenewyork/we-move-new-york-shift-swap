@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
+import { writeAuditLog } from "@/lib/audit";
+import { clientIp } from "@/lib/rateLimit";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -16,6 +18,14 @@ export async function GET(req: NextRequest) {
     include: {
       admin: { select: { id: true, firstName: true, lastName: true, email: true } },
     },
+  });
+
+  writeAuditLog({
+    adminId: user.userId,
+    action: "audit_log_export",
+    targetType: "audit_log",
+    detail: `Exported ${logs.length} audit log entries`,
+    ip: clientIp(req),
   });
 
   return ok(logs);

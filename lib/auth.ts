@@ -59,6 +59,19 @@ export function requireUser(req: NextRequest): TokenPayload {
   return user;
 }
 
+/**
+ * Returns an error message if the account is deleted or suspended, null otherwise.
+ * Call this after fetching the user from DB on any write route.
+ */
+export function checkActive(user: { email: string; suspendedUntil: Date | null }): string | null {
+  if (user.email.endsWith("@deleted.invalid")) return "Account not found";
+  if (user.suspendedUntil && user.suspendedUntil > new Date()) {
+    const mins = Math.ceil((user.suspendedUntil.getTime() - Date.now()) / 60_000);
+    return `Account suspended. Try again in ${mins} minute${mins !== 1 ? "s" : ""}.`;
+  }
+  return null;
+}
+
 // Separate secret for password-reset tokens — compromise of ACCESS_SECRET
 // cannot be used to forge reset tokens and vice versa.
 export function signResetToken(userId: string): string {
