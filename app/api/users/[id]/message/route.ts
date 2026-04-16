@@ -25,6 +25,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const toUser = await prisma.user.findUnique({ where: { id: toUserId } });
   if (!toUser) return err("User not found", 404);
 
+  const block = await prisma.block.findFirst({
+    where: {
+      OR: [
+        { blockerId: user.userId, blockedId: toUserId },
+        { blockerId: toUserId, blockedId: user.userId },
+      ],
+    },
+    select: { id: true },
+  });
+  if (block) return err("Unable to send message", 403);
+
   const body = await parseBody(req, BODY_2KB);
   if (body instanceof NextResponse) return body;
   const { text } = body as { text: string };
