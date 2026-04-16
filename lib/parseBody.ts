@@ -26,36 +26,24 @@ export async function parseBody<T = Record<string, unknown>>(
     return NextResponse.json({ error: "Payload too large" }, { status: 413 });
   }
 
-  // Stream-read up to maxBytes to enforce the limit even without Content-Length
-  const reader = req.body?.getReader();
-  if (!reader) return {} as T; // empty body — routes validate required fields themselves
-
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-
+  // Use arrayBuffer() — the standard Web API approach, compatible with Next.js App Router
+  // on Vercel. The manual stream reader approach is unreliable because Vercel may
+  // pre-buffer the body, causing getReader() to throw "Body already used".
+  // Vercel hard-caps request bodies at 4.5 MB, so buffering here is safe.
+  let buf: ArrayBuffer;
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > maxBytes) {
-        reader.cancel().catch(() => {});
-        return NextResponse.json({ error: "Payload too large" }, { status: 413 });
-      }
-      chunks.push(value);
-    }
+    buf = await req.arrayBuffer();
   } catch {
     return NextResponse.json({ error: "Failed to read request body" }, { status: 400 });
   }
 
-  const combined = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    combined.set(chunk, offset);
-    offset += chunk.byteLength;
+  if (buf.byteLength === 0) return {} as T; // empty body
+
+  if (buf.byteLength > maxBytes) {
+    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
   }
 
-  const text = new TextDecoder().decode(combined);
+  const text = new TextDecoder().decode(buf);
   if (!text.trim()) return {} as T;
 
   try {
