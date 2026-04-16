@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       const redis = new Redis({ url, token });
       await redis.set("health:ping", "1", { ex: 10 });
       const val = await redis.get("health:ping");
-      redisStatus = val === "1" ? "ok" : "read_mismatch";
+      redisStatus = String(val) === "1" ? "ok" : `read_mismatch:${JSON.stringify(val)}`;
     }
   } catch (e) {
     redisStatus = `error:${e instanceof Error ? e.message : String(e)}`;
