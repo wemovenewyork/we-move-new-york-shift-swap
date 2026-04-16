@@ -49,6 +49,8 @@ model User {
   auditLogs          AuditLog[]
   notifications      Notification[]
   savedSwaps         SavedSwap[]
+  blocksGiven        Block[]            @relation("BlocksGiven")
+  blocksReceived     Block[]            @relation("BlocksReceived")
   lastActiveAt       DateTime? @map("last_active_at")
   jobTitle          String?   @map("job_title")
   depotSetAt        DateTime? @map("depot_set_at")
@@ -278,6 +280,20 @@ enum AgreementStatus {
   userA_confirmed
   completed
   cancelled
+}
+
+model Block {
+  id        String   @id @default(uuid())
+  blockerId String   @map("blocker_id")
+  blockedId String   @map("blocked_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  blocker User @relation("BlocksGiven", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("blocks")
 }
 
 model AuditLog {

@@ -41,6 +41,17 @@ export async function POST(req: NextRequest) {
   if (!swap) return err("Swap not found", 404);
   if (swap.userId === user.userId) return err("Cannot message yourself", 400);
 
+  const block = await prisma.block.findFirst({
+    where: {
+      OR: [
+        { blockerId: user.userId, blockedId: swap.userId },
+        { blockerId: swap.userId, blockedId: user.userId },
+      ],
+    },
+    select: { id: true },
+  });
+  if (block) return err("Unable to send message", 403);
+
   const [message, sender, depot] = await Promise.all([
     prisma.message.create({
       data: { swapId, fromUserId: user.userId, toUserId: swap.userId, text: text.trim() },
