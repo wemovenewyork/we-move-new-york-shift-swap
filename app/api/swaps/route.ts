@@ -118,7 +118,12 @@ export async function POST(req: NextRequest) {
   const body = await parseBody(req, BODY_16KB);
   if (body instanceof NextResponse) return body;
   const { category, details, contact, date, run, route, startTime, clearTime,
-    swingStart, swingEnd, fromDay, fromDate, toDay, toDate, vacationHave, vacationWant } = body;
+    swingStart, swingEnd, fromDay, fromDate, toDay, toDate, vacationHave, vacationWant } = body as {
+    category?: string; details?: string; contact?: string; date?: string; run?: string; route?: string;
+    startTime?: string; clearTime?: string; swingStart?: string; swingEnd?: string;
+    fromDay?: string; fromDate?: string; toDay?: string; toDate?: string;
+    vacationHave?: string; vacationWant?: string;
+  };
 
   if (!category || !details) return err("Category and details are required", 400);
   const validCategories: string[] = ["work", "daysoff", "vacation", "open_work"];
@@ -162,7 +167,7 @@ export async function POST(req: NextRequest) {
   const normalisedDetails = details.trim().replace(/\s+/g, " ").toLowerCase();
   const thirtyMinutesAgo = new Date(Date.now() - 30 * 60_000);
   const recentSwaps = await prisma.swap.findMany({
-    where: { userId: user.userId, category: category as string, createdAt: { gte: thirtyMinutesAgo } },
+    where: { userId: user.userId, category: category as SwapCategory, createdAt: { gte: thirtyMinutesAgo } },
     select: { details: true },
   });
   const isDupe = recentSwaps.some(s => s.details.trim().replace(/\s+/g, " ").toLowerCase() === normalisedDetails);
@@ -174,7 +179,7 @@ export async function POST(req: NextRequest) {
     data: {
       userId: user.userId,
       depotId: dbUser.depotId,
-      category,
+      category: category as SwapCategory,
       details,
       contact: contact ?? null,
       posterName,

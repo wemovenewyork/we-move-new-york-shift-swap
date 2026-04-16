@@ -48,6 +48,6 @@ export async function PUT(
     }
   }
 
-  const updated = await prisma.swap.update({ where: { id }, data: { status } });
+  const updated = await prisma.swap.update({ where: { id }, data: { status: status as Status } });
   return ok(updated);
 }

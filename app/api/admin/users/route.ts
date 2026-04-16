@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { writeAuditLog } from "@/lib/audit";
-import { parseBody, BODY_2KB } from "@/lib/parseBody";
+import { parseBody, BODY_2KB, BODY_1KB } from "@/lib/parseBody";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -48,7 +48,7 @@ export async function PATCH(req: NextRequest) {
   const patchBody = await parseBody(req, BODY_2KB);
   if (patchBody instanceof NextResponse) return patchBody;
   const { userId, role, depotId, suspendedUntil, verifiedOperator } = patchBody as {
-    userId: string; role?: string; depotId?: string; suspendedUntil?: string; verifiedOperator?: boolean;
+    userId: string; role?: string; depotId?: string | null; suspendedUntil?: string; verifiedOperator?: boolean;
   };
   if (!userId) return err("userId required", 400);
   if (userId === user.userId) return err("Cannot change your own role", 400);
@@ -64,15 +64,16 @@ export async function PATCH(req: NextRequest) {
 
   const updated = await prisma.user.update({
     where: { id: userId },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: {
       ...(role !== undefined && { role }),
       ...(depotId !== undefined && {
-        depotId,
+        depotId: depotId ?? null,
         depotSetAt: new Date(), // Admin resets the lock timer
       }),
       ...(suspendedUntil !== undefined && { suspendedUntil: new Date(suspendedUntil) }),
       ...(verifiedOperator !== undefined && { verifiedOperator }),
-    },
+    } as Parameters<typeof prisma.user.update>[0]["data"],
     select: { id: true, firstName: true, lastName: true, role: true, depotId: true, suspendedUntil: true, depot: { select: { name: true, code: true } } },
   });
 

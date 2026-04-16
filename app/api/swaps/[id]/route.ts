@@ -60,7 +60,12 @@ export async function PUT(
   const body = await parseBody(req, BODY_16KB);
   if (body instanceof NextResponse) return body;
   const { details, contact, date, run, route, startTime, clearTime,
-    swingStart, swingEnd, fromDay, fromDate, toDay, toDate, vacationHave, vacationWant } = body;
+    swingStart, swingEnd, fromDay, fromDate, toDay, toDate, vacationHave, vacationWant } = body as {
+    details?: string; contact?: string; date?: string; run?: string; route?: string;
+    startTime?: string; clearTime?: string; swingStart?: string; swingEnd?: string;
+    fromDay?: string; fromDate?: string; toDay?: string; toDate?: string;
+    vacationHave?: string; vacationWant?: string;
+  };
 
   if (details && details.length > 500) return err("Details max 500 chars", 400);
 
