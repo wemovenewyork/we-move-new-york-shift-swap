@@ -8,7 +8,7 @@ export interface PushPayload {
 
 function initVapid() {
   webpush.setVapidDetails(
-    process.env.VAPID_EMAIL ?? "mailto:admin@wemoveny.app",
+    process.env.VAPID_EMAIL ?? "",
     process.env.VAPID_PUBLIC_KEY ?? "",
     process.env.VAPID_PRIVATE_KEY ?? ""
   );

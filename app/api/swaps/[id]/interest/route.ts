@@ -5,6 +5,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
 import { notifyUserWithEmailFallback } from "@/lib/notifyUser";
 import { parseBody, BODY_4KB } from "@/lib/parseBody";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 export async function POST(
   req: NextRequest,
@@ -47,10 +48,9 @@ export async function POST(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl) throw new Error("NEXT_PUBLIC_APP_URL is not set");
 
-  const escapedSenderName = senderName.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const emailHtml = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#010028;color:#fff;border-radius:16px">
   <h2 style="font-size:18px;font-weight:800;margin-bottom:8px">New interest in your swap</h2>
-  <p style="color:rgba(255,255,255,.6);font-size:14px;line-height:1.6;margin-bottom:24px">${escapedSenderName} is interested in your swap — log in to respond.</p>
+  <p style="color:rgba(255,255,255,.6);font-size:14px;line-height:1.6;margin-bottom:24px">${escapeHtml(senderName)} is interested in your swap — log in to respond.</p>
   <a href="${appUrl}/depot/${depotCode}/swaps/${id}" style="display:inline-block;padding:14px 28px;border-radius:12px;background:#D1AD38;color:#010028;font-weight:700;font-size:15px;text-decoration:none">View Swap</a>
 </div>`;
 
