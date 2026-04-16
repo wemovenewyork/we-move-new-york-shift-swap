@@ -6,14 +6,7 @@ import { sendEmail } from "@/lib/email";
 import { ok, err } from "@/lib/apiResponse";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { parseBody, BODY_1KB } from "@/lib/parseBody";
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+import { escapeHtml } from "@/lib/escapeHtml";
 
 // POST /api/auth/forgot-password
 // Accepts { email } — sends reset link if account exists. Always returns 200 to prevent enumeration.

@@ -84,7 +84,7 @@ export default function RepDashboardPage() {
   const [error, setError] = useState("");
   const [inviteCodes, setInviteCodes] = useState<{ code: string; isValid: boolean; usedBy?: string | null }[]>([]);
   const [qrCode, setQrCode] = useState<string | null>(null);
-  const appUrl = typeof window !== "undefined" ? window.location.origin : "https://we-move-ny-shift-swap.vercel.app";
+  const appUrl = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL ?? "");
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");

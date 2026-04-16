@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser, checkActive } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
 import { notifyUser } from "@/lib/notifyUser";
@@ -37,23 +38,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
   if (existing) return err("An agreement is already in progress for this swap", 409);
 
-  const [agreement, proposer] = await Promise.all([
-    prisma.swapAgreement.create({
-      data: {
-        swapId: id,
-        userAId: user.userId,
-        userBId: swap.userId,
-        status: "pending",
-        userANote: note ?? null,
-        userAAt: new Date(),
-      },
-      include: {
-        userA: { select: { id: true, firstName: true, lastName: true } },
-        userB: { select: { id: true, firstName: true, lastName: true } },
-      },
-    }),
-    prisma.user.findUnique({ where: { id: user.userId }, select: { firstName: true, lastName: true } }),
-  ]);
+  let agreement, proposer;
+  try {
+    [agreement, proposer] = await Promise.all([
+      prisma.swapAgreement.create({
+        data: {
+          swapId: id,
+          userAId: user.userId,
+          userBId: swap.userId,
+          status: "pending",
+          userANote: note ?? null,
+          userAAt: new Date(),
+        },
+        include: {
+          userA: { select: { id: true, firstName: true, lastName: true } },
+          userB: { select: { id: true, firstName: true, lastName: true } },
+        },
+      }),
+      prisma.user.findUnique({ where: { id: user.userId }, select: { firstName: true, lastName: true } }),
+    ]);
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      return err("An agreement is already in progress for this swap", 409);
+    }
+    throw e;
+  }
 
   await prisma.swap.update({ where: { id }, data: { status: "pending" } });
 

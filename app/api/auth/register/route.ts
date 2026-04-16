@@ -9,14 +9,7 @@ import { err } from "@/lib/apiResponse";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { parseBody, BODY_4KB } from "@/lib/parseBody";
 import { sendEmail } from "@/lib/email";
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+import { escapeHtml } from "@/lib/escapeHtml";
 
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
