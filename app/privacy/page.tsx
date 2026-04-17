@@ -30,7 +30,7 @@ export default function PrivacyPage() {
 
       <main id="main-content" tabIndex={-1} style={s.content}>
         <h1 style={s.h1}>Privacy Policy</h1>
-        <p style={s.updated}>Last updated: April 1, 2026</p>
+        <p style={s.updated}>Last updated: April 17, 2026</p>
 
         <div style={s.section}>
           <h2 style={s.h2}>1. Overview</h2>
@@ -83,14 +83,22 @@ export default function PrivacyPage() {
 
         <div style={s.section}>
           <h2 style={s.h2}>6. Data Retention</h2>
-          <p style={s.p}>Swap listings are automatically expired after 90 days of inactivity. You may delete your own swap posts at any time. To request deletion of your account and associated data, contact us through the App.</p>
+          <p style={s.p}>We retain different categories of data for different periods:</p>
+          <ul style={{ listStyle: "disc", paddingLeft: 24, marginBottom: 12 }}>
+            <li style={s.li}><strong style={{ color: C.white }}>Swap listings</strong> are automatically expired after 90 days of inactivity.</li>
+            <li style={s.li}><strong style={{ color: C.white }}>Messages</strong> between users are retained for as long as both user accounts remain active, or until a user deletes them.</li>
+            <li style={s.li}><strong style={{ color: C.white }}>Reputation and rating history</strong> is retained for the life of the account so that trust signals remain available to other users.</li>
+            <li style={s.li}><strong style={{ color: C.white }}>Block records</strong> are retained for the life of both accounts to ensure block enforcement remains active.</li>
+            <li style={s.li}><strong style={{ color: C.white }}>Audit logs</strong> of sensitive actions (login attempts, account changes, reports) are retained for up to 12 months for security and abuse prevention.</li>
+          </ul>
+          <p style={s.p}>When you request deletion of your account, your profile, swap listings, and personally identifying information are removed within 30 days. Some data (such as audit logs and certain records of reported or terminated accounts) may be retained longer to prevent abuse and as required by applicable law.</p>
         </div>
 
         <hr style={s.divider} />
 
         <div style={s.section}>
-          <h2 style={s.h2}>7. Cookies & Local Storage</h2>
-          <p style={s.p}>We use browser local storage to maintain your login session (access and refresh tokens). We do not use third-party tracking cookies or advertising cookies. No data is shared with advertisers.</p>
+          <h2 style={s.h2}>7. Cookies</h2>
+          <p style={s.p}>We use secure login cookies to maintain your session — these are set by our servers and are not accessible to browser scripts, which protects your login from common web attacks. We do not use third-party tracking cookies or advertising cookies. No data is shared with advertisers.</p>
         </div>
 
         <hr style={s.divider} />
@@ -104,6 +112,7 @@ export default function PrivacyPage() {
             <li style={s.li}>Request deletion of your account and all associated data.</li>
             <li style={s.li}>Opt out of non-essential communications.</li>
           </ul>
+          <p style={s.p}>To exercise any of these rights, email us at wemovenewyork.net@gmail.com or contact us through the app.</p>
         </div>
 
         <hr style={s.divider} />
@@ -117,7 +126,7 @@ export default function PrivacyPage() {
 
         <div style={s.section}>
           <h2 style={s.h2}>10. Contact</h2>
-          <p style={s.p}>For privacy-related questions or data requests, contact us through the App or reach out to your depot representative.</p>
+          <p style={s.p}>For privacy-related questions, data access requests, or account deletion requests, you can reach us at wemovenewyork.net@gmail.com or through the app.</p>
         </div>
       </main>
     </div>
