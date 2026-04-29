@@ -81,7 +81,7 @@ function getDayFromDate(dateStr: string): string {
 }
 
 interface FormState {
-  category: "work" | "daysoff" | "vacation" | "open_work";
+  category: "work" | "daysoff" | "vacation";
   details: string; contact: string;
   date: string; run: string; route: string;
   startTime: string; clearTime: string; swingStart: string; swingEnd: string;
@@ -221,7 +221,6 @@ export default function PostSwapPage() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [templates, setTemplates] = useState<(Swap & { templateName: string })[]>([]);
-  const isDispatcher = user?.role === "dispatcher";
   const [f, sF] = useState<FormState>({
     category: "work", details: "", contact: "",
     date: "", run: "", route: "",
@@ -229,11 +228,6 @@ export default function PostSwapPage() {
     fromDate: "", toDate: "",
     vacationHave: "", vacationWant: "",
   });
-
-  // Once user loads, switch category to open_work for dispatchers
-  useEffect(() => {
-    if (isDispatcher) sF(prev => ({ ...prev, category: "open_work" }));
-  }, [isDispatcher]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg); setTimeout(() => setToast(null), 2500);
@@ -301,7 +295,6 @@ export default function PostSwapPage() {
     if (f.category === "work" && !f.date) return false;
     if (f.category === "daysoff" && !f.fromDate) return false;
     if (f.category === "vacation" && (!f.vacationHave || !f.vacationWant)) return false;
-    if (f.category === "open_work" && !f.date) return false;
     return true;
   };
 
@@ -403,15 +396,8 @@ export default function PostSwapPage() {
         </h2>
 
         <div style={{ display: "grid", gap: 16 }}>
-          {/* Dispatcher pending verification notice */}
-          {isDispatcher && !user?.dispatcherVerified && (
-            <div style={{ padding: "14px 16px", borderRadius: 14, background: "#22D3EE12", border: "1px solid #22D3EE33", fontSize: 13, color: "#22D3EE", lineHeight: 1.6 }}>
-              🚌 <strong>Pending verification</strong> — your dispatcher account is awaiting admin approval. You&apos;ll be able to post open work once verified.
-            </div>
-          )}
-
-          {/* Template picker (operators only) */}
-          {!isDispatcher && templates.length > 0 && (
+          {/* Template picker */}
+          {templates.length > 0 && (
             <button
               onClick={() => setShowTemplates(true)}
               style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 14, border: `1px solid ${C.gold}33`, background: C.gold + "08", cursor: "pointer", textAlign: "left" }}
@@ -421,9 +407,8 @@ export default function PostSwapPage() {
             </button>
           )}
 
-          {/* Swap type (operators only) */}
-          {!isDispatcher && (
-            <div>
+          {/* Swap type */}
+          <div>
               <label style={lb}>Swap Type</label>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
                 {SWAP_TYPES.map(sc => {
@@ -438,18 +423,6 @@ export default function PostSwapPage() {
                 })}
               </div>
             </div>
-          )}
-
-          {/* Dispatcher: open work badge */}
-          {isDispatcher && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 14, background: "#22D3EE10", border: "1px solid #22D3EE33" }}>
-              <span style={{ fontSize: 22 }}>🚌</span>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: "#22D3EE" }}>Open Work</div>
-                <div style={{ fontSize: 11, color: C.m }}>Posting work that needs coverage at {depot.name}</div>
-              </div>
-            </div>
-          )}
 
           {/* Work fields */}
           {f.category === "work" && (
@@ -547,48 +520,16 @@ export default function PostSwapPage() {
             </>
           )}
 
-          {/* Open work fields (dispatchers) */}
-          {f.category === "open_work" && (
-            <div style={{ background: "#22D3EE08", borderRadius: 16, border: "1px solid #22D3EE22", padding: 16, display: "grid", gap: 14 }}>
-              <div>
-                <label style={lb}>
-                  Date <span style={{ color: C.red, fontSize: 10 }}>{showErrors && !f.date ? "Required" : ""}</span>
-                </label>
-                <input
-                  type="date"
-                  value={f.date}
-                  min={today}
-                  onChange={e => { if (!e.target.value || !isPastDate(e.target.value)) sF({ ...f, date: e.target.value }); }}
-                  style={{ ...dateInputStyle, ...(showErrors && !f.date ? { borderColor: C.red + "66" } : {}) }}
-                />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <label style={lb}>Run #</label>
-                  <input value={f.run} onChange={e => sF({ ...f, run: e.target.value })} placeholder="e.g. 401" />
-                </div>
-                <div>
-                  <label style={lb}>Route</label>
-                  <input value={f.route} onChange={e => sF({ ...f, route: e.target.value })} placeholder="e.g. Bx12" />
-                </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <TimePicker label="Start Time" id="ow-start" value={f.startTime} onChange={v => sF({ ...f, startTime: v })} dateStr={f.date} />
-                <TimePicker label="Clear Time" id="ow-clear" value={f.clearTime} onChange={v => sF({ ...f, clearTime: v })} dateStr={f.date} />
-              </div>
-            </div>
-          )}
-
           {/* Details */}
           <div>
             <label htmlFor="post-details" style={lb}>
-              {f.category === "open_work" ? "Notes" : "Details"} {showErrors && !f.details.trim() && <span style={{ color: C.red, fontSize: 10 }}>Required</span>}
+              Details {showErrors && !f.details.trim() && <span style={{ color: C.red, fontSize: 10 }}>Required</span>}
             </label>
             <textarea
               id="post-details"
               value={f.details}
               onChange={e => sF({ ...f, details: e.target.value })}
-              placeholder={f.category === "open_work" ? "Any additional notes about this open work..." : "Details about this swap..."}
+              placeholder="Details about this swap..."
               rows={3}
               style={{ resize: "vertical", fontSize: 16, ...(showErrors && !f.details.trim() ? { borderColor: C.red + "66" } : {}) }}
               maxLength={500}
@@ -599,7 +540,7 @@ export default function PostSwapPage() {
           {/* Contact */}
           <div>
             <label htmlFor="post-contact" style={lb}>Contact (optional)</label>
-            <input id="post-contact" value={f.contact} onChange={e => sF({ ...f, contact: e.target.value })} placeholder="Phone or see dispatcher" style={{ fontSize: 16 }} />
+            <input id="post-contact" value={f.contact} onChange={e => sF({ ...f, contact: e.target.value })} placeholder="Phone or email" style={{ fontSize: 16 }} />
           </div>
 
           {dateError && (
@@ -612,8 +553,8 @@ export default function PostSwapPage() {
             <button onClick={() => router.back()} style={{ padding: 16, borderRadius: 14, border: `1px solid ${C.bd}`, background: "transparent", color: C.m, cursor: "pointer", fontSize: 15, fontWeight: 600 }}>Cancel</button>
             <button
               onClick={handleSubmit}
-              disabled={submitting || submitted || (isDispatcher && !user?.dispatcherVerified)}
-              style={{ position: "relative", overflow: "hidden", padding: 16, borderRadius: 14, border: "none", cursor: (isDispatcher && !user?.dispatcherVerified) ? "not-allowed" : "pointer", background: submitted ? "#2ED573" : isDispatcher ? "linear-gradient(135deg,#22D3EE,#0EA5E9)" : `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 15, fontWeight: 700, color: submitted ? "#fff" : isDispatcher ? "#fff" : C.bg, opacity: (submitting || (isDispatcher && !user?.dispatcherVerified)) ? 0.5 : 1, transition: "background 0.3s ease" }}
+              disabled={submitting || submitted}
+              style={{ position: "relative", overflow: "hidden", padding: 16, borderRadius: 14, border: "none", cursor: "pointer", background: submitted ? "#2ED573" : `linear-gradient(135deg,${C.gold},${C.gold}dd)`, fontSize: 15, fontWeight: 700, color: submitted ? "#fff" : C.bg, opacity: submitting ? 0.5 : 1, transition: "background 0.3s ease" }}
             >
               {submitted ? (
                 <>
@@ -622,7 +563,7 @@ export default function PostSwapPage() {
                     <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "rgba(255,255,255,0.4)", animation: "rippleOut 0.6s ease-out forwards" }} />
                   </div>
                 </>
-              ) : submitting ? "Saving..." : editId ? "Save Changes" : isDispatcher ? "Post Open Work" : "Post Swap"}
+              ) : submitting ? "Saving..." : editId ? "Save Changes" : "Post Swap"}
             </button>
           </div>
         </div>

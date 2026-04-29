@@ -64,7 +64,7 @@ export default function PrintAgreementPage() {
     <div style={{ fontFamily: "Arial, sans-serif", padding: 40, color: "#333" }}>Loading…</div>
   );
 
-  const categoryLabel = { work: "Work Day Swap", daysoff: "Days Off Swap", vacation: "Vacation Week Swap", open_work: "Open Work" }[swap.category] ?? swap.category;
+  const categoryLabel = { work: "Work Day Swap", daysoff: "Days Off Swap", vacation: "Vacation Week Swap" }[swap.category as "work" | "daysoff" | "vacation"] ?? swap.category;
 
   return (
     <>

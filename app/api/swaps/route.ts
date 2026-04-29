@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 
   // Build where clause
   const andClauses: Record<string, unknown>[] = [{ depotId: dbUser.depotId }];
-  if (category && ["work", "daysoff", "vacation", "open_work"].includes(category)) {
+  if (category && ["work", "daysoff", "vacation"].includes(category)) {
     andClauses.push({ category: category as SwapCategory });
   }
   if (status && ["open", "pending", "filled", "expired"].includes(status)) {
@@ -117,11 +117,6 @@ export async function POST(req: NextRequest) {
   const activeErr = checkActive(dbUser);
   if (activeErr) return err(activeErr, 403);
 
-  // Dispatchers must be verified before posting
-  if (dbUser.role === "dispatcher" && !dbUser.dispatcherVerified) {
-    return err("Your dispatcher account is pending verification by an admin", 403);
-  }
-
   const body = await parseBody(req, BODY_16KB);
   if (body instanceof NextResponse) return body;
   const { category, details, contact, date, run, route, startTime, clearTime,
@@ -133,7 +128,7 @@ export async function POST(req: NextRequest) {
   };
 
   if (!category || !details) return err("Category and details are required", 400);
-  const validCategories: string[] = ["work", "daysoff", "vacation", "open_work"];
+  const validCategories: string[] = ["work", "daysoff", "vacation"];
   if (!validCategories.includes(category as string)) return err("Invalid category", 400);
   if (details.length > 500) return err("Details must be 500 characters or fewer", 400);
   // Prevent embedding contact info in free-text — the contact field exists for this
@@ -163,15 +158,6 @@ export async function POST(req: NextRequest) {
   }
   if (run && run.length > 20) return err("Run must be 20 characters or fewer", 400);
   if (route && route.length > 20) return err("Route must be 20 characters or fewer", 400);
-
-  // Only dispatchers can post open work
-  if (category === "open_work" && dbUser.role !== "dispatcher") {
-    return err("Only verified dispatchers can post open work", 403);
-  }
-  // Dispatchers can only post open work
-  if (dbUser.role === "dispatcher" && category !== "open_work") {
-    return err("Dispatchers can only post open work", 403);
-  }
 
   // Normalise details for duplicate check: collapse whitespace and lowercase
   const normalisedDetails = details.trim().replace(/\s+/g, " ").toLowerCase();
@@ -217,14 +203,10 @@ export async function POST(req: NextRequest) {
   const categoryLabel =
     swap.category === "work" ? "Work"
     : swap.category === "daysoff" ? "Days Off"
-    : swap.category === "vacation" ? "Vacation"
-    : "Open Work";
-  const isOpenWork = swap.category === "open_work";
+    : "Vacation";
   await notifyMany(depotUsers.map(u => u.id), {
-    title: isOpenWork ? `Open Work posted — ${posterName}` : `New ${categoryLabel} swap posted`,
-    body: isOpenWork
-      ? `${posterName} (Dispatcher) posted open work that needs coverage`
-      : `${posterName} posted a new swap — check the board`,
+    title: `New ${categoryLabel} swap posted`,
+    body: `${posterName} posted a new swap — check the board`,
     url: `/depot/${dbUser.depot!.code}/swaps/${swap.id}`,
   });
 

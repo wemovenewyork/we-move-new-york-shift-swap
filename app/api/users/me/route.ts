@@ -49,8 +49,6 @@ export async function GET(req: NextRequest) {
     jobTitle: dbUser.jobTitle,
     depotSetAt: dbUser.depotSetAt?.toISOString() ?? null,
     verifiedOperator: dbUser.verifiedOperator,
-    dispatcherVerified: dbUser.dispatcherVerified,
-    dispatcherBadge: dbUser.dispatcherBadge,
   });
 }
 
@@ -105,12 +103,7 @@ export async function PUT(req: NextRequest) {
       select: { depotId: true, depotSetAt: true, role: true },
     });
     const isAdmin = dbUser?.role === "admin" || dbUser?.role === "subAdmin";
-    const isDispatcher = dbUser?.role === "dispatcher";
-    // Dispatchers are permanently locked to their depot once set
-    if (isDispatcher && dbUser?.depotId && dbUser.depotId !== depotId && depotId !== null) {
-      return err("Dispatchers are permanently assigned to one depot and cannot change it.", 403);
-    }
-    if (!isAdmin && !isDispatcher && dbUser?.depotId && dbUser.depotId !== depotId && depotId !== null) {
+    if (!isAdmin && dbUser?.depotId && dbUser.depotId !== depotId && depotId !== null) {
       const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
       if (dbUser.depotSetAt && (Date.now() - dbUser.depotSetAt.getTime()) < sevenDaysMs) {
         const unlocksAt = new Date(dbUser.depotSetAt.getTime() + sevenDaysMs);

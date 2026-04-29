@@ -8,7 +8,7 @@ export interface Depot {
   openSwaps?: number;
 }
 
-export type SwapCategory = "work" | "daysoff" | "vacation" | "open_work";
+export type SwapCategory = "work" | "daysoff" | "vacation";
 export type SwapStatus = "open" | "pending" | "filled" | "expired";
 
 export interface Swap {
@@ -50,7 +50,7 @@ export interface RepScore {
   total: number;
 }
 
-export type UserRole = "operator" | "dispatcher" | "depotRep" | "subAdmin" | "admin";
+export type UserRole = "operator" | "depotRep" | "subAdmin" | "admin";
 export type AgreementStatus = "pending" | "userA_confirmed" | "completed" | "cancelled";
 
 export interface User {
@@ -70,8 +70,6 @@ export interface User {
   jobTitle?: string | null;
   depotSetAt?: string | null;
   verifiedOperator?: boolean;
-  dispatcherVerified?: boolean;
-  dispatcherBadge?: string | null;
 }
 
 export interface Announcement {

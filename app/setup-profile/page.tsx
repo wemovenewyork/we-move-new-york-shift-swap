@@ -8,7 +8,7 @@ import { Depot } from "@/types";
 import { C } from "@/constants/colors";
 import { analytics } from "@/lib/analytics";
 
-const JOB_TITLES = ["Bus Operator", "Dispatcher", "Maintainer", "Cleaner", "Station Agent", "Train Operator", "Conductor", "Other"];
+const JOB_TITLES = ["Bus Operator", "Maintainer", "Cleaner", "Station Agent", "Train Operator", "Conductor", "Other"];
 const BOROUGH_ORDER = ["Manhattan", "Brooklyn", "Bronx", "Queens", "Staten Island"];
 const lb: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: 12, fontWeight: 600, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
 

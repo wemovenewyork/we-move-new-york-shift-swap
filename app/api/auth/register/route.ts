@@ -20,22 +20,19 @@ export async function POST(req: NextRequest) {
 
   const body = await parseBody(req, BODY_4KB);
   if (body instanceof NextResponse) return body;
-  const { firstName, lastName, email, password, inviteCode, role: requestedRole, dispatcherBadge } = body as {
+  const { firstName, lastName, email, password, inviteCode } = body as {
     firstName: string; lastName: string; email: string; password: string;
-    inviteCode?: string; role?: string; dispatcherBadge?: string;
+    inviteCode?: string;
   };
-
-  const isDispatcher = requestedRole === "dispatcher";
 
   if (!firstName || !lastName || !email || !password) {
     return err("All fields are required", 400);
   }
-  if (!isDispatcher && !inviteCode) return err("Invite code is required", 400);
+  if (!inviteCode) return err("Invite code is required", 400);
   if (!email.includes("@")) return err("Invalid email", 400);
   if (firstName.trim().length > 50) return err("First name must be 50 characters or fewer", 400);
   if (lastName.trim().length > 50) return err("Last name must be 50 characters or fewer", 400);
   if (inviteCode && inviteCode.length > 20) return err("Invalid invite code", 400);
-  if (dispatcherBadge && dispatcherBadge.length > 50) return err("Badge number must be 50 characters or fewer", 400);
   if (password.length < 12) return err("Password must be at least 12 characters", 400);
   if (password.length > 128) return err("Password must be 128 characters or fewer", 400);
 
@@ -54,7 +51,7 @@ export async function POST(req: NextRequest) {
   let newCodes: string[] = [];
   let user;
 
-  if (!isDispatcher) {
+  {
     const codeUpper = (inviteCode as string).trim().toUpperCase();
 
     try {
@@ -112,20 +109,6 @@ export async function POST(req: NextRequest) {
 
     // Initialize reputation
     await prisma.reputation.create({ data: { userId: user.id } });
-  } else {
-    user = await prisma.user.create({
-      data: {
-        email: email.toLowerCase().trim(),
-        passwordHash,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        role: "dispatcher",
-        dispatcherBadge: dispatcherBadge ? dispatcherBadge.trim() : null,
-        verified: true,
-        emailVerifyToken: verifyToken,
-        emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
-    });
   }
 
   // Send verification email — HTML-escape user-supplied name fields
@@ -164,11 +147,9 @@ export async function POST(req: NextRequest) {
       depotId: user.depotId,
       role: user.role,
       language: user.language,
-      dispatcherVerified: user.dispatcherVerified,
     },
     ...(newCodes.length > 0 ? { inviteCodes: newCodes } : {}),
     emailVerificationRequired: true,
-    ...(isDispatcher ? { pendingVerification: true } : {}),
   }, { status: 201 });
 
   const isProd = process.env.NODE_ENV === "production";
