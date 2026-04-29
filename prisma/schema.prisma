@@ -231,6 +231,11 @@ model SwapAgreement {
   userA User @relation("AgreementUserA", fields: [userAId], references: [id])
   userB User @relation("AgreementUserB", fields: [userBId], references: [id])
 
+  // Raw SQL partial unique index — NOT representable in Prisma DSL.
+  // Defined in migration 20260414_agreement_unique_active:
+  //   CREATE UNIQUE INDEX "swap_agreements_swap_id_active_key"
+  //   ON "swap_agreements" ("swap_id") WHERE status IN ('pending', 'userA_confirmed')
+  // DO NOT drop this index — it prevents race-condition duplicate agreements.
   @@map("swap_agreements")
 }
 
