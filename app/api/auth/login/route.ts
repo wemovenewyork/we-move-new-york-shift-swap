@@ -79,6 +79,17 @@ export async function POST(req: NextRequest) {
       data: { loginAttempts: 0, lockedUntil: null },
     });
 
+    // Soft launch gate — only allow the designated depot (admins bypass)
+    const softLaunchDepot = process.env.SOFT_LAUNCH_DEPOT;
+    if (
+      softLaunchDepot &&
+      !["admin", "subAdmin"].includes(user.role) &&
+      user.depotId &&
+      user.depot?.name !== softLaunchDepot
+    ) {
+      return err(`We Move NY is currently in soft launch at ${softLaunchDepot} only. We'll be at your depot soon!`, 403);
+    }
+
     const payload = { userId: user.id, email: user.email };
     const accessToken = signAccessToken(payload);
     const refreshToken = signRefreshToken(payload);
