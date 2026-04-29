@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       user.depotId &&
       user.depot?.name !== softLaunchDepot
     ) {
-      return err(`We Move NY is currently in soft launch at ${softLaunchDepot} only. We'll be at your depot soon!`, 403);
+      return err(`We Move New York is currently in soft launch at ${softLaunchDepot} only. We'll be at your depot soon!`, 403);
     }
 
     const payload = { userId: user.id, email: user.email };

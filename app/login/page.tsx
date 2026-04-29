@@ -326,7 +326,7 @@ export default function LoginPage() {
 
             <div style={{ background: "rgba(255,255,255,.04)", border: `1px solid rgba(255,255,255,.08)`, borderRadius: 16, padding: "20px 18px", marginBottom: 24, fontSize: 13, color: C.m, lineHeight: 1.75 }}>
               <p style={{ margin: "0 0 12px" }}>
-                <strong style={{ color: C.white }}>We Move NY</strong> is an unofficial peer-to-peer tool for MTA bus operators to coordinate shift swaps among themselves.
+                <strong style={{ color: C.white }}>We Move New York</strong> is an unofficial peer-to-peer tool for MTA bus operators to coordinate shift swaps among themselves.
               </p>
               <p style={{ margin: "0 0 12px" }}>
                 This platform is <strong style={{ color: C.white }}>not affiliated with, endorsed by, or operated by the MTA</strong>, any transit agency, or any labor union.
