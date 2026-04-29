@@ -10,11 +10,11 @@ export async function GET(req: NextRequest) {
   if (!secret || auth !== `Bearer ${secret}`) return err("Unauthorized", 401);
 
   try {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-  const dayAfter = new Date(tomorrow);
-  dayAfter.setDate(dayAfter.getDate() + 1);
+  // Compute "tomorrow" in NYC time (America/New_York) so the window
+  // aligns with operators' actual calendar day, not the UTC server clock.
+  const nycNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const tomorrow = new Date(Date.UTC(nycNow.getFullYear(), nycNow.getMonth(), nycNow.getDate() + 1));
+  const dayAfter  = new Date(Date.UTC(nycNow.getFullYear(), nycNow.getMonth(), nycNow.getDate() + 2));
 
   const swaps = await prisma.swap.findMany({
     where: { status: "open", date: { gte: tomorrow, lt: dayAfter } },

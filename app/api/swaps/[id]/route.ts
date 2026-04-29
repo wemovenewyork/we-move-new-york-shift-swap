@@ -69,6 +69,20 @@ export async function PUT(
 
   if (details && details.length > 500) return err("Details max 500 chars", 400);
 
+  const now = new Date();
+  const oneYearFromNow = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+  for (const [field, val] of [["date", date], ["fromDate", fromDate], ["toDate", toDate]] as [string, unknown][]) {
+    if (val) {
+      const d = new Date(val as string);
+      if (isNaN(d.getTime())) return err(`Invalid ${field}`, 400);
+      if (d < now) return err(`${field} must be in the future`, 400);
+      if (d > oneYearFromNow) return err(`${field} cannot be more than 1 year from now`, 400);
+    }
+  }
+  if (fromDate && toDate && new Date(toDate) < new Date(fromDate)) {
+    return err("toDate must be on or after fromDate", 400);
+  }
+
   const updated = await prisma.swap.update({
     where: { id },
     data: {

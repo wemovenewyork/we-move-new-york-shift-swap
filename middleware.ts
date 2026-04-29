@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Redis } from "@upstash/redis";
 
-export function middleware(req: NextRequest) {
+let redis: Redis | null = null;
+function getRedis(): Redis | null {
+  if (redis) return redis;
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+  redis = new Redis({ url, token });
+  return redis;
+}
+
+function decodeJwtPayload(token: string): { userId?: string; iat?: number } | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    return JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+  } catch {
+    return null;
+  }
+}
+
+export async function middleware(req: NextRequest) {
   if (process.env.MAINTENANCE_MODE === "true") {
     const { pathname } = req.nextUrl;
-    // Allow the maintenance page itself, static assets, and the health endpoint
     if (
       pathname === "/maintenance" ||
       pathname.startsWith("/_next/") ||
@@ -15,6 +35,37 @@ export function middleware(req: NextRequest) {
     }
     return NextResponse.redirect(new URL("/maintenance", req.url));
   }
+
+  // For API routes (except auth/refresh and health), enforce force-logout.
+  // Access tokens are short-lived (15 min) but logout-all should take effect immediately.
+  const { pathname } = req.nextUrl;
+  if (
+    pathname.startsWith("/api/") &&
+    pathname !== "/api/health" &&
+    pathname !== "/api/auth/refresh" &&
+    !pathname.startsWith("/api/auth/login") &&
+    !pathname.startsWith("/api/auth/register") &&
+    !pathname.startsWith("/api/auth/forgot-password") &&
+    !pathname.startsWith("/api/auth/reset-password") &&
+    !pathname.startsWith("/api/cron/")
+  ) {
+    const token = req.cookies.get("accessToken")?.value;
+    if (token) {
+      const payload = decodeJwtPayload(token);
+      if (payload?.userId && payload?.iat) {
+        const store = getRedis();
+        if (store) {
+          try {
+            const val = await store.get(`force-logout:${payload.userId}`);
+            if (val && payload.iat * 1000 < Number(val)) {
+              return NextResponse.json({ error: "Session invalidated. Please sign in again." }, { status: 401 });
+            }
+          } catch { /* fail open — Redis errors should not block requests */ }
+        }
+      }
+    }
+  }
+
   return NextResponse.next();
 }
 

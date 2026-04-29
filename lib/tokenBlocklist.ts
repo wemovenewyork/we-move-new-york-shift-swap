@@ -35,3 +35,27 @@ export async function isRefreshTokenBlocked(tokenHash: string): Promise<boolean>
     return true; // fail closed — if Redis is down, treat token as revoked
   }
 }
+
+// Force-invalidate all outstanding access tokens for a user (logout-all).
+// Stores a timestamp; any access token issued before it is rejected.
+// TTL = 900s (15 min) — matches the access token lifetime.
+export async function blockUserAccessTokens(userId: string): Promise<void> {
+  const store = getRedis();
+  if (!store) return;
+  try {
+    await store.set(`force-logout:${userId}`, String(Date.now()), { ex: 900 });
+  } catch { /* non-fatal */ }
+}
+
+// Returns true if the token (identified by its iat in ms) was issued before a force-logout.
+export async function isUserForcedLogout(userId: string, iatMs: number): Promise<boolean> {
+  const store = getRedis();
+  if (!store) return false;
+  try {
+    const val = await store.get(`force-logout:${userId}`);
+    if (!val) return false;
+    return iatMs < Number(val);
+  } catch {
+    return false; // fail open — don't lock out users if Redis is down
+  }
+}

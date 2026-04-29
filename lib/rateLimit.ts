@@ -28,8 +28,9 @@ export async function rateLimit(key: string, limit: number, windowMs: number): P
     const count = await store.incr(key);
     if (count === 1) await store.expire(key, windowSec);
     return count <= limit;
-  } catch {
-    // Allow on any Redis error rather than block legitimate users
+  } catch (e) {
+    // Allow on any Redis error rather than block legitimate users, but surface it
+    console.error("[rateLimit] Redis error — failing open for key", key, e);
     return true;
   }
 }

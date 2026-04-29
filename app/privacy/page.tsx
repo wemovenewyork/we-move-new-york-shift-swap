@@ -45,7 +45,7 @@ export default function PrivacyPage() {
           <p style={s.p}><strong style={{ color: C.white }}>Swap Listings:</strong> Content you post — including shift details, run numbers, routes, and dates — is visible to other verified users at your depot.</p>
           <p style={s.p}><strong style={{ color: C.white }}>Messages:</strong> Messages sent through the platform are stored to facilitate swap coordination. Messages are only visible to the sender and recipient.</p>
           <p style={s.p}><strong style={{ color: C.white }}>Reputation & Reviews:</strong> Ratings and completion history are stored and displayed to other users to build trust in the platform.</p>
-          <p style={s.p}><strong style={{ color: C.white }}>Usage Data:</strong> We may collect basic usage data such as pages visited and features used to improve the App. We do not sell this data.</p>
+          <p style={s.p}><strong style={{ color: C.white }}>Usage Data:</strong> We use Google Analytics and Google Tag Manager to collect basic usage data such as pages visited and features used to improve the App. This data is processed by Google in accordance with their privacy policy. We do not sell this data, and we do not use it to identify individual users or share it with your employer.</p>
         </div>
 
         <hr style={s.divider} />

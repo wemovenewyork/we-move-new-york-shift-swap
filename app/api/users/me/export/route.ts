@@ -1,11 +1,16 @@
 import { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rateLimit";
 import { err } from "@/lib/apiResponse";
 
 export async function GET(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
+
+  if (!await rateLimit(`export:${user.userId}`, 3, 3_600_000)) {
+    return err("Export rate limit exceeded — max 3 exports per hour", 429);
+  }
 
   const [profile, swaps, messages, agreements, savedSwaps, notifications, reputation, reviews] = await Promise.all([
     prisma.user.findUnique({

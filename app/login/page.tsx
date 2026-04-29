@@ -157,6 +157,11 @@ export default function LoginPage() {
           <h1 style={{ fontSize: 26, fontWeight: 800, color: C.white }}>{mode === "signin" ? "Sign In" : mode === "dispatcher" ? "Dispatcher Sign Up" : "Create Account"}</h1>
         </div>
 
+        <p style={{ fontSize: 11, color: "rgba(255,255,255,.35)", textAlign: "center", marginBottom: 16, lineHeight: 1.5 }}>
+          Not affiliated with the MTA, NYCT, or any labor union. Unofficial peer-to-peer tool.{" "}
+          <a href="/disclaimer" style={{ color: "rgba(255,255,255,.45)", textDecoration: "underline" }}>Disclaimer</a>
+        </p>
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, background: C.s, borderRadius: 12, padding: 4, marginBottom: 18 }}>
           {(["signin", "register", "dispatcher"] as const).map(t => (
             <button key={t} onClick={() => { setMode(t); setErr(""); setFieldErrs({}); }} style={{ padding: 10, borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: mode === t ? C.gold : "transparent", color: mode === t ? C.bg : C.m }}>
