@@ -77,8 +77,15 @@ export async function GET(req: NextRequest) {
   const reviewMap: Record<string, number[]> = {};
   reviews.forEach(r => { (reviewMap[r.reviewedId] ??= []).push(r.rating); });
 
+  // Mask poster last name in list responses — show "First L." to limit bulk identity extraction
+  const maskLastName = (name: string) => {
+    const parts = name.trim().split(" ");
+    return parts.length < 2 ? name : `${parts[0]} ${parts[parts.length - 1][0]}.`;
+  };
+
   const swapsWithRep = swaps.map(s => ({
     ...s,
+    posterName: s.userId === user.userId ? s.posterName : maskLastName(s.posterName),
     saved: savedSet.has(s.id),
     posterLastActive: s.user?.lastActiveAt ?? null,
     reputation: calcScore({
@@ -129,6 +136,9 @@ export async function POST(req: NextRequest) {
   const validCategories: string[] = ["work", "daysoff", "vacation", "open_work"];
   if (!validCategories.includes(category as string)) return err("Invalid category", 400);
   if (details.length > 500) return err("Details must be 500 characters or fewer", 400);
+  // Prevent embedding contact info in free-text — the contact field exists for this
+  if (/[^\s@]+@[^\s@]+\.[^\s@]+/.test(details)) return err("Email addresses should go in the contact field, not the swap details", 400);
+  if (/\b(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}\b/.test(details)) return err("Phone numbers should go in the contact field, not the swap details", 400);
   if (contact) {
     if (contact.length > 30) return err("Contact must be 30 characters or fewer", 400);
     // Must look like a phone number or email address
