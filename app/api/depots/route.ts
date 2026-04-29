@@ -3,7 +3,11 @@ import { err } from "@/lib/apiResponse";
 
 export async function GET() {
   try {
-    const depots = await prisma.depot.findMany({ orderBy: { name: "asc" } });
+    const softLaunchDepot = process.env.SOFT_LAUNCH_DEPOT;
+    const depots = await prisma.depot.findMany({
+      where: softLaunchDepot ? { name: softLaunchDepot } : undefined,
+      orderBy: { name: "asc" },
+    });
     const counts = await prisma.swap.groupBy({
       by: ["depotId"],
       _count: { id: true },

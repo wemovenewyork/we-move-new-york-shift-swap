@@ -96,6 +96,11 @@ export default function SetupProfilePage() {
                 </optgroup>
               ))}
             </select>
+            {depots.length === 1 && (
+              <div style={{ fontSize: 11, color: C.gold, marginTop: 6, lineHeight: 1.5 }}>
+                We Move NY is currently in soft launch at {depots[0].name} only. More depots coming soon.
+              </div>
+            )}
             <div style={{ fontSize: 11, color: C.m, marginTop: 6, lineHeight: 1.5 }}>
               You can only see and post swaps in your home depot. Once set, this can only be changed once every 7 days.
             </div>
