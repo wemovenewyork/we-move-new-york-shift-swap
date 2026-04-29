@@ -94,66 +94,6 @@ async function main() {
     },
   });
 
-  console.log("Seeding demo account...");
-  const flatbush = await prisma.depot.findUnique({ where: { code: "FB" } });
-  const demoHash = await bcrypt.hash("demo123", 10);
-  const demo = await prisma.user.upsert({
-    where: { email: "demo@mta.com" },
-    update: {},
-    create: {
-      email: "demo@mta.com",
-      passwordHash: demoHash,
-      firstName: "Demo",
-      lastName: "Operator",
-      depotId: flatbush?.id,
-      verified: true,
-    },
-  });
-
-  // Give demo user 3 invite codes
-  const existingCodes = await prisma.inviteCode.count({ where: { createdBy: demo.id } });
-  if (existingCodes === 0) {
-    for (let i = 0; i < 3; i++) {
-      await prisma.inviteCode.create({
-        data: { code: genCode(), createdBy: demo.id },
-      });
-    }
-  }
-
-  // Demo reputation
-  await prisma.reputation.upsert({
-    where: { userId: demo.id },
-    update: {},
-    create: { userId: demo.id, completed: 12, cancelled: 1, noShow: 0 },
-  });
-
-  // Demo reviews
-  const repReviewCount = await prisma.review.count({ where: { reviewedId: demo.id } });
-  if (repReviewCount === 0) {
-    const demoSwap = await prisma.swap.create({
-      data: {
-        userId: demo.id,
-        depotId: flatbush!.id,
-        category: "work",
-        status: "filled",
-        details: "Demo swap for seed reviews",
-        posterName: "Demo Operator",
-        date: new Date("2024-01-01"),
-      },
-    });
-    const ratings = [5, 5, 4, 5, 5, 5, 4, 5, 5, 4, 5, 5];
-    for (const rating of ratings) {
-      await prisma.review.create({
-        data: {
-          swapId: demoSwap.id,
-          reviewerId: demo.id,
-          reviewedId: demo.id,
-          rating,
-        },
-      });
-    }
-  }
-
   console.log("Seed complete.");
 }
 
