@@ -162,11 +162,26 @@ export default function LoginPage() {
           <p style={{ fontSize: 15, color: C.white, fontWeight: 600, marginBottom: 20, wordBreak: "break-all" }}>
             {registeredEmail}
           </p>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,.55)", lineHeight: 1.6, marginBottom: 24 }}>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,.55)", lineHeight: 1.6, marginBottom: 16 }}>
             Click the link in that email to verify your account, then come back here to sign in. The link expires in 24 hours.
           </p>
+          <div style={{
+            background: "rgba(209,173,56,.10)",
+            border: "1px solid rgba(209,173,56,.35)",
+            borderRadius: 12,
+            padding: "12px 14px",
+            marginBottom: 20,
+            textAlign: "left",
+          }}>
+            <p style={{ fontSize: 13, color: C.gold, fontWeight: 700, marginBottom: 4 }}>
+              📂 Don&apos;t see it? Check your spam folder.
+            </p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,.7)", lineHeight: 1.5 }}>
+              New email sender — your provider may filter the first message. Mark it &quot;Not Spam&quot; so future messages reach your inbox.
+            </p>
+          </div>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,.4)", lineHeight: 1.6, marginBottom: 20 }}>
-            Don&apos;t see it? Check your spam folder. Still nothing? Email{" "}
+            Still nothing after a few minutes? Email{" "}
             <a href="mailto:wemovenewyork.net@gmail.com" style={{ color: C.m }}>wemovenewyork.net@gmail.com</a>.
           </p>
           <button
@@ -221,7 +236,10 @@ export default function LoginPage() {
           <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(209,173,56,.08)", border: "1px solid rgba(209,173,56,.25)", marginBottom: 14, fontSize: 13, color: "rgba(255,255,255,.85)" }}>
             <p style={{ marginBottom: 10, lineHeight: 1.5 }}>Didn&apos;t get the verification email, or did the link expire?</p>
             {resendStatus === "sent" ? (
-              <p style={{ color: C.m, fontSize: 12 }}>✓ If that account is unverified, we&apos;ve sent a fresh link. Check your inbox.</p>
+              <div>
+                <p style={{ color: C.m, fontSize: 12, marginBottom: 6 }}>✓ If that account is unverified, we&apos;ve sent a fresh link.</p>
+                <p style={{ color: C.gold, fontSize: 12, fontWeight: 600 }}>📂 Check your spam folder if you don&apos;t see it.</p>
+              </div>
             ) : (
               <button
                 type="button"
