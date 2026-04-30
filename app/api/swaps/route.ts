@@ -30,6 +30,26 @@ export async function GET(req: NextRequest) {
 
   // Build where clause
   const andClauses: Record<string, unknown>[] = [{ depotId: dbUser.depotId }];
+
+  // Hide swaps from operators the current user has blocked, and from operators
+  // who have blocked the current user. Symmetric, same as the messaging filter.
+  const blocks = await prisma.block.findMany({
+    where: {
+      OR: [
+        { blockerId: user.userId },
+        { blockedId: user.userId },
+      ],
+    },
+    select: { blockerId: true, blockedId: true },
+  });
+  if (blocks.length > 0) {
+    const hiddenUserIds = new Set<string>();
+    for (const b of blocks) {
+      hiddenUserIds.add(b.blockerId === user.userId ? b.blockedId : b.blockerId);
+    }
+    andClauses.push({ userId: { notIn: [...hiddenUserIds] } });
+  }
+
   if (category && ["work", "daysoff", "vacation"].includes(category)) {
     andClauses.push({ category: category as SwapCategory });
   }

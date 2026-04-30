@@ -32,13 +32,30 @@ export async function PUT(
       create: { userId: user.userId, completed: 1 },
     });
 
-    // Notify all other users who messaged about this swap
-    const interestedUsers = await prisma.message.findMany({
-      where: { swapId: id, fromUserId: { not: swap.userId } },
-      select: { fromUserId: true },
-      distinct: ["fromUserId"],
-    });
-    const ids = interestedUsers.map(m => m.fromUserId);
+    // Notify everyone with a stake in this swap: anyone who messaged about it,
+    // anyone who saved it, and anyone who proposed an agreement on it.
+    // Dedupe across sources, exclude the swap owner.
+    const [messagers, savers, agreementParticipants] = await Promise.all([
+      prisma.message.findMany({
+        where: { swapId: id, fromUserId: { not: swap.userId } },
+        select: { fromUserId: true },
+        distinct: ["fromUserId"],
+      }),
+      prisma.savedSwap.findMany({
+        where: { swapId: id, userId: { not: swap.userId } },
+        select: { userId: true },
+      }),
+      prisma.swapAgreement.findMany({
+        where: { swapId: id, userAId: { not: swap.userId } },
+        select: { userAId: true },
+        distinct: ["userAId"],
+      }),
+    ]);
+    const ids = [...new Set([
+      ...messagers.map(m => m.fromUserId),
+      ...savers.map(s => s.userId),
+      ...agreementParticipants.map(a => a.userAId),
+    ])];
     if (ids.length > 0) {
       await notifyMany(ids, {
         title: "Swap has been filled",
