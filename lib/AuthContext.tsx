@@ -37,13 +37,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Use a raw fetch for the initial session check so a missing/expired cookie
-    // silently sets user=null rather than triggering the api.ts redirect loop.
-    fetch("/api/users/me", { credentials: "include" })
-      .then(res => res.ok ? res.json() : null)
-      .then(data => { if (data) setUser(data); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    // Initial session check on app load.
+    //
+    // A raw fetch is used (not the `api` helper) because the api helper
+    // redirects to /login on 401 — which would create a redirect loop on
+    // the login page itself for never-logged-in users.
+    //
+    // But we still need to handle the most common case: a returning user
+    // whose 15-minute access token has expired but whose 7-day refresh
+    // token is still valid. Without explicit refresh handling here, those
+    // users get silently logged out every ~15 minutes even though the
+    // session is supposed to last 7 days.
+    //
+    // Flow:
+    //   1. GET /users/me. If it works, use the user data.
+    //   2. If 401, POST /auth/refresh to mint a new access token from
+    //      the refresh-token cookie. If that succeeds, retry GET /users/me.
+    //   3. If anything else fails, treat as logged out (user=null).
+    //
+    // All requests use credentials: "include" so the HttpOnly cookies are
+    // sent.
+    let cancelled = false;
+    (async () => {
+      try {
+        let res = await fetch("/api/users/me", { credentials: "include" });
+
+        if (res.status === 401) {
+          // Try to refresh, then retry the user fetch.
+          const refresh = await fetch("/api/auth/refresh", {
+            method: "POST",
+            credentials: "include",
+          });
+          if (refresh.ok) {
+            res = await fetch("/api/users/me", { credentials: "include" });
+          }
+        }
+
+        if (cancelled) return;
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        }
+      } catch {
+        // Network error or similar — treat as logged out, the user can sign in again.
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const login = (userData: User) => {
