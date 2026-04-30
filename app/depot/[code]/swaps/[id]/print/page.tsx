@@ -22,7 +22,7 @@ const fdate = (d?: string | Date | null) => {
 export default function PrintAgreementPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const { id } = useParams<{ code: string; id: string }>();
+  const { code, id } = useParams<{ code: string; id: string }>();
   const [swap, setSwap] = useState<Swap | null>(null);
   const [agreement, setAgreement] = useState<SwapAgreement | null>(null);
   const [gateError, setGateError] = useState("");
@@ -56,7 +56,7 @@ export default function PrintAgreementPage() {
       <div style={{ fontSize: 40, marginBottom: 16 }}>🔒</div>
       <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 10 }}>Agreement not confirmed</div>
       <div style={{ fontSize: 13, color: "#666", lineHeight: 1.6, marginBottom: 28 }}>{gateError}</div>
-      <button onClick={() => window.close()} style={{ padding: "10px 24px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", cursor: "pointer", fontSize: 14 }}>Close</button>
+      <button onClick={() => router.push(`/depot/${code}/swaps/${id}`)} style={{ padding: "10px 24px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", cursor: "pointer", fontSize: 14 }}>Back to Swap</button>
     </div>
   );
 
@@ -92,6 +92,17 @@ export default function PrintAgreementPage() {
         .header-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 2px solid #111; }
         .logo { font-weight: 900; font-size: 14px; letter-spacing: 2px; }
       `}</style>
+
+      <div className="no-print" style={{ position: "sticky", top: 0, zIndex: 100, background: "#fff", borderBottom: "1px solid #e5e5e5", padding: "10px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+        <button
+          onClick={() => router.push(`/depot/${code}/swaps/${id}`)}
+          aria-label="Back to swap"
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#333" }}
+        >
+          ← Back to Swap
+        </button>
+        <div style={{ fontSize: 12, color: "#888" }}>Print Agreement</div>
+      </div>
 
       <div className="page">
         <div className="header-bar">
@@ -239,9 +250,6 @@ export default function PrintAgreementPage() {
         <div className="no-print" style={{ marginTop: 32, textAlign: "center" }}>
           <button onClick={() => window.print()} style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: "#010028", color: "#D1AD38", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
             Save / Print PDF
-          </button>
-          <button onClick={() => window.close()} style={{ marginLeft: 12, padding: "12px 20px", borderRadius: 12, border: "1px solid #ccc", background: "#fff", fontSize: 14, cursor: "pointer" }}>
-            Close
           </button>
         </div>
       </div>
