@@ -9,13 +9,23 @@ export async function GET(req: NextRequest) {
   if (!secret || auth !== `Bearer ${secret}`) return err("Unauthorized", 401);
 
   try {
-  const now = new Date();
+  // Compute "today" in America/New_York as a UTC midnight Date.
+  // Swap dates are stored as @db.Date (midnight UTC). A swap dated Apr 30 should
+  // be considered "in the past" only after Apr 30 has fully ended in NY — i.e.
+  // when NY's local date has rolled over to May 1.
+  const nyParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date()); // e.g. "2026-04-30"
+  const nyToday = new Date(`${nyParts}T00:00:00Z`);
 
   // Fetch work swaps (have a `date`) that are past, so we can notify owners
   const toExpire = await prisma.swap.findMany({
     where: {
       status: { in: ["open", "pending"] },
-      date: { lt: now, not: null },
+      date: { lt: nyToday, not: null },
     },
     select: { id: true, userId: true, depotId: true, details: true },
   });
@@ -24,7 +34,7 @@ export async function GET(req: NextRequest) {
   const result = await prisma.swap.updateMany({
     where: {
       status: { in: ["open", "pending"] },
-      date: { lt: now, not: null },
+      date: { lt: nyToday, not: null },
     },
     data: { status: "expired" },
   });
@@ -33,7 +43,7 @@ export async function GET(req: NextRequest) {
   const result2 = await prisma.swap.updateMany({
     where: {
       status: { in: ["open", "pending"] },
-      fromDate: { lt: now, not: null },
+      fromDate: { lt: nyToday, not: null },
       date: null,
     },
     data: { status: "expired" },
