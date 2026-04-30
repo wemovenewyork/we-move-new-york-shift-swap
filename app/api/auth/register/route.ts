@@ -131,7 +131,14 @@ export async function POST(req: NextRequest) {
         If you didn't create a We Move NY account, you can safely ignore this email.
       </p>
     </div>`
-  ).catch(() => {});
+  ).catch((e) => {
+    // Surface email failures to Sentry so we know if Resend is down during launch.
+    // The user has already seen "Check your email" — without this, an outage is invisible.
+    Sentry.captureException(e, {
+      tags: { source: "register-verify-email" },
+      extra: { userId: user.id, email: user.email },
+    });
+  });
 
   // No auto-login on register — user must verify email and then log in.
   // This ensures the email address is real and prevents account claim from

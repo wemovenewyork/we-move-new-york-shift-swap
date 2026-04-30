@@ -52,9 +52,17 @@ export async function POST(req: NextRequest) {
             If you didn't request this, you can safely ignore this email.
           </p>
         </div>`
-      ).catch(() => {}); // fire-and-forget; log silently if email fails
+      ).catch((e) => {
+        // Log to Sentry so launch-time email outages don't go undetected.
+        Sentry.captureException(e, {
+          tags: { source: "forgot-password-email" },
+          extra: { userId: user.id },
+        });
+      });
     }
-  } catch { /* non-fatal */ }
+  } catch (e) {
+    Sentry.captureException(e, { tags: { source: "forgot-password" } });
+  }
 
   // Pad response to minDuration regardless of whether the email was found/sent
   const elapsed = Date.now() - startedAt;

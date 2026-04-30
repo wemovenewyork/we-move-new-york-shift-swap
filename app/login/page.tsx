@@ -54,7 +54,12 @@ export default function LoginPage() {
   const [showTerms, setShowTerms] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
   const [acceptingTerms, setAcceptingTerms] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return sessionStorage.getItem("wmny-pending-verify-email");
+  });
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendStatus, setResendStatus] = useState<"" | "sending" | "sent">("");
 
   const strength = pwStrength(pw);
 
@@ -96,14 +101,34 @@ export default function LoginPage() {
     if (!em.trim()) errs.em = "Required";
     if (!pw) errs.pw = "Required";
     if (Object.keys(errs).length) { setFieldErrs(errs); setShaking(true); setTimeout(() => setShaking(false), 500); return; }
-    setSubmitting(true); setErr(""); setFieldErrs({});
+    setSubmitting(true); setErr(""); setFieldErrs({}); setNeedsVerification(false); setResendStatus("");
     try {
       const data = await api.post<{ user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; language: string } }>("/auth/login", { email: em, password: pw });
+      // Clear any stale "pending verification" state on successful login
+      sessionStorage.removeItem("wmny-pending-verify-email");
       login(data.user as Parameters<typeof login>[0]);
       setShowConsentFlow(true);
     } catch (e: unknown) {
-      setErrWithShake(e instanceof Error ? e.message : "Login failed");
+      const msg = e instanceof Error ? e.message : "Login failed";
+      // Detect the "please verify your email" 403 so we can offer a resend button
+      if (/verify your email/i.test(msg)) {
+        setNeedsVerification(true);
+      }
+      setErrWithShake(msg);
     } finally { setSubmitting(false); }
+  };
+
+  const doResendVerification = async () => {
+    if (!em.trim()) return;
+    setResendStatus("sending");
+    try {
+      await api.post("/auth/resend-verification", { email: em.trim() });
+      setResendStatus("sent");
+    } catch {
+      // Server returns 200 even on miss, so a real error means network/server outage.
+      // Still show "sent" to avoid revealing account state.
+      setResendStatus("sent");
+    }
   };
 
   const doRegister = async () => {
@@ -115,7 +140,9 @@ export default function LoginPage() {
         { firstName: fn, lastName: ln, email: em, password: pw, inviteCode: invCode }
       );
       // No auto-login: user must verify email first. Show the "check your inbox" screen.
-      setRegisteredEmail(em.trim().toLowerCase());
+      const normalized = em.trim().toLowerCase();
+      sessionStorage.setItem("wmny-pending-verify-email", normalized);
+      setRegisteredEmail(normalized);
     } catch (e: unknown) {
       setErrWithShake(e instanceof Error ? e.message : "Registration failed");
     } finally { setSubmitting(false); }
@@ -144,7 +171,13 @@ export default function LoginPage() {
           </p>
           <button
             type="button"
-            onClick={() => { setRegisteredEmail(null); setMode("signin"); setEm(registeredEmail); setPw(""); }}
+            onClick={() => {
+              sessionStorage.removeItem("wmny-pending-verify-email");
+              setRegisteredEmail(null);
+              setMode("signin");
+              setEm(registeredEmail);
+              setPw("");
+            }}
             style={{ width: "100%", padding: "14px 20px", borderRadius: 14, background: C.m, color: "#010028", fontWeight: 700, fontSize: 15, border: "none", cursor: "pointer" }}
           >
             Go to Sign In
@@ -183,6 +216,24 @@ export default function LoginPage() {
         </div>
 
         {err && <div role="alert" aria-live="assertive" style={{ padding: "10px 14px", borderRadius: 12, background: C.red + "15", border: `1px solid ${C.red}33`, marginBottom: 14, fontSize: 13, color: C.red }}>{err}</div>}
+
+        {needsVerification && mode === "signin" && (
+          <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(209,173,56,.08)", border: "1px solid rgba(209,173,56,.25)", marginBottom: 14, fontSize: 13, color: "rgba(255,255,255,.85)" }}>
+            <p style={{ marginBottom: 10, lineHeight: 1.5 }}>Didn&apos;t get the verification email, or did the link expire?</p>
+            {resendStatus === "sent" ? (
+              <p style={{ color: C.m, fontSize: 12 }}>✓ If that account is unverified, we&apos;ve sent a fresh link. Check your inbox.</p>
+            ) : (
+              <button
+                type="button"
+                onClick={doResendVerification}
+                disabled={resendStatus === "sending" || !em.trim()}
+                style={{ padding: "8px 14px", borderRadius: 10, background: C.m, color: "#010028", fontWeight: 700, fontSize: 13, border: "none", cursor: resendStatus === "sending" ? "wait" : "pointer", opacity: !em.trim() ? 0.5 : 1 }}
+              >
+                {resendStatus === "sending" ? "Sending…" : "Resend verification email"}
+              </button>
+            )}
+          </div>
+        )}
 
         {mode === "signin" ? (
           <div style={{ display: "grid", gap: 14 }}>
