@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { parseBody, BODY_4KB } from "@/lib/parseBody";
+import { rateLimit } from "@/lib/rateLimit";
 
 // GET  /api/depots/:code/announcements  → active announcements for this depot
 // POST /api/depots/:code/announcements  → create (depotRep/admin only)
@@ -30,6 +31,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
 export async function POST(req: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
+
+  if (!await rateLimit(`announcement:${user.userId}`, 10, 3_600_000)) {
+    return err("Rate limit: max 10 announcements per hour", 429);
+  }
 
   const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
   if (!dbUser) return err("User not found", 404);

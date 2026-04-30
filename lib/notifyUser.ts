@@ -7,9 +7,12 @@ const BATCH_SIZE = 50;
 
 /** Persist a single in-app notification record. Non-fatal. */
 async function persistNotification(userId: string, payload: PushPayload): Promise<void> {
+  // Reject non-relative URLs — notification URLs must stay on-domain.
+  const url = payload.url ?? null;
+  if (url !== null && !url.startsWith("/")) return;
   try {
     await prisma.notification.create({
-      data: { userId, type: "push", title: payload.title, body: payload.body, url: payload.url ?? null },
+      data: { userId, type: "push", title: payload.title, body: payload.body, url },
     });
   } catch { /* never break the main request */ }
 }
@@ -17,10 +20,12 @@ async function persistNotification(userId: string, payload: PushPayload): Promis
 /** Persist in-app notification records for many users at once. Non-fatal. */
 async function persistNotifications(userIds: string[], payload: PushPayload): Promise<void> {
   if (!userIds.length) return;
+  const url = payload.url ?? null;
+  if (url !== null && !url.startsWith("/")) return;
   try {
     await prisma.notification.createMany({
       data: userIds.map(userId => ({
-        userId, type: "push", title: payload.title, body: payload.body, url: payload.url ?? null,
+        userId, type: "push", title: payload.title, body: payload.body, url,
       })),
     });
   } catch { /* never break the main request */ }
