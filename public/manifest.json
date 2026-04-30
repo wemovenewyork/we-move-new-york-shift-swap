@@ -1,6 +1,6 @@
 {
-  "name": "We Move New York",
-  "short_name": "WeMoveNY",
+  "name": "WMNY Shift Swap",
+  "short_name": "WMNY",
   "description": "MTA operator shift swap app",
   "start_url": "/depots",
   "display": "standalone",

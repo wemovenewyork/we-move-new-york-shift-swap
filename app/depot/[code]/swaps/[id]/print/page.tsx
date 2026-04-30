@@ -232,8 +232,8 @@ export default function PrintAgreementPage() {
         </div>
 
         <div className="footer">
-          We Move New York — Unofficial peer-to-peer shift swap tool — Not affiliated with the MTA or any transit union<br />
-          Generated from wemoveny.app · Swap ID: {swap.id}
+          WMNY Shift Swap — Unofficial peer-to-peer shift swap tool — Not affiliated with the MTA or any transit union<br />
+          Generated from wmnyshiftswap.com · Swap ID: {swap.id}
         </div>
 
         <div className="no-print" style={{ marginTop: 32, textAlign: "center" }}>
