@@ -21,7 +21,7 @@ export default function DisclaimerPage() {
         <section style={{ marginBottom: 24 }}>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: C.gold, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>No Affiliation</h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,.7)", lineHeight: 1.7 }}>
-            We Move New York Shift Swap is not affiliated with, endorsed by, or operated by New York City Transit, the Metropolitan Transportation Authority (MTA), any transit agency, or any labor union.
+            WMNY Shift Swap is not affiliated with, endorsed by, or operated by New York City Transit, the Metropolitan Transportation Authority (MTA), any transit agency, or any labor union.
           </p>
         </section>
 

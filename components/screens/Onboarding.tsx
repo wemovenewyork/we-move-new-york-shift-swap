@@ -143,7 +143,7 @@ const STEPS = [
   {
     color: C.gold,
     title: "Swapping Shifts\nMade Simple",
-    body: "We Move NY is the fastest way for bus operators to swap work days, days off, and vacation weeks — peer to peer, no paperwork.",
+    body: "WMNY Shift Swap is the fastest way for bus operators to swap work days, days off, and vacation weeks — peer to peer, no paperwork.",
     Illustration: IllustrationSwap,
   },
   {

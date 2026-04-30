@@ -88,7 +88,7 @@ export default function SetupProfilePage() {
             </select>
             {depots.length === 1 && (
               <div style={{ fontSize: 11, color: C.gold, marginTop: 6, lineHeight: 1.5 }}>
-                We Move New York is currently in soft launch at {depots[0].name} only. More depots coming soon.
+                WMNY Shift Swap is currently in soft launch at {depots[0].name} only. More depots coming soon.
               </div>
             )}
             <div style={{ fontSize: 11, color: C.m, marginTop: 6, lineHeight: 1.5 }}>

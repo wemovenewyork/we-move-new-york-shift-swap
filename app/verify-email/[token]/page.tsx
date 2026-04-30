@@ -45,7 +45,7 @@ export default function VerifyEmailPage() {
             <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: C.white, marginBottom: 8 }}>Email verified!</h1>
             <p style={{ color: C.m, fontSize: 14, lineHeight: 1.6, marginBottom: 28 }}>
-              Your email has been verified. You can now sign in to We Move NY.
+              Your email has been verified. You can now sign in to WMNY Shift Swap.
             </p>
             <button
               onClick={() => router.push("/login")}

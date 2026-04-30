@@ -12,7 +12,7 @@ const STEPS = [
     n: "01",
     color: C.gold,
     title: "Get Your Invite",
-    desc: "We Move NY is operator-to-operator. Every new member joins with an invite code from a fellow operator. No management, no gatekeeping.",
+    desc: "WMNY Shift Swap is operator-to-operator. Every new member joins with an invite code from a fellow operator. No management, no gatekeeping.",
     detail: "When you join, you automatically receive 3 invite codes to share with colleagues at your depot.",
     visual: <InviteVisual />,
   },
@@ -53,7 +53,7 @@ const STEPS = [
     color: "#2ED573",
     title: "Print & Present",
     desc: "Once both operators confirm, a timestamped agreement is generated. Print it or show it on your phone to your dispatcher.",
-    detail: "The agreement still requires supervisor approval per your depot's procedures — We Move NY coordinates the swap, it doesn't replace management sign-off.",
+    detail: "The agreement still requires supervisor approval per your depot's procedures — WMNY Shift Swap coordinates the swap, it doesn't replace management sign-off.",
     visual: <PrintVisual />,
   },
 ];
