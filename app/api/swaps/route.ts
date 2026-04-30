@@ -179,6 +179,22 @@ export async function POST(req: NextRequest) {
   if (run && run.length > 20) return err("Run must be 20 characters or fewer", 400);
   if (route && route.length > 20) return err("Route must be 20 characters or fewer", 400);
 
+  // Cap remaining string fields. Body is already 16KB-capped, but per-field
+  // limits prevent any single field from being filled with junk that pollutes
+  // the UI when rendered. Times like "14:30" fit easily in 10 chars; day
+  // labels in 12; vacation week descriptions in 200.
+  const stringFieldLimits: Record<string, number> = {
+    startTime: 10, clearTime: 10, swingStart: 10, swingEnd: 10,
+    fromDay: 12, toDay: 12,
+    vacationHave: 200, vacationWant: 200,
+  };
+  for (const [name, max] of Object.entries(stringFieldLimits)) {
+    const v = (body as Record<string, unknown>)[name];
+    if (typeof v === "string" && v.length > max) {
+      return err(`${name} must be ${max} characters or fewer`, 400);
+    }
+  }
+
   // Normalise details for duplicate check: collapse whitespace and lowercase
   const normalisedDetails = details.trim().replace(/\s+/g, " ").toLowerCase();
   const thirtyMinutesAgo = new Date(Date.now() - 30 * 60_000);

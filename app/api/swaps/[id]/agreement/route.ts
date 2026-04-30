@@ -40,8 +40,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   let agreement, proposer;
   try {
-    [agreement, proposer] = await Promise.all([
-      prisma.swapAgreement.create({
+    [agreement, proposer] = await prisma.$transaction(async (tx) => {
+      const created = await tx.swapAgreement.create({
         data: {
           swapId: id,
           userAId: user.userId,
@@ -54,17 +54,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           userA: { select: { id: true, firstName: true, lastName: true } },
           userB: { select: { id: true, firstName: true, lastName: true } },
         },
-      }),
-      prisma.user.findUnique({ where: { id: user.userId }, select: { firstName: true, lastName: true } }),
-    ]);
+      });
+      const proposerInfo = await tx.user.findUnique({
+        where: { id: user.userId },
+        select: { firstName: true, lastName: true },
+      });
+      // Move swap to pending atomically with agreement creation. Without this,
+      // a failure here would leave an orphan agreement pointing at an open swap.
+      await tx.swap.update({ where: { id }, data: { status: "pending" } });
+      return [created, proposerInfo] as const;
+    });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return err("An agreement is already in progress for this swap", 409);
     }
     throw e;
   }
-
-  await prisma.swap.update({ where: { id }, data: { status: "pending" } });
 
   // Notify the swap poster that someone wants to agree
   const depotCode = await prisma.depot.findUnique({ where: { id: swap.depotId }, select: { code: true } });
@@ -129,21 +134,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const depotId = depot?.code ?? swap?.depotId ?? "";
 
   if (action === "cancel") {
-    const updated = await prisma.swapAgreement.update({
-      where: { id: agreement.id },
-      data: { status: "cancelled" },
+    const updated = await prisma.$transaction(async (tx) => {
+      const u = await tx.swapAgreement.update({
+        where: { id: agreement.id },
+        data: { status: "cancelled" },
+      });
+      await tx.swap.update({ where: { id }, data: { status: "open" } });
+      // Reputation: ding the user who clicked cancel — they're the one backing
+      // out of a commitment (whether they were the proposer or the swap owner).
+      await tx.reputation.upsert({
+        where: { userId: user.userId },
+        update: { cancelled: { increment: 1 } },
+        create: { userId: user.userId, cancelled: 1 },
+      });
+      return u;
     });
-    await prisma.swap.update({ where: { id }, data: { status: "open" } });
 
-    // Reputation: ding the user who clicked cancel — they're the one backing out
-    // of a commitment (whether they were the proposer or the swap owner).
-    await prisma.reputation.upsert({
-      where: { userId: user.userId },
-      update: { cancelled: { increment: 1 } },
-      create: { userId: user.userId, cancelled: 1 },
-    });
-
-    // Notify the other party
+    // Notify the other party (after transaction so DB state is committed first)
     const otherUserId = isUserB ? agreement.userAId : agreement.userBId;
     await notifyUser(otherUserId, {
       title: "Agreement cancelled",
@@ -194,31 +201,39 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     };
 
-    // Bump reputation for both parties when the swap actually closes.
-    // Both operators completed a swap together; both should get credit.
-    const bumpReputationForBothParties = async () => {
-      await Promise.all([
-        prisma.reputation.upsert({
-          where: { userId: agreement.userAId },
-          update: { completed: { increment: 1 } },
-          create: { userId: agreement.userAId, completed: 1 },
-        }),
-        prisma.reputation.upsert({
-          where: { userId: agreement.userBId },
-          update: { completed: { increment: 1 } },
-          create: { userId: agreement.userBId, completed: 1 },
-        }),
-      ]);
-    };
+    // Atomically: update agreement → mark swap filled → bump both reputations.
+    // If any of these fail, we don't want a half-completed state where the
+    // agreement says completed but the swap is still pending, or vice versa.
+    const completeAgreement = (
+      noteText: string | null,
+      includeUserBFields: boolean
+    ) =>
+      prisma.$transaction(async (tx) => {
+        const u = await tx.swapAgreement.update({
+          where: { id: agreement.id },
+          data: includeUserBFields
+            ? { status: "completed", userBNote: noteText, userBAt: new Date(), completedAt: new Date() }
+            : { status: "completed", completedAt: new Date() },
+        });
+        await tx.swap.update({ where: { id }, data: { status: "filled" } });
+        await Promise.all([
+          tx.reputation.upsert({
+            where: { userId: agreement.userAId },
+            update: { completed: { increment: 1 } },
+            create: { userId: agreement.userAId, completed: 1 },
+          }),
+          tx.reputation.upsert({
+            where: { userId: agreement.userBId },
+            update: { completed: { increment: 1 } },
+            create: { userId: agreement.userBId, completed: 1 },
+          }),
+        ]);
+        return u;
+      });
 
     // Owner (userB) confirms → agreement is complete
     if (isUserB && agreement.status === "pending") {
-      const updated = await prisma.swapAgreement.update({
-        where: { id: agreement.id },
-        data: { status: "completed", userBNote: note ?? null, userBAt: new Date(), completedAt: new Date() },
-      });
-      await prisma.swap.update({ where: { id }, data: { status: "filled" } });
-      await bumpReputationForBothParties();
+      const updated = await completeAgreement(note ?? null, true);
       await notifyUser(agreement.userAId, {
         title: "Swap confirmed! 🎉",
         body: "Your swap is locked in. Print the agreement to show your dispatcher.",
@@ -231,12 +246,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     // Backwards-compat: handle existing userA_confirmed rows
     if (isUserA && agreement.status === "userA_confirmed") {
-      const updated = await prisma.swapAgreement.update({
-        where: { id: agreement.id },
-        data: { status: "completed", completedAt: new Date() },
-      });
-      await prisma.swap.update({ where: { id }, data: { status: "filled" } });
-      await bumpReputationForBothParties();
+      const updated = await completeAgreement(null, false);
       await notifyUser(agreement.userBId, {
         title: "Swap agreement completed!",
         body: "Both operators confirmed. Your swap is locked in.",

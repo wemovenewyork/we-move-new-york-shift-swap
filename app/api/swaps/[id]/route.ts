@@ -122,6 +122,19 @@ export async function PUT(
   if (run && run.length > 20) return err("Run must be 20 characters or fewer", 400);
   if (route && route.length > 20) return err("Route must be 20 characters or fewer", 400);
 
+  // Cap remaining string fields. Same field limits as POST.
+  const stringFieldLimits: Record<string, number> = {
+    startTime: 10, clearTime: 10, swingStart: 10, swingEnd: 10,
+    fromDay: 12, toDay: 12,
+    vacationHave: 200, vacationWant: 200,
+  };
+  for (const [name, max] of Object.entries(stringFieldLimits)) {
+    const v = (body as Record<string, unknown>)[name];
+    if (typeof v === "string" && v.length > max) {
+      return err(`${name} must be ${max} characters or fewer`, 400);
+    }
+  }
+
   const now = new Date();
   const oneYearFromNow = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
   for (const [field, val] of [["date", date], ["fromDate", fromDate], ["toDate", toDate]] as [string, unknown][]) {

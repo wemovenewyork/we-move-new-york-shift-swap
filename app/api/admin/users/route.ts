@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { writeAuditLog } from "@/lib/audit";
 import { parseBody, BODY_2KB, BODY_1KB } from "@/lib/parseBody";
+import { blockUserAccessTokens } from "@/lib/tokenBlocklist";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -76,6 +77,17 @@ export async function PATCH(req: NextRequest) {
     } as Parameters<typeof prisma.user.update>[0]["data"],
     select: { id: true, firstName: true, lastName: true, role: true, depotId: true, suspendedUntil: true, depot: { select: { name: true, code: true } } },
   });
+
+  // If admin suspended the user (or set suspendedUntil to a future date),
+  // invalidate any active access tokens so the user is kicked from the app
+  // immediately rather than continuing for up to 15min until token expiry.
+  // Also invalidate when role changes — a demoted admin shouldn't keep their
+  // privileges for the remainder of their token.
+  const wasSuspended = suspendedUntil !== undefined && new Date(suspendedUntil) > new Date();
+  const wasRoleChanged = role !== undefined && role !== target.role;
+  if (wasSuspended || wasRoleChanged) {
+    await blockUserAccessTokens(userId);
+  }
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
   writeAuditLog({
