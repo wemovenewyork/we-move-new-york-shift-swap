@@ -8,7 +8,9 @@ import { Depot } from "@/types";
 import { C } from "@/constants/colors";
 import { analytics } from "@/lib/analytics";
 
-const JOB_TITLES = ["Bus Operator", "Maintainer", "Cleaner", "Station Agent", "Train Operator", "Conductor", "Other"];
+// Soft launch: only Bus Operators. Once we expand to other crafts, restore the
+// full list: ["Bus Operator", "Maintainer", "Cleaner", "Station Agent", "Train Operator", "Conductor", "Other"]
+const SOFT_LAUNCH_JOB_TITLE = "Bus Operator";
 const BOROUGH_ORDER = ["Manhattan", "Brooklyn", "Bronx", "Queens", "Staten Island"];
 const lb: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: 12, fontWeight: 600, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
 
@@ -16,10 +18,12 @@ export default function SetupProfilePage() {
   const { user, loading, refreshUser } = useAuth();
   const router = useRouter();
   const [depots, setDepots] = useState<Depot[]>([]);
-  const [jobTitle, setJobTitle] = useState("");
   const [depotId, setDepotId] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+
+  // Job title is fixed during soft launch — no UI selector needed.
+  const jobTitle = SOFT_LAUNCH_JOB_TITLE;
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -35,7 +39,6 @@ export default function SetupProfilePage() {
   })).filter(g => g.depots.length > 0);
 
   const handleSave = async () => {
-    if (!jobTitle) { setErr("Please select your job title"); return; }
     if (!depotId) { setErr("Please select your home depot"); return; }
     setSaving(true);
     setErr("");
@@ -63,24 +66,11 @@ export default function SetupProfilePage() {
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: C.white, marginBottom: 6 }}>Set Up Your Profile</h1>
           <p style={{ fontSize: 13, color: C.m, lineHeight: 1.5 }}>
-            Hi {user.firstName}! Choose your job title and home depot to get started. Your home depot determines which swaps you see and post.
+            Hi {user.firstName}! Choose your home depot to get started. Your home depot determines which swaps you see and post.
           </p>
         </div>
 
         <div style={{ display: "grid", gap: 16 }}>
-          <div>
-            <label htmlFor="setup-job" style={lb}>Job Title</label>
-            <select
-              id="setup-job"
-              value={jobTitle}
-              onChange={e => { setJobTitle(e.target.value); setErr(""); }}
-              style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.bd}`, background: C.s, color: jobTitle ? C.white : C.m, fontSize: 16, cursor: "pointer" }}
-            >
-              <option value="">— Select your job title —</option>
-              {JOB_TITLES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-
           <div>
             <label htmlFor="setup-depot" style={lb}>Home Depot</label>
             <select
