@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { rateLimit } from "@/lib/rateLimit";
 import { parseBody, BODY_2KB } from "@/lib/parseBody";
+import { blockUserAccessTokens } from "@/lib/tokenBlocklist";
 
 export async function PUT(req: NextRequest) {
   let user;
@@ -38,6 +39,11 @@ export async function PUT(req: NextRequest) {
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
   await prisma.user.update({ where: { id: user.userId }, data: { passwordHash } });
+
+  // Invalidate all existing sessions on password change. The current session
+  // will need to refresh, but that's a small price for the security guarantee
+  // that no stolen tokens survive a password change.
+  await blockUserAccessTokens(user.userId);
 
   return ok({ message: "Password updated" });
 }

@@ -15,6 +15,12 @@ export async function GET(req: NextRequest) {
   });
   if (!dbUser) return err("User not found", 404);
 
+  // Block suspended or soft-deleted accounts from reading their own profile.
+  // Without this, the UI's auth-context would think they're logged in even
+  // though they shouldn't be able to use any other endpoint.
+  const activeErr = checkActive(dbUser);
+  if (activeErr) return err(activeErr, 403);
+
   const rep = await prisma.reputation.findUnique({ where: { userId: user.userId } });
   const reviews = await prisma.review.findMany({
     where: { reviewedId: user.userId },

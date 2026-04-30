@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
 import { parseBody, BODY_1KB } from "@/lib/parseBody";
 import { writeAuditLog } from "@/lib/audit";
@@ -11,6 +12,13 @@ import bcrypt from "bcryptjs";
 export async function POST(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
+
+  // Rate limit: deletion is destructive and password-gated, so an attacker
+  // with a stolen access token shouldn't be able to brute-force the password
+  // confirmation by retrying.
+  if (!await rateLimit(`self-delete:${user.userId}`, 3, 15 * 60 * 1000)) {
+    return err("Too many attempts — try again in 15 minutes", 429);
+  }
 
   const body = await parseBody(req, BODY_1KB);
   if (body instanceof NextResponse) return body;

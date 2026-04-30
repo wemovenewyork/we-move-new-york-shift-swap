@@ -35,7 +35,9 @@ export async function GET(req: NextRequest) {
   return ok(messages);
 }
 
-// DELETE /api/messages/thread?with=userId  → delete all messages in a thread
+// DELETE /api/messages/thread?with=userId  → delete YOUR sent messages in a thread.
+// Does NOT delete the other party's messages — that would let one user wipe
+// the other's record without consent and erase evidence of harassment.
 export async function DELETE(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
@@ -46,10 +48,8 @@ export async function DELETE(req: NextRequest) {
 
   const result = await prisma.message.deleteMany({
     where: {
-      OR: [
-        { fromUserId: user.userId, toUserId: withUserId },
-        { fromUserId: withUserId, toUserId: user.userId },
-      ],
+      fromUserId: user.userId,
+      toUserId: withUserId,
     },
   });
 

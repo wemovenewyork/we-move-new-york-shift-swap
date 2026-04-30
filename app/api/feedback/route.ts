@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
@@ -17,13 +18,23 @@ export async function POST(req: NextRequest) {
   if (body instanceof NextResponse) return body;
   const { message } = body as { message: string };
   if (!message?.trim()) return err("Message required", 400);
-  await prisma.auditLog.create({
-    data: {
-      id: crypto.randomUUID(),
-      adminId: user.userId,
-      action: "feedback",
-      detail: message.trim().slice(0, 1000),
-    },
-  }).catch(() => {});
+
+  try {
+    await prisma.auditLog.create({
+      data: {
+        id: crypto.randomUUID(),
+        adminId: user.userId,
+        action: "feedback",
+        detail: message.trim().slice(0, 1000),
+      },
+    });
+  } catch (e) {
+    Sentry.captureException(e, {
+      tags: { source: "feedback-write" },
+      extra: { userId: user.userId },
+    });
+    return err("Could not save feedback — try again", 500);
+  }
+
   return ok({ received: true });
 }
