@@ -61,6 +61,15 @@ export default function ThreadPage() {
       const msgs = await api.get<ThreadMessage[]>(`/messages/thread?with=${counterpartId}`);
       setMessages(msgs);
       api.post(`/messages/thread/read`, { with: counterpartId }).catch(() => {});
+      // Clear any in-app notifications pointing at this thread. The bell
+      // badge stops counting them once you've actually opened the thread.
+      // Notification rows themselves stick around as history (mark read,
+      // not delete) so users can scroll back through alerts later.
+      api.post(`/notifications/mark-read-by-url`, {
+        url: `/depot/${code}/messages/${counterpartId}`,
+      }).then(() => {
+        window.dispatchEvent(new Event("wmny:notifications-changed"));
+      }).catch(() => {});
       // Derive counterpart info from messages
       const cp = msgs.find(m => m.fromUserId === counterpartId)?.fromUser
         ?? msgs.find(m => m.toUserId === counterpartId)?.fromUser;

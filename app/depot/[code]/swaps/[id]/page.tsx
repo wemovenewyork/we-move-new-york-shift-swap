@@ -74,6 +74,15 @@ export default function SwapDetailPage() {
       .then(setAgreement)
       .catch(() => {})
       .finally(() => setAgreeLoaded(true));
+    // Clear any in-app notifications pointing at this swap. The bell badge
+    // stops counting "interested in your swap" / "swap confirmed" / etc. once
+    // the user has actually opened the destination. Notifications themselves
+    // are kept (mark read, not delete) for history.
+    api.post(`/notifications/mark-read-by-url`, {
+      url: `/depot/${code}/swaps/${id}`,
+    }).then(() => {
+      window.dispatchEvent(new Event("wmny:notifications-changed"));
+    }).catch(() => {});
   }, [id, user, code, router]);
 
   const buildProposeNote = () => {
