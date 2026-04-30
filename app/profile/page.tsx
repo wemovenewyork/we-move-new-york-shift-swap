@@ -184,7 +184,7 @@ export default function ProfilePage() {
           <div style={{ fontSize: 20, fontWeight: 800, color: C.white }}>{fn} {ln}</div>
           <div style={{ fontSize: 12, color: C.m, marginTop: 4 }}>{email}</div>
           <div style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <ProgressRing score={user.reputation?.score ?? 0} size={48} strokeWidth={4} />
+            {(user.reputation?.total ?? 0) > 0 && <ProgressRing score={user.reputation?.score ?? 0} size={48} strokeWidth={4} />}
             <RepBadge rep={user.reputation} size="small" />
           </div>
           {depot && (
