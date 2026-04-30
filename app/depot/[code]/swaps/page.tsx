@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
 import { Depot, Swap, Announcement, FlexibleOperator } from "@/types";
@@ -30,6 +30,15 @@ export default function BrowsePage() {
   const router = useRouter();
   const params = useParams<{ code: string }>();
   const code = params.code;
+  const searchParams = useSearchParams();
+
+  // Allow callers to deep-link to a specific status filter via ?status=...
+  // Used by the depot home stat pills (active swaps → ?status=open default,
+  // completed this month → ?status=filled). Only honour known status values.
+  const initialStatus = (() => {
+    const s = searchParams.get("status");
+    return s && ["open", "pending", "filled", "expired", "all"].includes(s) ? s : "open";
+  })();
 
   const [depot, setDepot] = useState<Depot | null>(null);
   const [swaps, setSwaps] = useState<Swap[]>([]);
@@ -65,7 +74,7 @@ export default function BrowsePage() {
 
   const [cat, setCat] = useState("all");
   const [q, setQ] = useState("");
-  const [sf, setSf] = useState("open");
+  const [sf, setSf] = useState(initialStatus);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sortBy, setSortBy] = useState("newest");

@@ -119,12 +119,42 @@ export default function ActionPage() {
         <PushBanner />
         {stats && (
           <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: 12, marginBottom: 16 }}>
-            <div style={{ background: "rgba(255,255,255,.04)", border: `1px solid ${C.bd}`, borderRadius: 20, padding: "6px 14px", fontSize: 11, color: C.m, fontWeight: 600 }}>
+            <button
+              type="button"
+              onClick={() => { playClick(); router.push(`/depot/${code}/swaps?status=filled`); }}
+              style={{
+                background: "rgba(255,255,255,.04)",
+                border: `1px solid ${C.bd}`,
+                borderRadius: 20,
+                padding: "6px 14px",
+                fontSize: 11,
+                color: C.m,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+              aria-label={`${stats.completed} swaps completed this month — view filled swaps`}
+            >
               <span style={{ color: C.gold }}>{stats.completed}</span> completed this month
-            </div>
-            <div style={{ background: "rgba(255,255,255,.04)", border: `1px solid ${C.bd}`, borderRadius: 20, padding: "6px 14px", fontSize: 11, color: C.m, fontWeight: 600 }}>
+            </button>
+            <button
+              type="button"
+              onClick={() => { playClick(); router.push(`/depot/${code}/swaps`); }}
+              style={{
+                background: "rgba(255,255,255,.04)",
+                border: `1px solid ${C.bd}`,
+                borderRadius: 20,
+                padding: "6px 14px",
+                fontSize: 11,
+                color: C.m,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+              aria-label={`${stats.active} active swaps — browse open swaps`}
+            >
               <span style={{ color: C.gold }}>{stats.active}</span> active swaps
-            </div>
+            </button>
           </div>
         )}
         <div style={{ display: "grid", gap: 10, width: "100%" }}>
