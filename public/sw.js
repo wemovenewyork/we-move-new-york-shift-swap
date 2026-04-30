@@ -1,4 +1,4 @@
-// We Move NY — Service Worker
+// WMNY Shift Swap — Service Worker
 // Handles push notifications and offline app shell caching
 
 const CACHE_NAME = "wmny-shell-v1";
@@ -103,7 +103,7 @@ self.addEventListener("fetch", (event) => {
 // ─── Push notifications ───────────────────────────────────────────────────────
 self.addEventListener("push", (event) => {
   if (!event.data) return;
-  let payload = { title: "We Move NY", body: "New update", url: "/" };
+  let payload = { title: "WMNY Shift Swap", body: "New update", url: "/" };
   try {
     payload = event.data.json();
   } catch {
