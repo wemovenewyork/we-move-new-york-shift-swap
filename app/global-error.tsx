@@ -21,7 +21,7 @@ export default function GlobalError({
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>We Move New York — Error</title>
+        <title>WMNY Shift Swap — Error</title>
       </head>
       <body
         style={{
@@ -46,7 +46,7 @@ export default function GlobalError({
         >
           <div style={{ fontSize: 48, marginBottom: 16 }}>🚌</div>
           <h1 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 12px" }}>
-            We Move NY is having trouble
+            WMNY Shift Swap is having trouble
           </h1>
           <p
             style={{

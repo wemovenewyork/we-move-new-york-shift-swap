@@ -15,7 +15,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "We Move New York — Shift Swap",
+  title: "WMNY Shift Swap",
   description: "Peer-to-peer shift swap platform for NYC MTA bus operators",
   manifest: "/manifest.json",
   appleWebApp: {

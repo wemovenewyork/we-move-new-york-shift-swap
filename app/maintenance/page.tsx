@@ -7,7 +7,7 @@ export default function MaintenancePage() {
         </div>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: "#fff", marginBottom: 10 }}>Down for Maintenance</h1>
         <p style={{ fontSize: 14, color: "rgba(255,255,255,.55)", maxWidth: 320, margin: "0 auto", lineHeight: 1.6 }}>
-          We Move New York is temporarily offline for scheduled maintenance. We&apos;ll be back shortly.
+          WMNY Shift Swap is temporarily offline for scheduled maintenance. We&apos;ll be back shortly.
         </p>
       </div>
     </div>

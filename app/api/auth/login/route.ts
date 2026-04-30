@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       user.depotId &&
       user.depot?.code !== softLaunchDepot
     ) {
-      return err(`We Move New York is currently in soft launch at Queens Village only. We'll be at your depot soon!`, 403);
+      return err(`WMNY Shift Swap is currently in soft launch at Queens Village only. We'll be at your depot soon!`, 403);
     }
 
     const payload = { userId: user.id, email: user.email };

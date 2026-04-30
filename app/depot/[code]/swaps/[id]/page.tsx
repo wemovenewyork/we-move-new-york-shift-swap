@@ -48,7 +48,7 @@ export default function SwapDetailPage() {
     const url = window.location.href;
     const text = `Check out this swap: ${swap?.details?.slice(0, 80)}`;
     if (navigator.share) {
-      await navigator.share({ title: "We Move NY Swap", text, url }).catch(() => {});
+      await navigator.share({ title: "WMNY Shift Swap", text, url }).catch(() => {});
     } else {
       await navigator.clipboard.writeText(url).catch(() => {});
       showToast("Link copied!");
