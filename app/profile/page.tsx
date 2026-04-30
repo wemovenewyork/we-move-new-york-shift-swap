@@ -55,7 +55,7 @@ export default function ProfilePage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (user) { setFn(user.firstName); setLn(user.lastName); setEmail(user.email); setLang(user.language); setDepotId(user.depotId ?? ""); }
+    if (user) { setFn(user.firstName); setLn(user.lastName); setEmail(user.email); setLang(user.language || "en"); setDepotId(user.depotId ?? ""); }
     api.get<Depot[]>("/depots").then(setDepots).catch(() => {});
   }, [user]);
 
@@ -212,42 +212,29 @@ export default function ProfilePage() {
             </div>
             <div><label htmlFor="prof-email" style={lb}>Email Address</label><input id="prof-email" type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
             <div>
-              <label style={lb}>Language</label>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {([
-                  { code: "en", label: "English" },
-                  { code: "es", label: "Español" },
-                  { code: "zh", label: "中文" },
-                  { code: "ht", label: "Kreyòl" },
-                ] as const).map(({ code, label }) => (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={async () => {
-                      setLang(code);
-                      try {
-                        const data = await api.put("/users/me", { firstName: fn, lastName: ln, email, language: code, depotId });
-                        updateUser(data as Parameters<typeof updateUser>[0]);
-                        showToast("Language updated!");
-                      } catch (e: unknown) {
-                        showToast(e instanceof Error ? e.message : "Failed to update language");
-                      }
-                    }}
-                    style={{
-                      padding: "8px 18px",
-                      borderRadius: 20,
-                      border: "none",
-                      cursor: "pointer",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      background: lang === code ? C.gold : "rgba(255,255,255,.06)",
-                      color: lang === code ? C.bg : C.m,
-                      transition: "all .2s",
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
+              <label htmlFor="prof-lang" style={lb}>Language</label>
+              <select
+                id="prof-lang"
+                value={lang}
+                onChange={e => setLang(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "12px 14px",
+                  borderRadius: 12,
+                  border: `1px solid ${C.bd}`,
+                  background: C.s,
+                  color: C.white,
+                  fontSize: 16,
+                  cursor: "pointer",
+                }}
+              >
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="zh">中文</option>
+                <option value="ht">Kreyòl</option>
+              </select>
+              <div style={{ fontSize: 11, color: C.m, marginTop: 6 }}>
+                Changes apply when you tap Save.
               </div>
             </div>
             <div>

@@ -176,6 +176,7 @@ const translations: Record<Lang, Record<string, string>> = {
     "nav.post": "Afiche",
     "nav.messages": "Mesaj",
     "nav.profile": "Pwofil",
+    "my": "Chanjman Mwen",
     "browse.title": "Tablo Chanjman",
     "browse.search": "Chèche chanjman...",
     "browse.empty": "Pa gen chanjman jwenn",
