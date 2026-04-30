@@ -89,6 +89,16 @@ export async function PATCH(req: NextRequest) {
     await blockUserAccessTokens(userId);
   }
 
+  // When a user is suspended, also invalidate their unused invite codes.
+  // Otherwise the suspended user's codes (or codes they shared publicly) are
+  // still claimable, opening the door to a chain of spam accounts.
+  if (wasSuspended) {
+    await prisma.inviteCode.updateMany({
+      where: { createdBy: userId, usedBy: null, isValid: true },
+      data: { isValid: false },
+    });
+  }
+
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
   writeAuditLog({
     adminId: user.userId,
