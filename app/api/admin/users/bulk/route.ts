@@ -63,6 +63,15 @@ export async function POST(req: NextRequest) {
     await Promise.all(userIds.map(id => blockUserAccessTokens(id)));
   }
 
+  // Invalidate unused invite codes from suspended users so the spam chain
+  // doesn't continue through codes they shared.
+  if (wasSuspended) {
+    await prisma.inviteCode.updateMany({
+      where: { createdBy: { in: userIds }, usedBy: null, isValid: true },
+      data: { isValid: false },
+    });
+  }
+
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
   writeAuditLog({
     adminId: user.userId,

@@ -137,6 +137,53 @@ export async function POST(req: NextRequest) {
   const activeErr = checkActive(dbUser);
   if (activeErr) return err(activeErr, 403);
 
+  // Hard caps to prevent spam, enforced via DB queries (not Redis) so they
+  // hold even if the rate limiter has issues. Admins and depotReps bypass.
+  const isPrivileged = ["admin", "subAdmin", "depotRep"].includes(dbUser.role);
+  if (!isPrivileged) {
+    // Cap concurrent open/pending swaps. Real operators rarely have more than
+    // 2-3 open at once; 4 is generous. A spammer can't accumulate a backlog.
+    const activeCount = await prisma.swap.count({
+      where: {
+        userId: user.userId,
+        status: { in: ["open", "pending"] },
+      },
+    });
+    if (activeCount >= 4) {
+      return err(
+        "You have 4 active swaps already. Delete one or wait for it to fill or expire before posting another.",
+        409,
+      );
+    }
+
+    // Daily cap: 3 swaps in any rolling 24-hour window. Posts that have been
+    // filled or cancelled DO count toward this limit so a user can't churn.
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const dailyCount = await prisma.swap.count({
+      where: {
+        userId: user.userId,
+        createdAt: { gte: dayAgo },
+      },
+    });
+    if (dailyCount >= 3) {
+      return err(
+        "Daily limit reached — you can post up to 3 swaps per 24 hours. Try again later.",
+        429,
+      );
+    }
+
+    // New-account cooldown: in the first 24 hours after registration, only
+    // 1 swap per day. Brand-new accounts are the highest spam risk; this
+    // gives admins time to notice if invite codes leak before bulk damage.
+    const accountAgeMs = Date.now() - new Date(dbUser.createdAt).getTime();
+    if (accountAgeMs < 24 * 60 * 60 * 1000 && dailyCount >= 1) {
+      return err(
+        "New accounts can post 1 swap in the first 24 hours. This limit lifts after a day to prevent spam.",
+        429,
+      );
+    }
+  }
+
   const body = await parseBody(req, BODY_16KB);
   if (body instanceof NextResponse) return body;
   const { category, details, contact, date, run, route, startTime, clearTime,
