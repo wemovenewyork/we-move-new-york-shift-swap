@@ -11,6 +11,14 @@ import { sendEmail } from "@/lib/email";
 import { escapeHtml } from "@/lib/escapeHtml";
 
 export async function POST(req: NextRequest) {
+  // Validate env at the top — if this throws after user creation (old position) it
+  // returns HTML 500 which the client can't parse, producing "Request failed".
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) {
+    Sentry.captureMessage("NEXT_PUBLIC_APP_URL is not set", "error");
+    return err("Server configuration error — contact support", 500);
+  }
+
   const ip = clientIp(req);
   if (!await rateLimit(`register:${ip}`, 5, 3_600_000)) {
     Sentry.captureEvent({ message: "Register rate limit hit", level: "warning", tags: { ip } });
@@ -93,26 +101,37 @@ export async function POST(req: NextRequest) {
       if (e instanceof Error && e.message === "INVALID_INVITE") {
         return err("Invalid invite code", 400);
       }
-      throw e;
+      Sentry.captureException(e, { tags: { source: "register-transaction" } });
+      return err("Registration failed — please try again", 500);
     }
 
     // Generate 3 new invite codes for new operator (outside transaction — non-critical)
-    for (let i = 0; i < 3; i++) {
-      let code = genInviteCode();
-      while (await prisma.inviteCode.findUnique({ where: { code } })) {
-        code = genInviteCode();
+    try {
+      for (let i = 0; i < 3; i++) {
+        let code = genInviteCode();
+        while (await prisma.inviteCode.findUnique({ where: { code } })) {
+          code = genInviteCode();
+        }
+        await prisma.inviteCode.create({ data: { code, createdBy: user.id } });
+        newCodes.push(code);
       }
-      await prisma.inviteCode.create({ data: { code, createdBy: user.id } });
-      newCodes.push(code);
+    } catch (e) {
+      Sentry.captureException(e, { tags: { source: "register-invite-codes" }, extra: { userId: user.id } });
     }
 
-    // Initialize reputation
-    await prisma.reputation.create({ data: { userId: user.id } });
+    // Initialize reputation — upsert is safe if this runs more than once (e.g. after a retry)
+    try {
+      await prisma.reputation.upsert({
+        where: { userId: user.id },
+        update: {},
+        create: { userId: user.id },
+      });
+    } catch (e) {
+      Sentry.captureException(e, { tags: { source: "register-reputation" }, extra: { userId: user.id } });
+    }
   }
 
   // Send verification email — HTML-escape user-supplied name fields
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (!appUrl) throw new Error("NEXT_PUBLIC_APP_URL is not set");
   const verifyLink = `${appUrl}/verify-email/${verifyToken}`;
   const safeFirstName = escapeHtml(user.firstName);
   sendEmail(
