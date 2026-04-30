@@ -331,9 +331,9 @@ export default function LoginPage() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="disclaimer-title"
-          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(1,0,40,.97)", backdropFilter: "blur(24px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 28px" }}
+          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(1,0,40,.97)", backdropFilter: "blur(24px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 28px calc(40px + env(safe-area-inset-bottom, 0px)) 28px", overflowY: "auto" }}
         >
-          <div style={{ maxWidth: 400, width: "100%" }}>
+          <div style={{ maxWidth: 400, width: "100%", maxHeight: "calc(100dvh - 80px - env(safe-area-inset-bottom, 0px))", overflowY: "auto" }}>
             <div style={{ width: 56, height: 56, borderRadius: "50%", background: C.gold + "18", border: `1.5px solid ${C.gold}44`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2L2 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7L12 2z" stroke={C.gold} strokeWidth="1.8" strokeLinejoin="round"/>
@@ -376,9 +376,9 @@ export default function LoginPage() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="terms-title"
-          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(1,0,40,.97)", backdropFilter: "blur(24px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "28px 20px" }}
+          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(1,0,40,.97)", backdropFilter: "blur(24px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "28px 20px calc(28px + env(safe-area-inset-bottom)) 20px" }}
         >
-          <div style={{ maxWidth: 440, width: "100%", display: "flex", flexDirection: "column", maxHeight: "90vh" }}>
+          <div style={{ maxWidth: 440, width: "100%", display: "flex", flexDirection: "column", maxHeight: "calc(100dvh - 56px - env(safe-area-inset-bottom, 0px))" }}>
             <div style={{ textAlign: "center", marginBottom: 18 }}>
               <div style={{ width: 48, height: 48, borderRadius: "50%", background: C.gold + "18", border: `1.5px solid ${C.gold}44`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
