@@ -80,12 +80,12 @@ async function main() {
   }
 
   console.log("Seeding admin account...");
-  const adminHash = await bcrypt.hash("WeMoveNY-Admin2024!", 10);
+  const adminHash = await bcrypt.hash("WMNYshiftswap0334", 10);
   await prisma.user.upsert({
-    where: { email: "admin@wemoveny.app" },
+    where: { email: "wemovenewyork.net@gmail.com" },
     update: {},
     create: {
-      email: "admin@wemoveny.app",
+      email: "wemovenewyork.net@gmail.com",
       passwordHash: adminHash,
       firstName: "Admin",
       lastName: "WeMoveNY",
