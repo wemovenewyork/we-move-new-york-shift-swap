@@ -65,8 +65,8 @@ export async function POST(
   <a href="${appUrl}/depot/${depotCode}/swaps/${id}" style="display:inline-block;padding:14px 28px;border-radius:12px;background:#D1AD38;color:#010028;font-weight:700;font-size:15px;text-decoration:none">View Swap</a>
 </div>`;
 
-  // Notify swap owner — fire and forget
-  notifyUserWithEmailFallback(
+  // Notify swap owner — awaited so the fetch completes before the serverless function exits
+  await notifyUserWithEmailFallback(
     swap.userId,
     {
       title: "New interest in your swap",

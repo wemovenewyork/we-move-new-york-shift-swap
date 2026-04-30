@@ -36,29 +36,30 @@ export async function POST(req: NextRequest) {
       if (!appUrl) throw new Error("NEXT_PUBLIC_APP_URL is not set");
       const resetLink = `${appUrl}/reset-password/${token}`;
 
-      await sendEmail(
-        user.email,
-        "Reset your We Move NY password",
-        `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#010028;color:#fff;border-radius:16px">
-          <h1 style="font-size:22px;font-weight:800;margin-bottom:8px">Reset your password</h1>
-          <p style="color:rgba(255,255,255,.6);font-size:14px;line-height:1.6;margin-bottom:24px">
-            Hi ${escapeHtml(user.firstName)}, we received a request to reset your We Move NY password.
-            This link expires in 1 hour.
-          </p>
-          <a href="${resetLink}" style="display:inline-block;padding:14px 28px;border-radius:12px;background:#D1AD38;color:#010028;font-weight:700;font-size:15px;text-decoration:none">
-            Reset Password
-          </a>
-          <p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:24px">
-            If you didn't request this, you can safely ignore this email.
-          </p>
-        </div>`
-      ).catch((e) => {
-        // Log to Sentry so launch-time email outages don't go undetected.
+      try {
+        await sendEmail(
+          user.email,
+          "Reset your We Move NY password",
+          `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#010028;color:#fff;border-radius:16px">
+            <h1 style="font-size:22px;font-weight:800;margin-bottom:8px">Reset your password</h1>
+            <p style="color:rgba(255,255,255,.6);font-size:14px;line-height:1.6;margin-bottom:24px">
+              Hi ${escapeHtml(user.firstName)}, we received a request to reset your We Move NY password.
+              This link expires in 1 hour.
+            </p>
+            <a href="${resetLink}" style="display:inline-block;padding:14px 28px;border-radius:12px;background:#D1AD38;color:#010028;font-weight:700;font-size:15px;text-decoration:none">
+              Reset Password
+            </a>
+            <p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:24px">
+              If you didn't request this, you can safely ignore this email.
+            </p>
+          </div>`
+        );
+      } catch (e) {
         Sentry.captureException(e, {
           tags: { source: "forgot-password-email" },
           extra: { userId: user.id },
         });
-      });
+      }
     }
   } catch (e) {
     Sentry.captureException(e, { tags: { source: "forgot-password" } });

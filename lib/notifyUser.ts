@@ -59,10 +59,24 @@ export async function notifyUserWithEmailFallback(
       const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
       if (user?.email && !user.email.includes("@deleted.invalid")) {
         const { sendEmail } = await import("@/lib/email");
-        await sendEmail(user.email, emailSubject, emailHtml).catch(() => {});
+        try {
+          await sendEmail(user.email, emailSubject, emailHtml);
+        } catch (e) {
+          const Sentry = await import("@sentry/nextjs");
+          Sentry.captureException(e, {
+            tags: { source: "notify-email-fallback" },
+            extra: { userId },
+          });
+        }
       }
     }
-  } catch { }
+  } catch (e) {
+    const Sentry = await import("@sentry/nextjs");
+    Sentry.captureException(e, {
+      tags: { source: "notify-user-with-fallback" },
+      extra: { userId },
+    });
+  }
 }
 
 /**
