@@ -57,7 +57,7 @@ export async function POST(
   const senderName = sender ? `${sender.firstName} ${sender.lastName}` : "Someone";
   const depotCode = depot?.code ?? swap.depotId;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (!appUrl) throw new Error("NEXT_PUBLIC_APP_URL is not set");
+  if (!appUrl) return err("Server configuration error — contact support", 500);
 
   const emailHtml = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#010028;color:#fff;border-radius:16px">
   <h2 style="font-size:18px;font-weight:800;margin-bottom:8px">New interest in your swap</h2>
@@ -70,7 +70,7 @@ export async function POST(
     swap.userId,
     {
       title: "New interest in your swap",
-      body: `${senderName} is interested — "${text.trim().substring(0, 60)}"`,
+      body: `${senderName} is interested — "${text.trim().replace(/[\n\r\t]/g, " ").substring(0, 60)}"`,
       url: `/depot/${depotCode}/swaps/${id}`,
     },
     "New interest in your swap",
