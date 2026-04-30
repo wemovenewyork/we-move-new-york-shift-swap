@@ -42,7 +42,7 @@ export default function DisclaimerPage() {
         <section style={{ marginBottom: 24 }}>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: C.gold, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Disclaimer of Liability</h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,.7)", lineHeight: 1.7 }}>
-            We Move New York is provided as-is without warranties of any kind. We are not responsible for disputes, missed shifts, denied swaps, disciplinary actions, or any other consequences arising from the use of this platform. Users are solely responsible for verifying and complying with all applicable rules.
+            WMNY Shift Swap is provided as-is without warranties of any kind. We are not responsible for disputes, missed shifts, denied swaps, disciplinary actions, or any other consequences arising from the use of this platform. Users are solely responsible for verifying and complying with all applicable rules.
           </p>
         </section>
 

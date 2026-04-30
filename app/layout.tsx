@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "WeMoveNY",
+    title: "WMNY Shift Swap",
   },
 };
 
