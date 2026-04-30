@@ -23,6 +23,27 @@ export default function Footer() {
             <Link href="/terms" style={{ fontSize: 10, color: "rgba(255,255,255,.45)", textDecoration: "none" }}>Terms of Use</Link>
           </div>
         </div>
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,.05)", textAlign: "center", fontSize: 10, color: "rgba(255,255,255,.35)" }}>
+          Designed by{" "}
+          <a
+            href="https://instagram.com/wemovenewyork"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "rgba(255,255,255,.55)", textDecoration: "none" }}
+          >
+            @wemovenewyork
+          </a>
+          {" · "}
+          Powered by{" "}
+          <a
+            href="https://futreeng.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "rgba(255,255,255,.55)", textDecoration: "none" }}
+          >
+            futreeng.com
+          </a>
+        </div>
       </div>
     </footer>
   );
