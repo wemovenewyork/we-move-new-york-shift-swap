@@ -9,7 +9,7 @@ import { useT } from "@/lib/i18n";
 import { playClick } from "@/lib/sound";
 
 interface Props {
-  active: "browse" | "post" | "my" | "messages" | "saved" | "matches";
+  active: "browse" | "post" | "my" | "messages" | "saved";
   depotCode: string;
   lang?: string;
 }
@@ -17,7 +17,7 @@ interface Props {
 export default function BottomNav({ active, depotCode, lang }: Props) {
   const router = useRouter();
   const [unread, setUnread] = useState(0);
-  const [activeTab, setActiveTab] = useState<"browse" | "post" | "my" | "messages" | "saved" | "matches">(active);
+  const [activeTab, setActiveTab] = useState<"browse" | "post" | "my" | "messages" | "saved">(active);
   const [pressed, setPressed] = useState<string | null>(null);
   const tr = useT(lang);
 
@@ -32,7 +32,6 @@ export default function BottomNav({ active, depotCode, lang }: Props) {
 
   const items = [
     { k: "browse", ic: "list", l: tr("nav.swaps"), href: `/depot/${depotCode}/swaps` },
-    { k: "matches", ic: "match", l: tr("nav.matches"), href: `/depot/${depotCode}/matches` },
     { k: "my", ic: "usr", l: tr("nav.my"), href: `/depot/${depotCode}/my` },
     { k: "messages", ic: "msg", l: tr("nav.messages"), href: `/depot/${depotCode}/messages`, badge: unread },
   ];

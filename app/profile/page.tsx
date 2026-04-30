@@ -20,8 +20,8 @@ import ProgressRing from "@/components/ui/ProgressRing";
 const lb: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: 12, fontWeight: 600, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
 
 const NOTIF_KEY = "notif-prefs";
-interface NotifPrefs { matches: boolean; messages: boolean; swapInterest: boolean; announcements: boolean; }
-const DEFAULT_NOTIF: NotifPrefs = { matches: true, messages: true, swapInterest: true, announcements: true };
+interface NotifPrefs { messages: boolean; swapInterest: boolean; announcements: boolean; }
+const DEFAULT_NOTIF: NotifPrefs = { messages: true, swapInterest: true, announcements: true };
 function loadNotifPrefs(): NotifPrefs {
   if (typeof window === "undefined") return DEFAULT_NOTIF;
   try { return { ...DEFAULT_NOTIF, ...JSON.parse(localStorage.getItem(NOTIF_KEY) ?? "{}") }; } catch { return DEFAULT_NOTIF; }
@@ -69,30 +69,28 @@ export default function ProfilePage() {
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
     setAvatarUploading(true);
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const img = new Image();
-      img.onload = async () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = 128; canvas.height = 128;
-        const ctx = canvas.getContext("2d")!;
-        const size = Math.min(img.width, img.height);
-        const sx = (img.width - size) / 2;
-        const sy = (img.height - size) / 2;
-        ctx.drawImage(img, sx, sy, size, size, 0, 0, 128, 128);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
-        try {
-          await api.put("/users/me", { avatarUrl: dataUrl });
-          await refreshUser();
-          analytics.avatarUploaded();
-        } catch { showToast("Failed to upload avatar"); }
-        setAvatarUploading(false);
-      };
-      img.src = ev.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    try {
+      const bitmap = await createImageBitmap(file);
+      const canvas = document.createElement("canvas");
+      canvas.width = 128; canvas.height = 128;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas not supported");
+      const size = Math.min(bitmap.width, bitmap.height);
+      ctx.drawImage(bitmap, (bitmap.width - size) / 2, (bitmap.height - size) / 2, size, size, 0, 0, 128, 128);
+      bitmap.close();
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+      await api.put("/users/me", { avatarUrl: dataUrl });
+      await refreshUser();
+      analytics.avatarUploaded();
+      showToast("Photo updated");
+    } catch (err) {
+      console.error("[avatar upload]", err);
+      showToast("Failed to upload photo — try a JPEG or PNG");
+    }
+    setAvatarUploading(false);
   };
 
   const handleLogoutAll = async () => {
@@ -324,7 +322,6 @@ export default function ProfilePage() {
               <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>Notification Preferences</div>
               <div style={{ display: "grid", gap: 12 }}>
                 {([
-                  { key: "matches" as const, label: "New swap matches" },
                   { key: "messages" as const, label: "Messages" },
                   { key: "swapInterest" as const, label: "Swap interest (someone messages about your swap)" },
                   { key: "announcements" as const, label: "Announcements from your depot" },

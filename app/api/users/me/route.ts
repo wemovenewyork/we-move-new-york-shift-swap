@@ -3,7 +3,7 @@ import { requireUser, checkActive } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calcScore } from "@/lib/reputation";
 import { ok, err } from "@/lib/apiResponse";
-import { parseBody, BODY_16KB } from "@/lib/parseBody";
+import { parseBody, BODY_200KB } from "@/lib/parseBody";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -56,7 +56,7 @@ export async function PUT(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
-  const body = await parseBody(req, BODY_16KB);
+  const body = await parseBody(req, BODY_200KB);
   if (body instanceof NextResponse) return body;
   const { firstName, lastName, email, language, depotId, jobTitle, avatarUrl } = body as {
     firstName?: string; lastName?: string; email?: string; language?: string;
@@ -73,19 +73,20 @@ export async function PUT(req: NextRequest) {
   if (language && language.length > 10) return err("Invalid language value", 400);
   if (jobTitle && jobTitle.length > 100) return err("Job title must be 100 characters or fewer", 400);
 
-  // Validate avatarUrl — must be a real HTTPS URL, not an arbitrary internal address
+  // Validate avatarUrl — allow base64 data URLs (from client-side canvas resize) or HTTPS URLs
   if (avatarUrl !== undefined && avatarUrl !== null) {
-    try {
-      const parsed = new URL(avatarUrl);
-      if (parsed.protocol !== "https:") return err("Avatar URL must use HTTPS", 400);
-      // Block private/internal IP ranges and localhost
-      const host = parsed.hostname.toLowerCase();
-      const blocked = ["localhost", "127.0.0.1", "0.0.0.0", "169.254", "10.", "192.168.", "172.16."];
-      if (blocked.some(b => host === b || host.startsWith(b))) {
+    if (avatarUrl.startsWith("data:image/")) {
+      if (avatarUrl.length > 200_000) return err("Avatar image too large", 400);
+    } else {
+      try {
+        const parsed = new URL(avatarUrl);
+        if (parsed.protocol !== "https:") return err("Avatar URL must use HTTPS", 400);
+        const host = parsed.hostname.toLowerCase();
+        const blocked = ["localhost", "127.0.0.1", "0.0.0.0", "169.254", "10.", "192.168.", "172.16."];
+        if (blocked.some(b => host === b || host.startsWith(b))) return err("Invalid avatar URL", 400);
+      } catch {
         return err("Invalid avatar URL", 400);
       }
-    } catch {
-      return err("Invalid avatar URL", 400);
     }
   }
 

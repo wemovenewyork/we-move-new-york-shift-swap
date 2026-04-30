@@ -11,9 +11,9 @@ interface Props {
 
 export default function RepBadge({ rep, size = "small" }: Props) {
   if (!rep || rep.total === 0) {
-    if (size === "small") return <span style={{ fontSize: 9, color: "#888", padding: "1px 6px", borderRadius: 4, background: "rgba(128,128,128,.12)", fontWeight: 600 }}>New</span>;
+    if (size === "small") return <span style={{ fontSize: 9, color: "#888", padding: "1px 6px", borderRadius: 4, background: "rgba(128,128,128,.12)", fontWeight: 600 }}>New User</span>;
   }
-  const s = rep ?? { score: 0, label: "New", color: "#888", stars: 0, reliability: 0, total: 0 };
+  const s = rep ?? { score: 0, label: "New User", color: "#888", stars: 0, reliability: 0, total: 0 };
 
   if (size === "small") return (
     <span style={{ fontSize: 9, color: s.color, padding: "1px 6px", borderRadius: 4, background: s.color + "15", fontWeight: 700, letterSpacing: 0.5 }}>

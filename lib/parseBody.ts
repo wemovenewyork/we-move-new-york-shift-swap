@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
 /** Default 16 KB — generous for complex bodies, blocks garbage payloads */
-export const BODY_16KB = 16_384;
-export const BODY_4KB  = 4_096;
-export const BODY_2KB  = 2_048;
-export const BODY_1KB  = 1_024;
+export const BODY_16KB  = 16_384;
+export const BODY_200KB = 204_800;
+export const BODY_4KB   = 4_096;
+export const BODY_2KB   = 2_048;
+export const BODY_1KB   = 1_024;
 
 /**
  * Parse request JSON with a hard size limit.
