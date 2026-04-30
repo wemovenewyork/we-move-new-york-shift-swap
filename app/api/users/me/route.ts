@@ -76,6 +76,7 @@ export async function PUT(req: NextRequest) {
 
   if (firstName && firstName.trim().length > 50) return err("First name must be 50 characters or fewer", 400);
   if (lastName && lastName.trim().length > 50) return err("Last name must be 50 characters or fewer", 400);
+  if (email && email.trim().length > 254) return err("Email must be 254 characters or fewer", 400);
   if (language && language.length > 10) return err("Invalid language value", 400);
   if (jobTitle && jobTitle.length > 100) return err("Job title must be 100 characters or fewer", 400);
 
@@ -88,8 +89,27 @@ export async function PUT(req: NextRequest) {
         const parsed = new URL(avatarUrl);
         if (parsed.protocol !== "https:") return err("Avatar URL must use HTTPS", 400);
         const host = parsed.hostname.toLowerCase();
-        const blocked = ["localhost", "127.0.0.1", "0.0.0.0", "169.254", "10.", "192.168.", "172.16."];
-        if (blocked.some(b => host === b || host.startsWith(b))) return err("Invalid avatar URL", 400);
+        // Block private/internal address ranges. Avatar URLs are loaded by
+        // viewers' browsers, so this isn't strict server-side SSRF — but
+        // linking to internal hosts can leak through referer headers and
+        // produces broken UX, so reject.
+        const blockedExact = new Set(["localhost", "0.0.0.0", "::", "::1"]);
+        const blockedPrefixes = [
+          "127.",         // IPv4 loopback
+          "10.",          // RFC1918 /8
+          "192.168.",     // RFC1918 /16
+          "169.254.",     // link-local
+          "fe80:",        // IPv6 link-local
+          "fc00:", "fd",  // IPv6 unique-local
+        ];
+        let blocked = blockedExact.has(host);
+        if (!blocked) {
+          // 172.16.0.0/12 covers 172.16. through 172.31.
+          const m = host.match(/^172\.(\d+)\./);
+          if (m && parseInt(m[1], 10) >= 16 && parseInt(m[1], 10) <= 31) blocked = true;
+        }
+        if (!blocked && blockedPrefixes.some(p => host.startsWith(p))) blocked = true;
+        if (blocked) return err("Invalid avatar URL", 400);
       } catch {
         return err("Invalid avatar URL", 400);
       }

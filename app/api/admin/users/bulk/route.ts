@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { writeAuditLog } from "@/lib/audit";
 import { parseBody, BODY_4KB } from "@/lib/parseBody";
+import { blockUserAccessTokens } from "@/lib/tokenBlocklist";
 
 // POST /api/admin/users/bulk
 // Atomically update role or suspendedUntil for up to 50 users at once.
@@ -52,6 +53,15 @@ export async function POST(req: NextRequest) {
       prisma.user.update({ where: { id }, data: updateData })
     )
   );
+
+  // Invalidate active sessions for users whose role or suspension just changed.
+  // Same reasoning as the single-user PATCH: don't let suspended/demoted users
+  // keep elevated access until their token expires.
+  const wasSuspended = suspendedUntil !== undefined && suspendedUntil !== null && new Date(suspendedUntil) > new Date();
+  const wasRoleChanged = role !== undefined;
+  if (wasSuspended || wasRoleChanged) {
+    await Promise.all(userIds.map(id => blockUserAccessTokens(id)));
+  }
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? undefined;
   writeAuditLog({
