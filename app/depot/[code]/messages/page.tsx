@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
@@ -38,6 +38,16 @@ export default function MessagesPage() {
   const [deleting, setDeleting] = useState(false);
   const [clearAllConfirm, setClearAllConfirm] = useState(false);
   const [clearingAll, setClearingAll] = useState(false);
+  const [pulling, setPulling] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const touchStartY = useRef<number>(0);
+
+  const fetchConvos = useCallback(async () => {
+    try {
+      const data = await api.get<Conversation[]>("/users/me/messages");
+      setConvos(data);
+    } catch (e) { console.error(e); }
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -48,8 +58,8 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!code || !user) return;
     api.get<Depot>(`/depots/${code}`).then(setDepot).catch(() => router.replace("/depots"));
-    api.get<Conversation[]>("/users/me/messages").then(setConvos).catch(console.error);
-  }, [code, user, router]);
+    fetchConvos();
+  }, [code, user, router, fetchConvos]);
 
   const totalUnread = convos.reduce((s, c) => s + c.unreadCount, 0);
 
@@ -71,10 +81,37 @@ export default function MessagesPage() {
     } catch { /* non-fatal */ } finally { setClearingAll(false); }
   };
 
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (window.scrollY > 0) return;
+    const delta = e.touches[0].clientY - touchStartY.current;
+    setPulling(delta > 70);
+  };
+  const handleTouchEnd = async () => {
+    if (pulling) {
+      setPulling(false);
+      setRefreshing(true);
+      await fetchConvos();
+      setRefreshing(false);
+    }
+  };
+
   if (!depot) return null;
 
   return (
-    <div style={{ minHeight: "100vh" }}>
+    <div
+      style={{ minHeight: "100vh" }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div style={{ textAlign: "center", fontSize: 12, color: C.m, padding: "8px 0", opacity: pulling || refreshing ? 1 : 0, transition: "opacity 0.2s", pointerEvents: "none" }}>
+        {refreshing ? (
+          <span style={{ display: "inline-block", width: 14, height: 14, border: `2px solid ${C.m}`, borderTopColor: "transparent", borderRadius: "50%", animation: "rotateLogo 0.6s linear infinite", verticalAlign: "middle" }} />
+        ) : "↓ Pull to refresh"}
+      </div>
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.8)", backdropFilter: "blur(24px)", borderBottom: `1px solid ${C.bd}`, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={() => router.push(`/depot/${code}`)} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon n="back" s={16} />

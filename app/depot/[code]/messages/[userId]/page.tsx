@@ -45,12 +45,37 @@ export default function ThreadPage() {
   const [clearingConvo, setClearingConvo] = useState(false);
   const [blockConfirm, setBlockConfirm] = useState(false);
   const [blocking, setBlocking] = useState(false);
+  const [pulling, setPulling] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const touchStartY = useRef<number>(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const showToast = useCallback((msg: string, type?: "success" | "error" | "info") => {
     setToast({ message: msg, type }); setTimeout(() => setToast(null), 2000);
   }, []);
+
+  const fetchMessages = useCallback(async () => {
+    if (!user || !counterpartId) return;
+    try {
+      const msgs = await api.get<ThreadMessage[]>(`/messages/thread?with=${counterpartId}`);
+      setMessages(msgs);
+      api.post(`/messages/thread/read`, { with: counterpartId }).catch(() => {});
+      // Derive counterpart info from messages
+      const cp = msgs.find(m => m.fromUserId === counterpartId)?.fromUser
+        ?? msgs.find(m => m.toUserId === counterpartId)?.fromUser;
+      if (!cp) {
+        const sent = msgs.find(m => m.fromUserId === user.id);
+        if (sent) {
+          setCounterpart({ id: counterpartId, firstName: "Operator", lastName: "" });
+        }
+      } else {
+        setCounterpart(cp);
+      }
+    } catch {
+      router.replace(`/depot/${code}/messages`);
+    }
+  }, [user, counterpartId, code, router]);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -59,27 +84,8 @@ export default function ThreadPage() {
   }, [user, loading, router, code]);
 
   useEffect(() => {
-    if (!user || !counterpartId) return;
-    api.get<ThreadMessage[]>(`/messages/thread?with=${counterpartId}`).then(msgs => {
-      setMessages(msgs);
-      api.post(`/messages/thread/read`, { with: counterpartId }).catch(() => {});
-      // Derive counterpart info from messages
-      const cp = msgs.find(m => m.fromUserId === counterpartId)?.fromUser
-        ?? msgs.find(m => m.toUserId === counterpartId)?.fromUser;
-      if (!cp) {
-        // Fallback: try to infer from toUser side via first sent message
-        const sent = msgs.find(m => m.fromUserId === user.id);
-        if (sent) {
-          // We know the counterpart id but not the name — fetch via admin approach not possible
-          // Set placeholder
-          setCounterpart({ id: counterpartId, firstName: "Operator", lastName: "" });
-        }
-      } else {
-        // fromUser of a received message IS the counterpart
-        setCounterpart(cp);
-      }
-    }).catch(() => router.replace(`/depot/${code}/messages`));
-  }, [user, counterpartId, code, router]);
+    fetchMessages();
+  }, [fetchMessages]);
 
   // Resolve counterpart name properly
   useEffect(() => {
@@ -160,8 +166,35 @@ export default function ThreadPage() {
     ? (counterpart.firstName[0] ?? "") + (counterpart.lastName?.[0] ?? "")
     : "?";
 
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (window.scrollY > 0) return;
+    const delta = e.touches[0].clientY - touchStartY.current;
+    setPulling(delta > 70);
+  };
+  const handleTouchEnd = async () => {
+    if (pulling) {
+      setPulling(false);
+      setRefreshing(true);
+      await fetchMessages();
+      setRefreshing(false);
+    }
+  };
+
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div
+      style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div style={{ textAlign: "center", fontSize: 12, color: C.m, padding: "8px 0", opacity: pulling || refreshing ? 1 : 0, transition: "opacity 0.2s", pointerEvents: "none" }}>
+        {refreshing ? (
+          <span style={{ display: "inline-block", width: 14, height: 14, border: `2px solid ${C.m}`, borderTopColor: "transparent", borderRadius: "50%", animation: "rotateLogo 0.6s linear infinite", verticalAlign: "middle" }} />
+        ) : "↓ Pull to refresh"}
+      </div>
       {/* Header */}
       <div style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(1,0,40,.9)", backdropFilter: "blur(24px)", borderBottom: `1px solid ${C.bd}`, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={() => router.push(`/depot/${code}/messages`)} aria-label="Go back" style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${C.bd}`, background: C.s, color: C.gold, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
