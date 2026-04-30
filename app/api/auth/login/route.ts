@@ -85,9 +85,9 @@ export async function POST(req: NextRequest) {
       softLaunchDepot &&
       !["admin", "subAdmin"].includes(user.role) &&
       user.depotId &&
-      user.depot?.name !== softLaunchDepot
+      user.depot?.code !== softLaunchDepot
     ) {
-      return err(`We Move New York is currently in soft launch at ${softLaunchDepot} only. We'll be at your depot soon!`, 403);
+      return err(`We Move New York is currently in soft launch at Queens Village only. We'll be at your depot soon!`, 403);
     }
 
     const payload = { userId: user.id, email: user.email };

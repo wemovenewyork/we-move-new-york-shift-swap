@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const softLaunchDepot = process.env.SOFT_LAUNCH_DEPOT;
     const depots = await prisma.depot.findMany({
-      where: softLaunchDepot ? { name: softLaunchDepot } : undefined,
+      where: softLaunchDepot ? { code: softLaunchDepot } : undefined,
       orderBy: { name: "asc" },
     });
     const counts = await prisma.swap.groupBy({
