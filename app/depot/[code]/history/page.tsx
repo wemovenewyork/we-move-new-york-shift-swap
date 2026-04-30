@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
@@ -13,11 +13,35 @@ import InboxIcon from "@/components/ui/InboxIcon";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-function groupByMonth(swaps: Swap[]): Map<string, Swap[]> {
-  const map = new Map<string, Swap[]>();
+// History rows are augmented Swaps tagged with how the user is involved.
+// "posted" = user is the swap.userId. "agreed" = user is userA on the
+// most recent agreement. The history API also includes the swap.user
+// (the poster's name) on agreed rows so we can show "with John D."
+interface HistorySwapAgreement {
+  id: string;
+  status: string;
+  createdAt: string;
+  userA?: { id: string; firstName: string; lastName: string };
+  userB?: { id: string; firstName: string; lastName: string };
+}
+interface HistorySwap extends Swap {
+  myRole: "posted" | "agreed";
+  agreements?: HistorySwapAgreement[];
+  user?: { id: string; firstName: string; lastName: string };
+}
+
+type Tab = "all" | "posted" | "agreed";
+
+function groupByMonth(swaps: HistorySwap[]): Map<string, HistorySwap[]> {
+  const map = new Map<string, HistorySwap[]>();
   for (const s of swaps) {
-    const d = new Date(s.createdAt);
-    const key = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    // For agreed swaps, group by when the user agreed (agreement.createdAt)
+    // not when the swap was originally posted — that's the date the user
+    // actually became involved.
+    const ref = s.myRole === "agreed" && s.agreements?.[0]
+      ? new Date(s.agreements[0].createdAt)
+      : new Date(s.createdAt);
+    const key = `${MONTHS[ref.getMonth()]} ${ref.getFullYear()}`;
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(s);
   }
@@ -29,9 +53,10 @@ export default function HistoryPage() {
   const router = useRouter();
   const params = useParams<{ code: string }>();
   const code = params.code;
-  const [swaps, setSwaps] = useState<Swap[]>([]);
+  const [swaps, setSwaps] = useState<HistorySwap[]>([]);
   const [fetching, setFetching] = useState(true);
   const [view, setView] = useState<"list" | "calendar">("list");
+  const [tab, setTab] = useState<Tab>("all");
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -41,13 +66,29 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (!user) return;
-    api.get<Swap[]>("/users/me/history")
+    api.get<HistorySwap[]>("/users/me/history")
       .then(setSwaps)
       .catch(() => {})
       .finally(() => setFetching(false));
   }, [user]);
 
-  const grouped = groupByMonth(swaps);
+  // Filter by tab
+  const filtered = useMemo(() => {
+    if (tab === "all") return swaps;
+    return swaps.filter(s => s.myRole === tab);
+  }, [swaps, tab]);
+
+  const grouped = groupByMonth(filtered);
+
+  // Counts shown on the tabs
+  const counts = useMemo(() => {
+    let posted = 0, agreed = 0;
+    for (const s of swaps) {
+      if (s.myRole === "posted") posted++;
+      else if (s.myRole === "agreed") agreed++;
+    }
+    return { all: posted + agreed, posted, agreed };
+  }, [swaps]);
 
   // Calendar — build a monthly view for the current month showing swap dates
   const now = new Date();
@@ -56,8 +97,8 @@ export default function HistoryPage() {
   const daysInMonth = new Date(thisYear, thisMonth + 1, 0).getDate();
   const firstDayOfWeek = new Date(thisYear, thisMonth, 1).getDay();
 
-  const swapsByDay = new Map<number, Swap[]>();
-  for (const s of swaps) {
+  const swapsByDay = new Map<number, HistorySwap[]>();
+  for (const s of filtered) {
     const d = s.date ? new Date(s.date + "T12:00") : null;
     if (d && d.getMonth() === thisMonth && d.getFullYear() === thisYear) {
       const day = d.getDate();
@@ -74,8 +115,10 @@ export default function HistoryPage() {
           <Icon n="back" s={16} />
         </button>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: C.white }}>My Swap History</div>
-          <div style={{ fontSize: 10, color: C.gold, letterSpacing: 2, textTransform: "uppercase" }}>{swaps.length} total swaps</div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: C.white }}>My Swaps</div>
+          <div style={{ fontSize: 10, color: C.gold, letterSpacing: 2, textTransform: "uppercase" }}>
+            {counts.all} total · {counts.posted} posted · {counts.agreed} agreed
+          </div>
         </div>
         <NotifIcon />
         <InboxIcon />
@@ -89,16 +132,52 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      <main id="main-content" tabIndex={-1} style={{ maxWidth: 520, margin: "0 auto", padding: "20px 16px 0" }}>
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 8, padding: "12px 16px 0", maxWidth: 520, margin: "0 auto" }}>
+        {([
+          { id: "all" as const, label: "All", count: counts.all },
+          { id: "posted" as const, label: "Posted", count: counts.posted },
+          { id: "agreed" as const, label: "Agreed", count: counts.agreed },
+        ]).map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            style={{
+              flex: 1,
+              padding: "9px 12px",
+              borderRadius: 10,
+              border: "none",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 700,
+              background: tab === t.id ? C.gold : "rgba(255,255,255,.04)",
+              color: tab === t.id ? C.bg : C.m,
+              transition: "all .15s",
+            }}
+          >
+            {t.label} <span style={{ opacity: 0.7, marginLeft: 4 }}>{t.count}</span>
+          </button>
+        ))}
+      </div>
+
+      <main id="main-content" tabIndex={-1} style={{ maxWidth: 520, margin: "0 auto", padding: "16px 16px 0" }}>
         {fetching ? (
           <div style={{ textAlign: "center", paddingTop: 60, color: C.m }}>Loading...</div>
-        ) : swaps.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div style={{ textAlign: "center", paddingTop: 60 }}>
             <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#60A5FA12", border: "1px solid #60A5FA33", margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Icon n="clk" s={28} c="#60A5FA" />
             </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: C.white, marginBottom: 8 }}>No swap history yet</div>
-            <div style={{ fontSize: 13, color: C.m }}>Your posted swaps will appear here.</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: C.white, marginBottom: 8 }}>
+              {tab === "agreed" ? "No agreed swaps yet" : tab === "posted" ? "No posted swaps yet" : "No swap history yet"}
+            </div>
+            <div style={{ fontSize: 13, color: C.m }}>
+              {tab === "agreed"
+                ? "Swaps you accept will appear here."
+                : tab === "posted"
+                  ? "Swaps you post will appear here."
+                  : "Swaps you post or agree to will appear here."}
+            </div>
           </div>
         ) : view === "list" ? (
           <div>
@@ -110,6 +189,11 @@ export default function HistoryPage() {
                     const cat = CM[s.category] ?? CM.work;
                     const co = SWAP_TYPES.find(x => x.id === s.category);
                     const st2 = STC[s.status] ?? STC.open;
+                    // For agreed swaps, show the poster's name. For posted swaps,
+                    // show the agreer's name if there's a confirmed agreement.
+                    const partner = s.myRole === "agreed"
+                      ? s.user
+                      : s.agreements?.[0]?.userA;
                     return (
                       <div
                         key={s.id}
@@ -121,11 +205,26 @@ export default function HistoryPage() {
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: 700, color: C.white, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.details.substring(0, 55)}…</div>
-                          <div style={{ fontSize: 10, color: C.m, marginTop: 2 }}>
-                            {co?.f} · {new Date(s.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          <div style={{ fontSize: 10, color: C.m, marginTop: 2, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <span>{co?.f}</span>
+                            <span>·</span>
+                            <span>{new Date(s.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                            {partner && (
+                              <>
+                                <span>·</span>
+                                <span style={{ color: s.myRole === "agreed" ? "#60A5FA" : "#00C9A7" }}>
+                                  {s.myRole === "agreed" ? "from" : "with"} {partner.firstName} {partner.lastName?.[0] ?? ""}.
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
-                        <span style={{ padding: "3px 9px", borderRadius: 8, background: st2.bg, border: `1px solid ${st2.bd}`, fontSize: 9, fontWeight: 700, color: st2.c, textTransform: "uppercase", letterSpacing: 1, whiteSpace: "nowrap" }}>{s.status}</span>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+                          {s.myRole === "agreed" && (
+                            <span style={{ padding: "2px 7px", borderRadius: 6, background: "#60A5FA22", border: "1px solid #60A5FA44", fontSize: 9, fontWeight: 700, color: "#60A5FA", textTransform: "uppercase", letterSpacing: 1 }}>Agreed</span>
+                          )}
+                          <span style={{ padding: "3px 9px", borderRadius: 8, background: st2.bg, border: `1px solid ${st2.bd}`, fontSize: 9, fontWeight: 700, color: st2.c, textTransform: "uppercase", letterSpacing: 1, whiteSpace: "nowrap" }}>{s.status}</span>
+                        </div>
                       </div>
                     );
                   })}

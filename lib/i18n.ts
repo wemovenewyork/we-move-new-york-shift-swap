@@ -14,7 +14,7 @@ const translations: Record<Lang, Record<string, string>> = {
     "my": "My Posted Swaps",
     "messages": "My Messages",
     "saved": "My Saved Swaps",
-    "history": "My History",
+    "history": "My Swaps",
     // Browse
     "browse.title": "Swap Board",
     "browse.search": "Search swaps...",
