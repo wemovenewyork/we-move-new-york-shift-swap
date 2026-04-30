@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
-import { signAccessToken, signRefreshToken } from "@/lib/auth";
 import { genInviteCode } from "@/lib/inviteCode";
 import { err } from "@/lib/apiResponse";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
@@ -76,7 +75,7 @@ export async function POST(req: NextRequest) {
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             role: "operator",
-            verified: true,
+            verified: false,
             emailVerifyToken: verifyToken,
             emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
             ...(invite?.createdBy ? { invitedBy: invite.createdBy } : {}),
@@ -134,10 +133,9 @@ export async function POST(req: NextRequest) {
     </div>`
   ).catch(() => {});
 
-  const payload = { userId: user.id, email: user.email };
-  const accessToken = signAccessToken(payload);
-  const refreshToken = signRefreshToken(payload);
-
+  // No auto-login on register — user must verify email and then log in.
+  // This ensures the email address is real and prevents account claim from
+  // a leaked invite code reaching someone with a stolen/typo'd email.
   const res = NextResponse.json({
     user: {
       id: user.id,
@@ -151,22 +149,6 @@ export async function POST(req: NextRequest) {
     ...(newCodes.length > 0 ? { inviteCodes: newCodes } : {}),
     emailVerificationRequired: true,
   }, { status: 201 });
-
-  const isProd = process.env.NODE_ENV === "production";
-  res.cookies.set("accessToken", accessToken, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: "strict",
-    path: "/",
-    maxAge: 900,
-  });
-  res.cookies.set("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: "strict",
-    path: "/api/auth",
-    maxAge: 604800,
-  });
 
   return res;
 }

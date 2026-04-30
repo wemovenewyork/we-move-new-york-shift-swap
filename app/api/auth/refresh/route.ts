@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyRefreshToken, signAccessToken, signRefreshToken } from "@/lib/auth";
+import { verifyRefreshToken, signAccessToken, signRefreshToken, checkActive } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { err } from "@/lib/apiResponse";
 import { blockRefreshToken, isRefreshTokenBlocked } from "@/lib/tokenBlocklist";
 import crypto from "crypto";
@@ -19,6 +20,27 @@ export async function POST(req: NextRequest) {
     const tokenHash = hashToken(refreshToken);
     if (await isRefreshTokenBlocked(tokenHash)) {
       return err("Token has been revoked", 401);
+    }
+
+    // Re-check the account state — refresh tokens last 7 days, but suspension,
+    // deletion, or unverified status must take effect immediately, not whenever
+    // the next refresh happens to fail.
+    const dbUser = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { email: true, suspendedUntil: true, verified: true },
+    });
+    if (!dbUser) {
+      await blockRefreshToken(tokenHash, 7 * 24 * 60 * 60);
+      return err("Account not found", 401);
+    }
+    const activeErr = checkActive(dbUser);
+    if (activeErr) {
+      await blockRefreshToken(tokenHash, 7 * 24 * 60 * 60);
+      return err(activeErr, 403);
+    }
+    if (!dbUser.verified) {
+      await blockRefreshToken(tokenHash, 7 * 24 * 60 * 60);
+      return err("Email not verified", 403);
     }
 
     // Revoke the current refresh token (token rotation — each token usable once)

@@ -54,6 +54,7 @@ export default function LoginPage() {
   const [showTerms, setShowTerms] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
   const [acceptingTerms, setAcceptingTerms] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   const strength = pwStrength(pw);
 
@@ -109,15 +110,49 @@ export default function LoginPage() {
     if (!validateRegister()) { setShaking(true); setTimeout(() => setShaking(false), 500); return; }
     setSubmitting(true); setErr(""); setFieldErrs({});
     try {
-      const data = await api.post<{ user: { id: string; firstName: string; lastName: string; email: string; depotId?: string | null; role: string; language: string; flexibleMode: boolean }; pendingVerification?: boolean }>("/auth/register", { firstName: fn, lastName: ln, email: em, password: pw, inviteCode: invCode });
-      login(data.user as Parameters<typeof login>[0]);
-      window.location.href = "/setup-profile";
+      await api.post<{ user: { id: string; email: string }; emailVerificationRequired?: boolean }>(
+        "/auth/register",
+        { firstName: fn, lastName: ln, email: em, password: pw, inviteCode: invCode }
+      );
+      // No auto-login: user must verify email first. Show the "check your inbox" screen.
+      setRegisteredEmail(em.trim().toLowerCase());
     } catch (e: unknown) {
       setErrWithShake(e instanceof Error ? e.message : "Registration failed");
     } finally { setSubmitting(false); }
   };
 
   if (showIntro) return <Intro onDone={() => { sessionStorage.setItem("intro-seen", "1"); setShowIntro(false); }} />;
+
+  if (registeredEmail) {
+    return (
+      <main id="main-content" tabIndex={-1} className="page-enter" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
+        <div style={{ maxWidth: 440, width: "100%", background: "rgba(255,255,255,.02)", backdropFilter: "blur(16px)", borderRadius: 28, border: "1px solid rgba(255,255,255,.06)", padding: 36, boxShadow: "0 24px 80px rgba(0,0,0,.3)", textAlign: "center" }}>
+          <div style={{ fontSize: 56, marginBottom: 12 }}>📬</div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: C.white, marginBottom: 12 }}>Check your email</h1>
+          <p style={{ fontSize: 14, color: "rgba(255,255,255,.7)", lineHeight: 1.6, marginBottom: 8 }}>
+            We sent a verification link to
+          </p>
+          <p style={{ fontSize: 15, color: C.white, fontWeight: 600, marginBottom: 20, wordBreak: "break-all" }}>
+            {registeredEmail}
+          </p>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,.55)", lineHeight: 1.6, marginBottom: 24 }}>
+            Click the link in that email to verify your account, then come back here to sign in. The link expires in 24 hours.
+          </p>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,.4)", lineHeight: 1.6, marginBottom: 20 }}>
+            Don&apos;t see it? Check your spam folder. Still nothing? Email{" "}
+            <a href="mailto:wemovenewyork.net@gmail.com" style={{ color: C.m }}>wemovenewyork.net@gmail.com</a>.
+          </p>
+          <button
+            type="button"
+            onClick={() => { setRegisteredEmail(null); setMode("signin"); setEm(registeredEmail); setPw(""); }}
+            style={{ width: "100%", padding: "14px 20px", borderRadius: 14, background: C.m, color: "#010028", fontWeight: 700, fontSize: 15, border: "none", cursor: "pointer" }}
+          >
+            Go to Sign In
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main id="main-content" tabIndex={-1} className="page-enter" style={{ minHeight: "100vh", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 20px", overflowY: "auto" }}>
