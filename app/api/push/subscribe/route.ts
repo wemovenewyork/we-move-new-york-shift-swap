@@ -17,10 +17,22 @@ export async function POST(req: NextRequest) {
   const { endpoint, keys } = body as { endpoint: string; keys: { p256dh: string; auth: string } };
   if (!endpoint || !keys?.p256dh || !keys?.auth) return err("Invalid subscription object", 400);
 
-  await prisma.pushSubscription.upsert({
-    where: { endpoint },
-    create: { userId: user.userId, endpoint, p256dh: keys.p256dh, auth: keys.auth },
-    update: { userId: user.userId, p256dh: keys.p256dh, auth: keys.auth },
+  // Scope to (endpoint, userId). The previous upsert keyed on endpoint alone
+  // could overwrite another user's subscription if two users somehow shared
+  // an endpoint (e.g., shared-browser case). Now: if the existing record
+  // belongs to a different user, delete it first (legitimate device handoff)
+  // and write a fresh one for this user. Same user re-registering the same
+  // endpoint just refreshes the keys.
+  await prisma.$transaction(async (tx) => {
+    const existing = await tx.pushSubscription.findUnique({ where: { endpoint } });
+    if (existing && existing.userId !== user.userId) {
+      await tx.pushSubscription.delete({ where: { endpoint } });
+    }
+    await tx.pushSubscription.upsert({
+      where: { endpoint },
+      create: { userId: user.userId, endpoint, p256dh: keys.p256dh, auth: keys.auth },
+      update: { p256dh: keys.p256dh, auth: keys.auth },
+    });
   });
 
   return ok({ ok: true });

@@ -9,8 +9,33 @@ export async function GET(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
+  // Hide threads with operators the current user has blocked, or who blocked them.
+  const blocks = await prisma.block.findMany({
+    where: {
+      OR: [
+        { blockerId: user.userId },
+        { blockedId: user.userId },
+      ],
+    },
+    select: { blockerId: true, blockedId: true },
+  });
+  const hiddenUserIds = new Set<string>();
+  for (const b of blocks) {
+    hiddenUserIds.add(b.blockerId === user.userId ? b.blockedId : b.blockerId);
+  }
+
   const allMessages = await prisma.message.findMany({
-    where: { OR: [{ fromUserId: user.userId }, { toUserId: user.userId }] },
+    where: {
+      OR: [{ fromUserId: user.userId }, { toUserId: user.userId }],
+      ...(hiddenUserIds.size > 0
+        ? {
+            AND: [
+              { fromUserId: { notIn: [...hiddenUserIds] } },
+              { toUserId: { notIn: [...hiddenUserIds] } },
+            ],
+          }
+        : {}),
+    },
     orderBy: { createdAt: "desc" },
     include: {
       fromUser: { select: { id: true, firstName: true, lastName: true } },

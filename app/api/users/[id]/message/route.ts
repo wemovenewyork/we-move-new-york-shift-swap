@@ -16,7 +16,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!await rateLimit(`dm:${user.userId}`, 10, 3_600_000)) return err("Rate limit: max 10 direct messages per hour", 429);
 
   const { id: toUserId } = await params;
-  const dbSender = await prisma.user.findUnique({ where: { id: user.userId }, select: { email: true, suspendedUntil: true } });
+  const dbSender = await prisma.user.findUnique({
+    where: { id: user.userId },
+    select: { email: true, suspendedUntil: true, depotId: true, role: true },
+  });
   if (!dbSender) return err("User not found", 404);
   const activeErr = checkActive(dbSender);
   if (activeErr) return err(activeErr, 403);
@@ -24,6 +27,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const toUser = await prisma.user.findUnique({ where: { id: toUserId } });
   if (!toUser) return err("User not found", 404);
+
+  // Same-depot restriction. Admins can DM anyone (for support/moderation),
+  // but regular operators are limited to their own depot to prevent
+  // cross-depot harassment after we expand beyond Queens Village.
+  const isAdmin = dbSender.role === "admin" || dbSender.role === "subAdmin";
+  if (!isAdmin && (!dbSender.depotId || dbSender.depotId !== toUser.depotId)) {
+    return err("User not found", 404);
+  }
 
   const block = await prisma.block.findFirst({
     where: {

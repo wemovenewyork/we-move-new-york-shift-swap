@@ -7,6 +7,7 @@ import { ok, err } from "@/lib/apiResponse";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { parseBody, BODY_2KB } from "@/lib/parseBody";
 import { consumeResetToken, isResetTokenUsed } from "@/lib/resetTokenBlocklist";
+import { blockUserAccessTokens } from "@/lib/tokenBlocklist";
 import jwt from "jsonwebtoken";
 
 // POST /api/auth/reset-password
@@ -24,6 +25,12 @@ export async function POST(req: NextRequest) {
   if (!token || !newPassword) return err("Token and new password are required", 400);
   if (newPassword.length < 12) return err("Password must be at least 12 characters", 400);
   if (newPassword.length > 128) return err("Password must be 128 characters or fewer", 400);
+
+  // Match registration complexity check — letters+numbers OR special chars
+  const hasLetter = /[a-zA-Z]/.test(newPassword);
+  const hasNumber = /[0-9]/.test(newPassword);
+  const hasSpecialOrMixed = /[^a-zA-Z0-9]/.test(newPassword) || (hasLetter && hasNumber);
+  if (!hasSpecialOrMixed) return err("Password must contain letters and numbers", 400);
 
   // Check single-use before verifying — avoids leaking validity info
   if (await isResetTokenUsed(token)) return err("Reset link has already been used", 400);
@@ -48,6 +55,12 @@ export async function POST(req: NextRequest) {
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
   await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+
+  // Invalidate all existing sessions — user reset password because they
+  // suspect their account was compromised. Force-logout cuts off any
+  // stolen access tokens (15min remaining lifetime). The next refresh
+  // attempt by an attacker will fail because we just bumped the password.
+  await blockUserAccessTokens(userId);
 
   return ok({ message: "Password updated successfully" });
 }

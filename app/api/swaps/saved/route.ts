@@ -8,8 +8,29 @@ export async function GET(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
+  // Hide swaps from operators the current user has blocked, or who blocked them.
+  // Symmetric, same as the browse list filter.
+  const blocks = await prisma.block.findMany({
+    where: {
+      OR: [
+        { blockerId: user.userId },
+        { blockedId: user.userId },
+      ],
+    },
+    select: { blockerId: true, blockedId: true },
+  });
+  const hiddenUserIds = new Set<string>();
+  for (const b of blocks) {
+    hiddenUserIds.add(b.blockerId === user.userId ? b.blockedId : b.blockerId);
+  }
+
   const saved = await prisma.savedSwap.findMany({
-    where: { userId: user.userId },
+    where: {
+      userId: user.userId,
+      ...(hiddenUserIds.size > 0
+        ? { swap: { userId: { notIn: [...hiddenUserIds] } } }
+        : {}),
+    },
     orderBy: { createdAt: "desc" },
     include: {
       swap: {
@@ -30,8 +51,16 @@ export async function GET(req: NextRequest) {
   const reviewMap: Record<string, number[]> = {};
   reviews.forEach(r => { (reviewMap[r.reviewedId] ??= []).push(r.rating); });
 
+  // Mask poster last name in list responses to match the browse list — show
+  // "First L." to limit bulk identity extraction by anyone who scrapes the API.
+  const maskLastName = (name: string) => {
+    const parts = name.trim().split(" ");
+    return parts.length < 2 ? name : `${parts[0]} ${parts[parts.length - 1][0]}.`;
+  };
+
   const result = swapsList.map(s => ({
     ...s,
+    posterName: s.userId === user.userId ? s.posterName : maskLastName(s.posterName),
     saved: true,
     posterLastActive: s.user?.lastActiveAt ?? null,
     reputation: calcScore({
