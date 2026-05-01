@@ -12,13 +12,37 @@ jobs:
       - name: Check /api/health
         id: health
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://wmnyshiftswap.com/api/health)
+          # Retry once before alerting. Two flake modes the previous version hit:
+          #   1. A cold-start blip (Vercel function cold + Neon Postgres cold)
+          #      can exceed the previous 10-second curl timeout even on a
+          #      healthy site.
+          #   2. The apex wmnyshiftswap.com redirects (HTTP 307) to the
+          #      canonical www.wmnyshiftswap.com. Without -L the runner saw
+          #      the 307 as the final status and false-alarmed.
+          # Fixes both: -L follows redirects, --max-time 30 covers cold starts,
+          # we hit the canonical www host directly to skip the redirect, and we
+          # retry once with a 10s gap before declaring failure.
+          attempt() {
+            curl -sL -o /dev/null -w "%{http_code}" --max-time 30 https://www.wmnyshiftswap.com/api/health
+          }
+
+          STATUS=$(attempt)
+          if [ "$STATUS" = "200" ]; then
+            echo "OK — HTTP $STATUS (first attempt)"
+            echo "status=$STATUS" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "First attempt returned HTTP $STATUS — retrying in 10s"
+          sleep 10
+          STATUS=$(attempt)
           echo "status=$STATUS" >> $GITHUB_OUTPUT
+
           if [ "$STATUS" != "200" ]; then
-            echo "HEALTH CHECK FAILED — HTTP $STATUS"
+            echo "HEALTH CHECK FAILED — HTTP $STATUS (after retry)"
             exit 1
           fi
-          echo "OK — HTTP $STATUS"
+          echo "OK — HTTP $STATUS (recovered on retry)"
 
       - name: Open issue on failure
         if: failure()
@@ -43,7 +67,7 @@ jobs:
               body: [
                 '## Site is down',
                 '',
-                `**URL:** https://wmnyshiftswap.com/api/health`,
+                `**URL:** https://www.wmnyshiftswap.com/api/health`,
                 `**Status:** HTTP ${{ steps.health.outputs.status }}`,
                 `**Time:** ${new Date().toISOString()}`,
                 '',
