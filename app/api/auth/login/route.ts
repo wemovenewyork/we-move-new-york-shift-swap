@@ -7,6 +7,7 @@ import { err } from "@/lib/apiResponse";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { parseBody, BODY_1KB } from "@/lib/parseBody";
 import { writeAuditLog } from "@/lib/audit";
+import { isDepotInSoftLaunch } from "@/lib/softLaunch";
 
 const MAX_ATTEMPTS = 10;
 const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
@@ -79,15 +80,16 @@ export async function POST(req: NextRequest) {
       data: { loginAttempts: 0, lockedUntil: null },
     });
 
-    // Soft launch gate — only allow the designated depot (admins bypass)
-    const softLaunchDepot = process.env.SOFT_LAUNCH_DEPOT;
+    // Soft launch gate — only allow depots in the SOFT_LAUNCH_DEPOT allowlist
+    // (admins bypass). The allowlist accepts a single code ("QV") or a
+    // comma-separated list ("QV,WF,MV"). When the env var is unset, no
+    // restriction applies.
     if (
-      softLaunchDepot &&
       !["admin", "subAdmin"].includes(user.role) &&
       user.depotId &&
-      user.depot?.code !== softLaunchDepot
+      !isDepotInSoftLaunch(user.depot?.code)
     ) {
-      return err(`WMNY Shift Swap is currently in soft launch at Queens Village only. We'll be at your depot soon!`, 403);
+      return err(`WMNY Shift Swap is currently in limited soft launch. We'll be at your depot soon!`, 403);
     }
 
     const payload = { userId: user.id, email: user.email };
