@@ -11,6 +11,7 @@ import Icon from "@/components/ui/Icon";
 import Toast from "@/components/ui/Toast";
 import NotifIcon from "@/components/ui/NotifIcon";
 import InboxIcon from "@/components/ui/InboxIcon";
+import TimePicker from "@/components/ui/TimePicker";
 import { playClick, playSuccess } from "@/lib/sound";
 import FirstSwapCelebration from "@/components/ui/FirstSwapCelebration";
 import { markChecklistItem } from "@/components/ui/OnboardingChecklist";
@@ -19,10 +20,6 @@ import { analytics } from "@/lib/analytics";
 const lb: React.CSSProperties = {
   display: "block", marginBottom: 6, fontSize: 11, fontWeight: 600,
   color: C.m, letterSpacing: 1.5, textTransform: "uppercase",
-};
-const subLb: React.CSSProperties = {
-  display: "block", marginBottom: 4, fontSize: 9, fontWeight: 700,
-  color: "rgba(255,255,255,.35)", letterSpacing: 1, textTransform: "uppercase",
 };
 
 const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
@@ -87,100 +84,6 @@ interface FormState {
   startTime: string; clearTime: string; swingStart: string; swingEnd: string;
   fromDate: string; toDate: string;
   vacationHave: string; vacationWant: string;
-}
-
-// ── TimePicker ─────────────────────────────────────────────────────────────────
-// value / onChange use 24-h "HH:mm" strings. Two native selects: HR (00-23) and
-// MIN (00-59). Mobile browsers render native selects as scroll drum pickers.
-function TimePicker({
-  value, onChange, label, id, dateStr,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  label: string;
-  id: string;
-  dateStr?: string;
-}) {
-  const today = getToday();
-  const isToday = !!dateStr && dateStr === today;
-  const now = new Date();
-  const nowH = now.getHours();
-  const nowM = now.getMinutes();
-
-  const selH = value ? value.split(":")[0] : "";
-  const selM = value ? value.split(":")[1] : "";
-
-  const commit = (h: string, m: string) => {
-    if (!h || !m) { onChange(""); return; }
-    onChange(`${h}:${m}`);
-  };
-
-  const selStyle: React.CSSProperties = {
-    padding: "12px 8px",
-    fontSize: 16,
-    fontWeight: 600,
-    width: "100%",
-    textAlign: "center",
-    paddingRight: 28,
-    backgroundPosition: "right 6px center",
-  };
-
-  // When today is selected, only show hours from now onward.
-  // When the current hour is selected on today, only show minutes from now+1 onward.
-  const minHour = isToday ? nowH : 0;
-  const minMin  = (isToday && selH !== "" && parseInt(selH, 10) === nowH) ? nowM + 1 : 0;
-
-  // If the current selection is now in the past (e.g. date changed to today),
-  // clear it so the user has to re-pick.
-  const selHNum = selH !== "" ? parseInt(selH, 10) : -1;
-  const selMNum = selM !== "" ? parseInt(selM, 10) : -1;
-  const selIsPast =
-    isToday &&
-    selH !== "" &&
-    (selHNum < minHour || (selHNum === nowH && selMNum < minMin));
-
-  return (
-    <div>
-      <label htmlFor={`${id}-hr`} style={lb}>{label}</label>
-      {selIsPast && (
-        <div style={{ fontSize: 10, color: C.red, marginBottom: 4 }}>
-          Selected time is in the past — please choose again
-        </div>
-      )}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <div>
-          <span style={subLb}>Hour (00–23)</span>
-          <select
-            id={`${id}-hr`}
-            value={selIsPast ? "" : selH}
-            onChange={e => commit(e.target.value, selM || "00")}
-            style={selStyle}
-          >
-            <option value="">--</option>
-            {Array.from({ length: 24 - minHour }, (_, i) => {
-              const h = (i + minHour).toString().padStart(2, "0");
-              return <option key={h} value={h}>{h}</option>;
-            })}
-          </select>
-        </div>
-        <div>
-          <span style={subLb}>Minute</span>
-          <select
-            id={`${id}-min`}
-            value={selIsPast ? "" : selM}
-            onChange={e => commit(selH || "00", e.target.value)}
-            style={selStyle}
-          >
-            <option value="">--</option>
-            {Array.from({ length: 60 - minMin }, (_, i) => {
-              const m = (i + minMin).toString().padStart(2, "0");
-              return <option key={m} value={m}>{m}</option>;
-            })}
-          </select>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ── ShiftFields ────────────────────────────────────────────────────────────────

@@ -12,6 +12,7 @@ import MsgModal from "@/components/ui/MsgModal";
 import Toast from "@/components/ui/Toast";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import AgreementPanel from "@/components/ui/AgreementPanel";
+import TimePicker from "@/components/ui/TimePicker";
 import { timeAgo, fmtTime } from "@/lib/format";
 
 export default function SwapDetailPage() {
@@ -91,8 +92,8 @@ export default function SwapDetailPage() {
     if (swap.category === "work") {
       if (pRun) lines.push(`Run: ${pRun}`);
       if (pRoute) lines.push(`Route: ${pRoute}`);
-      if (pStart) lines.push(`Start: ${pStart}`);
-      if (pClear) lines.push(`Clear: ${pClear}`);
+      if (pStart) lines.push(`Start: ${fmtTime(pStart)}`);
+      if (pClear) lines.push(`Clear: ${fmtTime(pClear)}`);
     } else if (swap.category === "daysoff") {
       if (pFromDay || pFromDate) lines.push(`I have: ${[pFromDay, pFromDate].filter(Boolean).join(" ")}`);
       if (pToDay || pToDate) lines.push(`I want: ${[pToDay, pToDate].filter(Boolean).join(" ")}`);
@@ -332,14 +333,20 @@ export default function SwapDetailPage() {
                   </div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Start Time</div>
-                    <input value={pStart} onChange={e => setPStart(e.target.value)} placeholder="e.g. 6:00 AM" style={{ width: "100%", padding: "10px 13px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.white, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: C.m, marginBottom: 4 }}>Clear Time</div>
-                    <input value={pClear} onChange={e => setPClear(e.target.value)} placeholder="e.g. 2:30 PM" style={{ width: "100%", padding: "10px 13px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.05)", color: C.white, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }} />
-                  </div>
+                  <TimePicker
+                    id="propose-start"
+                    label="Start Time"
+                    value={pStart}
+                    onChange={setPStart}
+                    dateStr={swap.date ?? undefined}
+                  />
+                  <TimePicker
+                    id="propose-clear"
+                    label="Clear Time"
+                    value={pClear}
+                    onChange={setPClear}
+                    dateStr={swap.date ?? undefined}
+                  />
                 </div>
               </>
             )}
