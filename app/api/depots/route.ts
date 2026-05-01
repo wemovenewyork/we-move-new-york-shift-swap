@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { err } from "@/lib/apiResponse";
+import { getSoftLaunchDepots } from "@/lib/softLaunch";
 
 export async function GET() {
   try {
-    const softLaunchDepot = process.env.SOFT_LAUNCH_DEPOT;
+    const allowlist = getSoftLaunchDepots();
     const depots = await prisma.depot.findMany({
-      where: softLaunchDepot ? { code: softLaunchDepot } : undefined,
+      where: allowlist ? { code: { in: allowlist } } : undefined,
       orderBy: { name: "asc" },
     });
     const counts = await prisma.swap.groupBy({
