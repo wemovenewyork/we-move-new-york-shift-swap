@@ -29,6 +29,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (swap.status !== "open") return err("This swap is no longer open", 400);
   if (swap.userId === user.userId) return err("Cannot create agreement on your own swap", 400);
 
+  // Block check — symmetric, mirrors messages and interest routes.
+  // Blocked users can still hit this endpoint via stale deep-links since the
+  // browse/get routes filter them out from list responses.
+  const block = await prisma.block.findFirst({
+    where: {
+      OR: [
+        { blockerId: user.userId, blockedId: swap.userId },
+        { blockerId: swap.userId, blockedId: user.userId },
+      ],
+    },
+    select: { id: true },
+  });
+  if (block) return err("Unable to create agreement", 403);
+
   const body = await parseBody(req, BODY_4KB);
   if (body instanceof NextResponse) return body;
   const { note } = body as { note?: string };
