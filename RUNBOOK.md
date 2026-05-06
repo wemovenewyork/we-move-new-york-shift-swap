@@ -14,6 +14,23 @@ Contact: wemovenewyork.net@gmail.com
 
 ---
 
+## Local Setup
+
+Fresh checkouts require generating the Prisma client before TypeScript or builds will work:
+
+    npm install
+    npx prisma generate
+
+The `postinstall` script attempts this automatically, but can silently fail in some
+environments (notably some IDE-managed terminals and devcontainer first-runs). If
+`npx tsc --noEmit` reports `TS2305: has no exported member 'PrismaClient'`, run
+`npx prisma generate` manually.
+
+CI (.github/workflows/ci.yml) runs `npx prisma generate` explicitly before build,
+so deployments are unaffected.
+
+---
+
 ## Rollback a Bad Deploy
 
 ### Option A — Instant rollback via Vercel dashboard (preferred)
