@@ -9,11 +9,12 @@ import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { parseBody, BODY_4KB } from "@/lib/parseBody";
 import { sendEmail } from "@/lib/email";
 import { escapeHtml } from "@/lib/escapeHtml";
+import { getAppUrl } from "@/lib/appUrl";
 
 export async function POST(req: NextRequest) {
   // Validate env at the top — if this throws after user creation (old position) it
   // returns HTML 500 which the client can't parse, producing "Request failed".
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const appUrl = getAppUrl();
   if (!appUrl) {
     Sentry.captureMessage("NEXT_PUBLIC_APP_URL is not set", "error");
     return err("Server configuration error — contact support", 500);

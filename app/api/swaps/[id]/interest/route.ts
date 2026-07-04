@@ -6,6 +6,7 @@ import { ok, err } from "@/lib/apiResponse";
 import { notifyUserWithEmailFallback } from "@/lib/notifyUser";
 import { parseBody, BODY_4KB } from "@/lib/parseBody";
 import { escapeHtml } from "@/lib/escapeHtml";
+import { getAppUrl } from "@/lib/appUrl";
 
 export async function POST(
   req: NextRequest,
@@ -56,7 +57,7 @@ export async function POST(
 
   const senderName = sender ? `${sender.firstName} ${sender.lastName}` : "Someone";
   const depotCode = depot?.code ?? swap.depotId;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const appUrl = getAppUrl();
   if (!appUrl) return err("Server configuration error — contact support", 500);
 
   const emailHtml = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#010028;color:#fff;border-radius:16px">
