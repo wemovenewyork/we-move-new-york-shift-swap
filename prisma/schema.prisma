@@ -136,6 +136,9 @@ model Swap {
 
   @@index([depotId, status, createdAt(sort: Desc)])
   @@index([archivedAt])
+  // A9: hot paths — per-user active-swap caps and "my swaps" listings
+  @@index([userId, status])
+  @@index([userId, createdAt])
   @@map("swaps")
 }
 
@@ -164,6 +167,10 @@ model Message {
   fromUser User  @relation("SentMessages", fields: [fromUserId], references: [id])
   toUser   User  @relation("ReceivedMessages", fields: [toUserId], references: [id])
 
+  // A9: hot paths — unread counts, per-swap threads, conversation history
+  @@index([toUserId, read])
+  @@index([swapId])
+  @@index([fromUserId, toUserId, createdAt(sort: Desc)])
   @@map("messages")
 }
 
