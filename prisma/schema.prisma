@@ -57,6 +57,11 @@ model User {
   verifiedOperator    Boolean   @default(false) @map("verified_operator")
   dispatcherVerified  Boolean   @default(false) @map("dispatcher_verified")
   dispatcherBadge     String?   @map("dispatcher_badge")
+  // A7: per-category notification preferences (JSON merged over defaults in
+  // lib/notificationPrefs.ts) and push-only quiet hours (NY-local HH:MM).
+  notificationPrefs Json?   @map("notification_prefs")
+  quietStart        String? @map("quiet_start")
+  quietEnd          String? @map("quiet_end")
 
   @@map("users")
 }
