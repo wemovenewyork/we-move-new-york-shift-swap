@@ -287,7 +287,7 @@ enum SwapCategory {
   work
   daysoff
   vacation
-  open_work
+  open_work // reserved — open-work pickups, unimplemented; do not use in validation until built (A11; removing a PG enum value needs type recreation — not worth it)
 }
 
 enum SwapStatus {
@@ -369,12 +369,3 @@ model Notification {
   @@map("notifications")
 }
 
-enum AuditAction {
-  role_change
-  invite_revoke
-  invite_generate
-  report_dismiss
-  report_review
-  user_delete
-  account_delete
-}
