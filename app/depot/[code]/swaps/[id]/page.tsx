@@ -14,6 +14,7 @@ import ConfirmModal from "@/components/ui/ConfirmModal";
 import AgreementPanel from "@/components/ui/AgreementPanel";
 import TimePicker from "@/components/ui/TimePicker";
 import { timeAgo, fmtTime } from "@/lib/format";
+import { t } from "@/lib/i18n";
 
 export default function SwapDetailPage() {
   const { user, loading } = useAuth();
@@ -23,6 +24,7 @@ export default function SwapDetailPage() {
 
   const [swap, setSwap] = useState<Swap | null>(null);
   const [agreement, setAgreement] = useState<SwapAgreement | null>(null);
+  const [proposals, setProposals] = useState<SwapAgreement[]>([]);
   const [agreeLoaded, setAgreeLoaded] = useState(false);
   const [proposeModal, setProposeModal] = useState(false);
   const [proposeNote, setProposeNote] = useState("");
@@ -70,7 +72,16 @@ export default function SwapDetailPage() {
 
   useEffect(() => {
     if (!id || !user) return;
-    api.get<Swap>(`/swaps/${id}`).then(setSwap).catch(() => router.replace(`/depot/${code}/swaps`));
+    api.get<Swap>(`/swaps/${id}`).then((s) => {
+      setSwap(s);
+      // Owners also load the pending proposals list (trust v2: several
+      // operators can propose concurrently).
+      if (s.userId === user.id) {
+        api.get<SwapAgreement[]>(`/swaps/${id}/agreement?list=1`)
+          .then((list) => setProposals(list.filter((a) => a.status === "pending")))
+          .catch(() => {});
+      }
+    }).catch(() => router.replace(`/depot/${code}/swaps`));
     api.get<SwapAgreement>(`/swaps/${id}/agreement`)
       .then(setAgreement)
       .catch(() => {})
@@ -111,14 +122,31 @@ export default function SwapDetailPage() {
     try {
       const a = await api.post<SwapAgreement>(`/swaps/${id}/agreement`, { note: buildProposeNote() });
       setAgreement(a);
-      setSwap(prev => prev ? { ...prev, status: "pending" } : null);
+      // Trust v2: proposing does NOT lock the swap — it stays open on the board.
       setProposeModal(false);
       setProposeNote(""); setPRun(""); setPRoute(""); setPStart(""); setPClear("");
       setPFromDay(""); setPFromDate(""); setPToDay(""); setPToDate("");
       setPVacHave(""); setPVacWant("");
-      showToast("Agreement proposed!");
+      showToast(t("trust.proposalToast", user?.language ?? "en"));
     } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed to propose"); }
     setProposeBusy(false);
+  };
+
+  // Trust v2 status side-effects: accepted locks the swap, completed fills it,
+  // cancelling an accepted agreement reopens it.
+  const handleAgreementUpdate = (a: SwapAgreement) => {
+    setAgreement(a);
+    if (a.status === "accepted") setSwap(prev => prev ? { ...prev, status: "pending" } : null);
+    if (a.status === "completed") setSwap(prev => prev ? { ...prev, status: "filled" } : null);
+    if (a.status === "cancelled") setSwap(prev => prev ? { ...prev, status: "open" } : null);
+    refreshProposals();
+  };
+
+  const refreshProposals = () => {
+    if (!id) return;
+    api.get<SwapAgreement[]>(`/swaps/${id}/agreement?list=1`)
+      .then((list) => setProposals(list.filter((p) => p.status === "pending")))
+      .catch(() => {});
   };
 
   const handleSend = async (s: Swap, text: string) => {
@@ -290,7 +318,7 @@ export default function SwapDetailPage() {
               agreement={agreement}
               isOwner={false}
               currentUserId={user?.id ?? ""}
-              onUpdate={(a) => { setAgreement(a); if (a.status === "completed") setSwap(prev => prev ? { ...prev, status: "filled" } : null); }}
+              onUpdate={handleAgreementUpdate}
               onPropose={() => setProposeModal(true)}
               onPrint={() => window.open(`/depot/${code}/swaps/${id}/print`, "_blank")}
             />
@@ -300,9 +328,11 @@ export default function SwapDetailPage() {
             <AgreementPanel
               swap={swap}
               agreement={agreement}
+              proposals={proposals}
               isOwner={true}
               currentUserId={user?.id ?? ""}
-              onUpdate={(a) => { setAgreement(a); if (a.status === "completed") setSwap(prev => prev ? { ...prev, status: "filled" } : null); }}
+              onUpdate={handleAgreementUpdate}
+              onProposalsChanged={refreshProposals}
               onPropose={() => {}}
               onPrint={() => window.open(`/depot/${code}/swaps/${id}/print`, "_blank")}
             />
