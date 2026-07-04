@@ -25,12 +25,21 @@ export async function PUT(
   if (!swap) return err("Swap not found", 404);
   if (swap.userId !== user.userId) return err("Not authorized", 403);
 
-  if (status === "filled") {
-    await prisma.reputation.upsert({
-      where: { userId: user.userId },
-      update: { completed: { increment: 1 } },
-      create: { userId: user.userId, completed: 1 },
+  // Trust v2: an accepted agreement is a live commitment — the owner can't
+  // silently reopen the swap around it. Cancel the agreement first (which
+  // reopens the swap and applies the cancellation ding).
+  if (status === "open") {
+    const accepted = await prisma.swapAgreement.findFirst({
+      where: { swapId: id, status: { in: ["accepted", "userA_confirmed"] } },
+      select: { id: true },
     });
+    if (accepted) return err("Cancel the agreement first — this swap has an accepted agreement", 409);
+  }
+
+  if (status === "filled") {
+    // Trust v2: manual fill closes the swap but grants NO reputation.
+    // Reputation flows only from post-shift-confirmed agreements — the manual
+    // path was farmable (post → self-fill → +1 completed, repeat).
 
     // Notify everyone with a stake in this swap: anyone who messaged about it,
     // anyone who saved it, and anyone who proposed an agreement on it.
