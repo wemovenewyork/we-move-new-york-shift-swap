@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyAccessToken } from "@/lib/auth";
 import { getAppUrl } from "@/lib/appUrl";
 import { getPublicSwap, categoryLabel, prettyDate, PublicSwap } from "@/lib/publicSwap";
+import AttributionCapture from "./AttributionCapture";
 
 // Public, logged-out-safe teaser for a single swap — the shareable link that
 // unfurls in chat apps. Field discipline lives in lib/publicSwap (no details,
@@ -52,13 +53,21 @@ async function signedInDepotCode(): Promise<string | null> {
   }
 }
 
-export default async function PublicSwapPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PublicSwapPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ src?: string }>;
+}) {
   const { id } = await params;
+  const { src } = await searchParams;
   const swap = await getPublicSwap(id);
 
   if (!swap) {
     return (
       <Shell>
+        <AttributionCapture src={src ?? null} />
         <h1 style={{ fontSize: 22, fontWeight: 800, color: BRAND.white, margin: "0 0 8px" }}>Swap not found</h1>
         <p style={{ fontSize: 14, color: BRAND.mut, lineHeight: 1.6 }}>This link doesn&apos;t point to a swap we can show.</p>
         <CTA />
@@ -75,6 +84,7 @@ export default async function PublicSwapPage({ params }: { params: Promise<{ id:
   if (swap.status !== "open") {
     return (
       <Shell>
+        <AttributionCapture src={src ?? null} />
         <StatusPill text="No longer available" color="#888" />
         <h1 style={{ fontSize: 22, fontWeight: 800, color: BRAND.white, margin: "10px 0 8px" }}>This swap is no longer available</h1>
         <p style={{ fontSize: 14, color: BRAND.mut, lineHeight: 1.6, marginBottom: 4 }}>
@@ -87,6 +97,7 @@ export default async function PublicSwapPage({ params }: { params: Promise<{ id:
 
   return (
     <Shell>
+      <AttributionCapture src={src ?? null} />
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <span style={{ padding: "4px 12px", borderRadius: 20, background: (CHIP[swap.category] ?? BRAND.gold) + "22", border: `1px solid ${(CHIP[swap.category] ?? BRAND.gold)}55`, color: CHIP[swap.category] ?? BRAND.gold, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>
           {categoryLabel(swap.category)}

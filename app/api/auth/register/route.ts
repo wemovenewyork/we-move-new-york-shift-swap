@@ -11,7 +11,13 @@ import { sendEmail } from "@/lib/email";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { getAppUrl } from "@/lib/appUrl";
 
+// Growth attribution: the teaser page sets wmny_src when a shared link carries
+// ?src=share. Allowlist known values so the column stays clean.
+const KNOWN_SIGNUP_SOURCES = new Set(["share"]);
+
 export async function POST(req: NextRequest) {
+  const rawSrc = req.cookies.get("wmny_src")?.value;
+  const signupSource = rawSrc && KNOWN_SIGNUP_SOURCES.has(rawSrc) ? rawSrc : null;
   // Validate env at the top — if this throws after user creation (old position) it
   // returns HTML 500 which the client can't parse, producing "Request failed".
   const appUrl = getAppUrl();
@@ -88,6 +94,7 @@ export async function POST(req: NextRequest) {
             emailVerifyToken: verifyToken,
             emailVerifyExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
             ...(invite?.createdBy ? { invitedBy: invite.createdBy } : {}),
+            ...(signupSource ? { signupSource } : {}),
           },
         });
 

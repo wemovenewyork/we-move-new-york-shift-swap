@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { Depot, Swap } from "@/types";
 import { C } from "@/constants/colors";
 import SwapCard from "@/components/ui/SwapCard";
+import { shareSwap } from "@/lib/shareSwap";
 import DepotBadge from "@/components/ui/DepotBadge";
 import Icon from "@/components/ui/Icon";
 import BottomNav from "@/components/ui/BottomNav";
@@ -103,7 +104,7 @@ export default function MyPostsPage() {
             </div>
           ) : swaps.map((s, idx) => (
             <div key={s.id} style={{ animation: `fadeUp .5s cubic-bezier(.4,0,.2,1) ${idx * 0.06}s both` }}>
-              <SwapCard swap={s} user={user} onDelete={handleDelete} onStatusChange={handleStatus} onEdit={sw => router.push(`/depot/${code}/post?edit=${sw.id}`)} onSaveTemplate={handleSaveTemplate} />
+              <SwapCard swap={s} user={user} onDelete={handleDelete} onStatusChange={handleStatus} onEdit={sw => router.push(`/depot/${code}/post?edit=${sw.id}`)} onSaveTemplate={handleSaveTemplate} onShare={sw => shareSwap(sw.id, () => showToast("Link copied!"))} />
             </div>
           ))}
           <Footer />
