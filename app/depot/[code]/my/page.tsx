@@ -7,6 +7,8 @@ import { api } from "@/lib/api";
 import { Depot, Swap } from "@/types";
 import { C } from "@/constants/colors";
 import SwapCard from "@/components/ui/SwapCard";
+import { shareSwap } from "@/lib/shareSwap";
+import { useT } from "@/lib/i18n";
 import DepotBadge from "@/components/ui/DepotBadge";
 import Icon from "@/components/ui/Icon";
 import BottomNav from "@/components/ui/BottomNav";
@@ -28,6 +30,7 @@ export default function MyPostsPage() {
   const [confirm, setConfirm] = useState<{ title: string; text: string; action: () => void } | null>(null);
 
   const showToast = useCallback((msg: string, type?: "success" | "error" | "info") => { setToast({ message: msg, type }); setTimeout(() => setToast(null), 2500); }, []);
+  const tr = useT(user?.language);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -103,7 +106,7 @@ export default function MyPostsPage() {
             </div>
           ) : swaps.map((s, idx) => (
             <div key={s.id} style={{ animation: `fadeUp .5s cubic-bezier(.4,0,.2,1) ${idx * 0.06}s both` }}>
-              <SwapCard swap={s} user={user} onDelete={handleDelete} onStatusChange={handleStatus} onEdit={sw => router.push(`/depot/${code}/post?edit=${sw.id}`)} onSaveTemplate={handleSaveTemplate} />
+              <SwapCard swap={s} user={user} onDelete={handleDelete} onStatusChange={handleStatus} onEdit={sw => router.push(`/depot/${code}/post?edit=${sw.id}`)} onSaveTemplate={handleSaveTemplate} onShare={sw => shareSwap(sw.id, () => showToast(tr("share.copied")))} />
             </div>
           ))}
           <Footer />

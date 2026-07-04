@@ -245,7 +245,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     await notifyUser(agreement.userAId, {
       category: "agreement",
       title: "Proposal accepted! 🎉",
-      body: "The owner accepted your swap proposal. It's locked in — coordinate with your dispatcher.",
+      body: "The owner accepted your swap proposal. It's locked in — add it to your calendar from the agreement page.",
       url: swapUrl,
     });
     if (result.declinedProposers.length > 0) {

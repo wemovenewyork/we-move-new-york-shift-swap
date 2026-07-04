@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/lib/api";
+import { shareSwap } from "@/lib/shareSwap";
 import { Swap, SwapAgreement } from "@/types";
 import { C, CM, STC, SWAP_TYPES } from "@/constants/colors";
 import Icon from "@/components/ui/Icon";
@@ -48,14 +49,8 @@ export default function SwapDetailPage() {
   const agreementRef = useRef<HTMLDivElement>(null);
 
   const handleShare = async () => {
-    const url = window.location.href;
-    const text = `Check out this swap: ${swap?.details?.slice(0, 80)}`;
-    if (navigator.share) {
-      await navigator.share({ title: "WMNY Shift Swap", text, url }).catch(() => {});
-    } else {
-      await navigator.clipboard.writeText(url).catch(() => {});
-      showToast("Link copied!");
-    }
+    if (!id) return;
+    await shareSwap(id, () => showToast(t("share.copied", user?.language ?? "en")));
   };
 
   useEffect(() => {

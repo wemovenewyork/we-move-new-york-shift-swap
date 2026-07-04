@@ -36,6 +36,7 @@ interface Props {
   onReport?: (s: Swap) => void;
   onSaveTemplate?: (s: Swap) => void;
   onToggleSave?: (s: Swap, saved: boolean) => void;
+  onShare?: (s: Swap) => void;
   lastVisit?: number;
   onClick?: () => void;
 }
@@ -50,7 +51,7 @@ const activeAgo = (d?: string | null) => {
   return null; // older than a week — don't show
 };
 
-export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEdit, onReport, onSaveTemplate, onToggleSave, lastVisit, onClick }: Props) {
+export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEdit, onReport, onSaveTemplate, onToggleSave, onShare, lastVisit, onClick }: Props) {
   const { user: authUser } = useAuth();
   const tr = useT(authUser?.language);
   const m = CM[s.category] ?? CM.work;
@@ -213,6 +214,11 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
         <div style={{ display: "flex", gap: 6 }} onClick={e => e.stopPropagation()}>
           {own ? (
             <>
+              {onShare && (
+                <button onClick={() => onShare(s)} title={tr("share.button")} aria-label={tr("share.button")} style={{ padding: "4px 8px", borderRadius: 8, border: `1px solid ${C.gold}33`, background: C.gs, cursor: "pointer", color: C.gold, display: "flex", alignItems: "center" }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                </button>
+              )}
               {onSaveTemplate && (
                 <button onClick={() => onSaveTemplate(s)} title="Save as template" aria-label="Save as template" style={{ padding: "4px 8px", borderRadius: 8, border: `1px solid ${C.gold}33`, background: C.gs, cursor: "pointer", color: C.gold, display: "flex", alignItems: "center" }}><Icon n="clk" s={13} /></button>
               )}
