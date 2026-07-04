@@ -74,10 +74,13 @@ export async function GET(req: NextRequest) {
     andClauses.push({ date: dateCond });
   }
 
+  // A10: id as final tiebreaker on every sort — swaps sharing a createdAt
+  // (bulk seeds) or date otherwise paginate nondeterministically, so cursor
+  // pages could skip or repeat rows.
   const orderBy =
-    sort === "oldest" ? { createdAt: "asc" as const }
-    : sort === "date" ? { date: "asc" as const }
-    : { createdAt: "desc" as const };
+    sort === "oldest" ? [{ createdAt: "asc" as const }, { id: "asc" as const }]
+    : sort === "date" ? [{ date: "asc" as const }, { id: "asc" as const }]
+    : [{ createdAt: "desc" as const }, { id: "asc" as const }];
 
   const swaps = await prisma.swap.findMany({
     where: { AND: andClauses },
