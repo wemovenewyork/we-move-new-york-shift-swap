@@ -14,6 +14,7 @@ import NotifToggle from "@/components/ui/NotifToggle";
 import InboxIcon from "@/components/ui/InboxIcon";
 import NotifIcon from "@/components/ui/NotifIcon";
 import { analytics } from "@/lib/analytics";
+import { useT } from "@/lib/i18n";
 import CountUp from "@/components/ui/CountUp";
 import ProgressRing from "@/components/ui/ProgressRing";
 
@@ -56,6 +57,7 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = useCallback((msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); }, []);
+  const tt = useT(user?.language);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -336,20 +338,20 @@ export default function ProfilePage() {
             {/* A7: per-category notification preferences (server-backed) */}
             {notifSettings && (
               <div style={{ background: "rgba(255,255,255,.03)", borderRadius: 14, padding: 14, border: `1px solid ${C.bd}` }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: "uppercase", letterSpacing: 2, marginBottom: 6 }}>Notification Preferences</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: "uppercase", letterSpacing: 2, marginBottom: 6 }}>{tt("notif.title")}</div>
                 <div style={{ fontSize: 11, color: C.m, lineHeight: 1.5, marginBottom: 12 }}>
-                  These control push alerts — muted personal alerts still appear in your in-app inbox.
+                  {tt("notif.hint")}
                 </div>
 
                 {/* new_post: 4-way mode */}
                 <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, color: C.white, marginBottom: 8 }}>New swaps posted at your depot</div>
+                  <div style={{ fontSize: 13, color: C.white, marginBottom: 8 }}>{tt("notif.newPost")}</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 6 }}>
                     {([
-                      { mode: "all" as const, label: "Every post" },
-                      { mode: "matches" as const, label: "Matches me" },
-                      { mode: "digest" as const, label: "Daily digest" },
-                      { mode: "off" as const, label: "Off" },
+                      { mode: "all" as const, label: tt("notif.mode.all") },
+                      { mode: "matches" as const, label: tt("notif.mode.matches") },
+                      { mode: "digest" as const, label: tt("notif.mode.digest") },
+                      { mode: "off" as const, label: tt("notif.mode.off") },
                     ]).map(({ mode, label }) => {
                       const active = notifSettings.prefs.new_post === mode;
                       return (
@@ -368,11 +370,11 @@ export default function ProfilePage() {
                 {/* Boolean categories */}
                 <div style={{ display: "grid", gap: 12 }}>
                   {([
-                    { key: "message" as const, label: "Messages" },
-                    { key: "agreement" as const, label: "Swap agreements (proposals, confirmations)" },
-                    { key: "swap_updates" as const, label: "Your swaps (expiring, filled)" },
-                    { key: "announcements" as const, label: "Announcements from admins" },
-                    { key: "digest" as const, label: "Daily 7 AM digest" },
+                    { key: "message" as const, label: tt("notif.cat.message") },
+                    { key: "agreement" as const, label: tt("notif.cat.agreement") },
+                    { key: "swap_updates" as const, label: tt("notif.cat.swap_updates") },
+                    { key: "announcements" as const, label: tt("notif.cat.announcements") },
+                    { key: "digest" as const, label: tt("notif.cat.digest") },
                   ]).map(({ key, label }) => (
                     <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                       <span style={{ fontSize: 13, color: C.white, lineHeight: 1.4 }}>{label}</span>
@@ -384,10 +386,10 @@ export default function ProfilePage() {
                 {/* Quiet hours */}
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.bd}` }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, color: C.white }}>Quiet hours (no pushes)</span>
+                    <span style={{ fontSize: 13, color: C.white }}>{tt("notif.quiet")}</span>
                     {notifSettings.quietStart && (
                       <button onClick={() => saveQuietHours(null, null)} style={{ background: "none", border: `1px solid ${C.bd}`, borderRadius: 8, padding: "3px 10px", cursor: "pointer", fontSize: 10, fontWeight: 600, color: C.m }}>
-                        No quiet hours
+                        {tt("notif.quietClear")}
                       </button>
                     )}
                   </div>
@@ -399,7 +401,7 @@ export default function ProfilePage() {
                       onChange={e => { const v = e.target.value; if (v) saveQuietHours(v, notifSettings.quietEnd ?? "07:00"); }}
                       style={{ flex: 1, padding: "8px 10px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.04)", color: C.white, fontSize: 13, colorScheme: "dark" }}
                     />
-                    <span style={{ fontSize: 12, color: C.m }}>to</span>
+                    <span style={{ fontSize: 12, color: C.m }}>{tt("notif.quietTo")}</span>
                     <input
                       type="time"
                       aria-label="Quiet hours end"
