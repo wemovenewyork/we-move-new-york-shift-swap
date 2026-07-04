@@ -139,7 +139,7 @@ Cron schedules are in `vercel.json`. All require the `CRON_SECRET` env var as a 
 |---|---|---|
 | `/api/cron/expire-swaps` | Daily | Mark past-date swaps as expired |
 | `/api/cron/expiring-soon` | Daily | Notify operators of swaps expiring tomorrow (NYC time) |
-| `/api/cron/cleanup-swaps` | Weekly | Delete swaps expired >7 days ago |
+| `/api/cron/cleanup-swaps` | Weekly | Two-phase retention: archive settled swaps, hard-delete long-dead ones (see Data Retention) |
 | `/api/cron/expire-announcements` | Daily | Delete expired depot announcements |
 | `/api/cron/daily-digest` | Daily morning | Send new-swaps digest to subscribers |
 
@@ -148,3 +148,38 @@ To manually trigger a cron during an incident:
 curl -X GET https://<your-domain>/api/cron/expire-swaps \
   -H "Authorization: Bearer <CRON_SECRET>"
 ```
+
+---
+
+## Data Retention
+
+Swaps are retired in two phases by the weekly `cleanup-swaps` cron. The old
+behavior hard-deleted swaps 7 days after they filled/expired, which cascaded
+away their messages, **agreements (the printable dispatcher proof)**, and
+reports. The two-phase policy keeps that evidence reachable.
+
+**Phase A — soft archive (was: delete).** A swap that has been `filled` or
+`expired` for 7+ days gets `archived_at` set. Archived swaps:
+- **drop off** the board (`/api/swaps`), the saved list, and "My Swaps".
+- **stay reachable** in the history view and — for the swap owner and anyone
+  with an agreement or message on it — the detail and `/print` pages. Other
+  depot members get a 404, matching the board.
+- keep all related rows (messages, agreements, reviews, reports).
+
+**Phase B — hard delete (true garbage only).** A swap is permanently deleted
+(cascading to its related rows) only when **all** of these hold:
+- `archived_at` is more than **90 days** ago, **and**
+- its effective shift date is in the past — the latest of `date`/`fromDate`/
+  `toDate`, or `createdAt + 180 days` for undated vacation swaps, **and**
+- it has **no `pending` report** (open moderation cases are never deleted).
+
+The cron returns `{ archived, deleted }` counts. Because Phase A is idempotent
+(`archived_at: null` guard) and Phase B is guarded by the report check, it is
+safe to re-run manually:
+```bash
+curl -X GET https://<your-domain>/api/cron/cleanup-swaps \
+  -H "Authorization: Bearer <CRON_SECRET>"
+```
+
+`archived_at` is additive (nullable column + index, migration
+`20260704_soft_archive_swaps`); no data is dropped by the migration itself.

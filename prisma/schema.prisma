@@ -116,6 +116,10 @@ model Swap {
   posterName   String       @map("poster_name")
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
+  // Soft archive: set when the cleanup cron retires a filled/expired swap.
+  // Archived swaps drop off the board and list views but stay reachable to
+  // participants (agreement print/proof) until they are truly garbage-collected.
+  archivedAt   DateTime?    @map("archived_at")
 
   user       User            @relation(fields: [userId], references: [id])
   depot      Depot           @relation(fields: [depotId], references: [id])
@@ -126,6 +130,7 @@ model Swap {
   savedBy    SavedSwap[]
 
   @@index([depotId, status, createdAt(sort: Desc)])
+  @@index([archivedAt])
   @@map("swaps")
 }
 

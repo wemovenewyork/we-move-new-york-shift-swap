@@ -8,6 +8,7 @@ import { calcScore } from "@/lib/reputation";
 import { notifyMany } from "@/lib/notifyUser";
 import { touchLastActive } from "@/lib/touchLastActive";
 import { parseBody, BODY_16KB } from "@/lib/parseBody";
+import { nyToday, oneYearOut, parseDateOnly, validateSwapDate } from "@/lib/nyDate";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -28,8 +29,9 @@ export async function GET(req: NextRequest) {
   const limitParam = parseInt(searchParams.get("limit") ?? "20", 10);
   const limit = Math.min(Math.max(limitParam, 1), 50);
 
-  // Build where clause
-  const andClauses: Record<string, unknown>[] = [{ depotId: dbUser.depotId }];
+  // Build where clause. Archived swaps are retired from the board — they stay
+  // reachable to participants via the detail/print routes, not list views.
+  const andClauses: Record<string, unknown>[] = [{ depotId: dbUser.depotId }, { archivedAt: null }];
 
   // Hide swaps from operators the current user has blocked, and from operators
   // who have blocked the current user. Symmetric, same as the messaging filter.
@@ -209,19 +211,19 @@ export async function POST(req: NextRequest) {
     if (!isPhone && !isEmail) return err("Contact must be a phone number or email address", 400);
   }
 
-  // Validate date fields — must be in the future, no more than 1 year out
-  const now = new Date();
-  const oneYearFromNow = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+  // Validate date fields — calendar dates in NY, same-day allowed, ≤ 1 year out.
+  // Comparisons are date-only (midnight UTC) so evening posts near the NY→UTC
+  // day boundary don't wrongly reject today or tomorrow.
+  const today = nyToday();
+  const yearOut = oneYearOut(today);
   for (const [field, val] of [["date", date], ["fromDate", fromDate], ["toDate", toDate]] as [string, unknown][]) {
-    if (val) {
-      const d = new Date(val as string);
-      if (isNaN(d.getTime())) return err(`Invalid ${field}`, 400);
-      if (d < now) return err(`${field} must be in the future`, 400);
-      if (d > oneYearFromNow) return err(`${field} cannot be more than 1 year from now`, 400);
-    }
+    const msg = validateSwapDate(field, val, today, yearOut);
+    if (msg) return err(msg, 400);
   }
-  if (fromDate && toDate && new Date(toDate as string) < new Date(fromDate as string)) {
-    return err("toDate must be on or after fromDate", 400);
+  if (fromDate && toDate) {
+    const f = parseDateOnly(fromDate);
+    const t = parseDateOnly(toDate);
+    if (f && t && t < f) return err("toDate must be on or after fromDate", 400);
   }
   if (run && run.length > 20) return err("Run must be 20 characters or fewer", 400);
   if (route && route.length > 20) return err("Route must be 20 characters or fewer", 400);

@@ -6,6 +6,8 @@ import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
 import { notifyUser, notifyMany } from "@/lib/notifyUser";
 import { parseBody, BODY_4KB } from "@/lib/parseBody";
+import { assertRowsUpdated, isFinalizedConflict } from "@/lib/agreementGuard";
+import type { AgreementStatus } from "@prisma/client";
 
 // POST /api/swaps/:id/agreement  → propose a formal agreement
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -148,21 +150,30 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const depotId = depot?.code ?? swap?.depotId ?? "";
 
   if (action === "cancel") {
-    const updated = await prisma.$transaction(async (tx) => {
-      const u = await tx.swapAgreement.update({
-        where: { id: agreement.id },
-        data: { status: "cancelled" },
+    let updated;
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        // Guarded transition: only cancel if the agreement is still active.
+        // If a concurrent confirm already finalized it, count === 0 → conflict.
+        const res = await tx.swapAgreement.updateMany({
+          where: { id: agreement.id, status: { in: ["pending", "userA_confirmed"] } },
+          data: { status: "cancelled" },
+        });
+        assertRowsUpdated(res.count);
+        await tx.swap.update({ where: { id }, data: { status: "open" } });
+        // Reputation: ding the user who clicked cancel — they're the one backing
+        // out of a commitment (whether they were the proposer or the swap owner).
+        await tx.reputation.upsert({
+          where: { userId: user.userId },
+          update: { cancelled: { increment: 1 } },
+          create: { userId: user.userId, cancelled: 1 },
+        });
+        return tx.swapAgreement.findUniqueOrThrow({ where: { id: agreement.id } });
       });
-      await tx.swap.update({ where: { id }, data: { status: "open" } });
-      // Reputation: ding the user who clicked cancel — they're the one backing
-      // out of a commitment (whether they were the proposer or the swap owner).
-      await tx.reputation.upsert({
-        where: { userId: user.userId },
-        update: { cancelled: { increment: 1 } },
-        create: { userId: user.userId, cancelled: 1 },
-      });
-      return u;
-    });
+    } catch (e) {
+      if (isFinalizedConflict(e)) return err("This agreement was already finalized", 409);
+      throw e;
+    }
 
     // Notify the other party (after transaction so DB state is committed first)
     const otherUserId = isUserB ? agreement.userAId : agreement.userBId;
@@ -220,15 +231,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     // agreement says completed but the swap is still pending, or vice versa.
     const completeAgreement = (
       noteText: string | null,
-      includeUserBFields: boolean
+      includeUserBFields: boolean,
+      expectedStatuses: AgreementStatus[]
     ) =>
       prisma.$transaction(async (tx) => {
-        const u = await tx.swapAgreement.update({
-          where: { id: agreement.id },
+        // Guarded transition: only complete if still in the expected state, so a
+        // racing cancel (or a double-confirm) can't double-fill or double-count
+        // reputation. count === 0 → the other party already finalized it.
+        const res = await tx.swapAgreement.updateMany({
+          where: { id: agreement.id, status: { in: expectedStatuses } },
           data: includeUserBFields
             ? { status: "completed", userBNote: noteText, userBAt: new Date(), completedAt: new Date() }
             : { status: "completed", completedAt: new Date() },
         });
+        assertRowsUpdated(res.count);
         await tx.swap.update({ where: { id }, data: { status: "filled" } });
         await Promise.all([
           tx.reputation.upsert({
@@ -242,12 +258,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             create: { userId: agreement.userBId, completed: 1 },
           }),
         ]);
-        return u;
+        return tx.swapAgreement.findUniqueOrThrow({ where: { id: agreement.id } });
       });
 
     // Owner (userB) confirms → agreement is complete
     if (isUserB && agreement.status === "pending") {
-      const updated = await completeAgreement(note ?? null, true);
+      let updated;
+      try {
+        updated = await completeAgreement(note ?? null, true, ["pending"]);
+      } catch (e) {
+        if (isFinalizedConflict(e)) return err("This agreement was already finalized", 409);
+        throw e;
+      }
       await notifyUser(agreement.userAId, {
         title: "Swap confirmed! 🎉",
         body: "Your swap is locked in. Print the agreement to show your dispatcher.",
@@ -260,7 +282,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     // Backwards-compat: handle existing userA_confirmed rows
     if (isUserA && agreement.status === "userA_confirmed") {
-      const updated = await completeAgreement(null, false);
+      let updated;
+      try {
+        updated = await completeAgreement(null, false, ["userA_confirmed"]);
+      } catch (e) {
+        if (isFinalizedConflict(e)) return err("This agreement was already finalized", 409);
+        throw e;
+      }
       await notifyUser(agreement.userBId, {
         title: "Swap agreement completed!",
         body: "Both operators confirmed. Your swap is locked in.",

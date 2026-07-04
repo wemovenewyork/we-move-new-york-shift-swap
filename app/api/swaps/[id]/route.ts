@@ -6,6 +6,7 @@ import { calcScore } from "@/lib/reputation";
 import { notifyUser } from "@/lib/notifyUser";
 import { ok, err } from "@/lib/apiResponse";
 import { parseBody, BODY_16KB } from "@/lib/parseBody";
+import { nyToday, oneYearOut, parseDateOnly, validateSwapDate } from "@/lib/nyDate";
 
 async function getSwapWithRep(id: string) {
   const swap = await prisma.swap.findUnique({
@@ -57,6 +58,24 @@ export async function GET(
       select: { id: true },
     });
     if (block) return err("Swap not found", 404);
+  }
+
+  // Archived swaps are off the board but must stay reachable to participants so
+  // they can still print the agreement / dispatcher proof. Restrict them to the
+  // owner and anyone with an agreement or message on the swap; other depot
+  // members get a 404, matching the board's "it's gone" behavior.
+  if (swap.archivedAt && swap.userId !== user.userId) {
+    const [agr, msg] = await Promise.all([
+      prisma.swapAgreement.findFirst({
+        where: { swapId: id, OR: [{ userAId: user.userId }, { userBId: user.userId }] },
+        select: { id: true },
+      }),
+      prisma.message.findFirst({
+        where: { swapId: id, OR: [{ fromUserId: user.userId }, { toUserId: user.userId }] },
+        select: { id: true },
+      }),
+    ]);
+    if (!agr && !msg) return err("Swap not found", 404);
   }
 
   return ok(swap);
@@ -135,18 +154,18 @@ export async function PUT(
     }
   }
 
-  const now = new Date();
-  const oneYearFromNow = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+  // Re-validate on edit with the same NY calendar-date rules as POST
+  // (same-day allowed, ≤ 1 year out, strict YYYY-MM-DD).
+  const today = nyToday();
+  const yearOut = oneYearOut(today);
   for (const [field, val] of [["date", date], ["fromDate", fromDate], ["toDate", toDate]] as [string, unknown][]) {
-    if (val) {
-      const d = new Date(val as string);
-      if (isNaN(d.getTime())) return err(`Invalid ${field}`, 400);
-      if (d < now) return err(`${field} must be in the future`, 400);
-      if (d > oneYearFromNow) return err(`${field} cannot be more than 1 year from now`, 400);
-    }
+    const msg = validateSwapDate(field, val, today, yearOut);
+    if (msg) return err(msg, 400);
   }
-  if (fromDate && toDate && new Date(toDate) < new Date(fromDate)) {
-    return err("toDate must be on or after fromDate", 400);
+  if (fromDate && toDate) {
+    const f = parseDateOnly(fromDate);
+    const t = parseDateOnly(toDate);
+    if (f && t && t < f) return err("toDate must be on or after fromDate", 400);
   }
 
   const updated = await prisma.swap.update({
