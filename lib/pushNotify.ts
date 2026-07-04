@@ -25,7 +25,17 @@ export async function sendPush(
       JSON.stringify(payload)
     );
     return true;
-  } catch {
+  } catch (e) {
+    // A7: dead-subscription cleanup is centralized here (it used to live only
+    // in the daily-digest cron). 404/410 = endpoint permanently gone — remove
+    // the subscription so future fan-outs stop paying for it. Non-fatal.
+    const status = (e as { statusCode?: number })?.statusCode;
+    if (status === 404 || status === 410) {
+      try {
+        const { prisma } = await import("@/lib/prisma");
+        await prisma.pushSubscription.deleteMany({ where: { endpoint: subscription.endpoint } });
+      } catch { /* cleanup is best-effort */ }
+    }
     return false;
   }
 }

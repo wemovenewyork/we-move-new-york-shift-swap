@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
   await notifyUserWithEmailFallback(
     swap.userId,
     {
+      category: "message",
       title: "Someone is interested in your swap",
       body: `${senderName}: ${text.trim().slice(0, 100)}`,
       url: threadUrl,
@@ -85,6 +86,8 @@ export async function POST(req: NextRequest) {
         id: crypto.randomUUID(),
         userId: swap.userId,
         type: "swap_interest",
+        // A7 note: record-only write (no push) — in-app records for personal
+        // categories persist regardless of prefs, so this stays direct.
         title: "Someone is interested in your swap",
         body: `A new message about your swap: "${swap.details.slice(0, 60)}${swap.details.length > 60 ? "…" : ""}"`,
         url: depot ? `/depot/${depot.code}/swaps/${swapId}` : "/",

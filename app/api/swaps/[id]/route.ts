@@ -227,7 +227,8 @@ export async function DELETE(
       });
       const depotCode = depot?.code ?? swap.depotId;
       await notifyUser(activeAgreement.userAId, {
-        title: "Swap deleted",
+        category: "agreement",
+      title: "Swap deleted",
         body: "The poster cancelled this swap. Check the board for other options.",
         url: `/depot/${depotCode}/swaps`,
       });

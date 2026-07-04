@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
       data: { fromUserId: token.userId, toUserId: userId, text: trimmed, swapId: null },
     });
     await notifyUser(userId, {
+      category: "announcements",
       title: "Message from Admin",
       body: trimmed.substring(0, 80),
       url: "/inbox",
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
       })),
     });
     await notifyMany(recipientIds, {
+      category: "announcements",
       title: "Message from Admin",
       body: trimmed.substring(0, 80),
       url: "/inbox",
@@ -83,7 +85,8 @@ export async function POST(req: NextRequest) {
     })),
   });
   await notifyMany(allIds, {
-    title: "Message from Admin",
+    category: "announcements",
+      title: "Message from Admin",
     body: trimmed.substring(0, 80),
     url: "/inbox",
   });

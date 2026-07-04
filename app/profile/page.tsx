@@ -14,17 +14,25 @@ import NotifToggle from "@/components/ui/NotifToggle";
 import InboxIcon from "@/components/ui/InboxIcon";
 import NotifIcon from "@/components/ui/NotifIcon";
 import { analytics } from "@/lib/analytics";
+import { useT } from "@/lib/i18n";
 import CountUp from "@/components/ui/CountUp";
 import ProgressRing from "@/components/ui/ProgressRing";
 
 const lb: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: 12, fontWeight: 600, color: C.m, letterSpacing: 2, textTransform: "uppercase" };
 
-const NOTIF_KEY = "notif-prefs";
-interface NotifPrefs { messages: boolean; swapInterest: boolean; announcements: boolean; }
-const DEFAULT_NOTIF: NotifPrefs = { messages: true, swapInterest: true, announcements: true };
-function loadNotifPrefs(): NotifPrefs {
-  if (typeof window === "undefined") return DEFAULT_NOTIF;
-  try { return { ...DEFAULT_NOTIF, ...JSON.parse(localStorage.getItem(NOTIF_KEY) ?? "{}") }; } catch { return DEFAULT_NOTIF; }
+// A7: server-backed per-category prefs (replaces the old localStorage-only
+// stub, which nothing ever read).
+interface NotifSettings {
+  prefs: {
+    new_post: "all" | "matches" | "digest" | "off";
+    message: boolean;
+    agreement: boolean;
+    swap_updates: boolean;
+    announcements: boolean;
+    digest: boolean;
+  };
+  quietStart: string | null;
+  quietEnd: string | null;
 }
 function PillToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -45,10 +53,11 @@ export default function ProfilePage() {
   const [toast, setToast] = useState<string | null>(null); const [pwErr, setPwErr] = useState("");
   const [depots, setDepots] = useState<Depot[]>([]); const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
-  const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>(DEFAULT_NOTIF);
+  const [notifSettings, setNotifSettings] = useState<NotifSettings | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = useCallback((msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); }, []);
+  const tt = useT(user?.language);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -59,12 +68,34 @@ export default function ProfilePage() {
     api.get<Depot[]>("/depots").then(setDepots).catch(() => {});
   }, [user]);
 
-  useEffect(() => { setNotifPrefs(loadNotifPrefs()); }, []);
+  useEffect(() => {
+    if (!user) return;
+    api.get<NotifSettings>("/users/me/notification-prefs").then(setNotifSettings).catch(() => {});
+  }, [user]);
 
-  const saveNotifPref = (key: keyof NotifPrefs, val: boolean) => {
-    const next = { ...notifPrefs, [key]: val };
-    setNotifPrefs(next);
-    if (typeof window !== "undefined") localStorage.setItem(NOTIF_KEY, JSON.stringify(next));
+  const savePrefs = async (patch: Partial<NotifSettings["prefs"]>) => {
+    if (!notifSettings) return;
+    // Optimistic update; server response is authoritative.
+    setNotifSettings({ ...notifSettings, prefs: { ...notifSettings.prefs, ...patch } });
+    try {
+      const updated = await api.put<NotifSettings>("/users/me/notification-prefs", { prefs: patch });
+      setNotifSettings(updated);
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Save failed");
+      api.get<NotifSettings>("/users/me/notification-prefs").then(setNotifSettings).catch(() => {});
+    }
+  };
+
+  const saveQuietHours = async (quietStart: string | null, quietEnd: string | null) => {
+    if (!notifSettings) return;
+    setNotifSettings({ ...notifSettings, quietStart, quietEnd });
+    try {
+      const updated = await api.put<NotifSettings>("/users/me/notification-prefs", { quietStart, quietEnd });
+      setNotifSettings(updated);
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Save failed");
+      api.get<NotifSettings>("/users/me/notification-prefs").then(setNotifSettings).catch(() => {});
+    }
   };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -304,22 +335,84 @@ export default function ProfilePage() {
               <NotifToggle />
             </div>
 
-            {/* Notification preferences */}
-            <div style={{ background: "rgba(255,255,255,.03)", borderRadius: 14, padding: 14, border: `1px solid ${C.bd}` }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>Notification Preferences</div>
-              <div style={{ display: "grid", gap: 12 }}>
-                {([
-                  { key: "messages" as const, label: "Messages" },
-                  { key: "swapInterest" as const, label: "Swap interest (someone messages about your swap)" },
-                  { key: "announcements" as const, label: "Announcements from your depot" },
-                ] as const).map(({ key, label }) => (
-                  <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                    <span style={{ fontSize: 13, color: C.white, lineHeight: 1.4 }}>{label}</span>
-                    <PillToggle on={notifPrefs[key]} onChange={v => saveNotifPref(key, v)} />
+            {/* A7: per-category notification preferences (server-backed) */}
+            {notifSettings && (
+              <div style={{ background: "rgba(255,255,255,.03)", borderRadius: 14, padding: 14, border: `1px solid ${C.bd}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, textTransform: "uppercase", letterSpacing: 2, marginBottom: 6 }}>{tt("notif.title")}</div>
+                <div style={{ fontSize: 11, color: C.m, lineHeight: 1.5, marginBottom: 12 }}>
+                  {tt("notif.hint")}
+                </div>
+
+                {/* new_post: 4-way mode */}
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 13, color: C.white, marginBottom: 8 }}>{tt("notif.newPost")}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 6 }}>
+                    {([
+                      { mode: "all" as const, label: tt("notif.mode.all") },
+                      { mode: "matches" as const, label: tt("notif.mode.matches") },
+                      { mode: "digest" as const, label: tt("notif.mode.digest") },
+                      { mode: "off" as const, label: tt("notif.mode.off") },
+                    ]).map(({ mode, label }) => {
+                      const active = notifSettings.prefs.new_post === mode;
+                      return (
+                        <button
+                          key={mode}
+                          onClick={() => savePrefs({ new_post: mode })}
+                          style={{ padding: "8px 4px", borderRadius: 10, border: `1px solid ${active ? C.gold : C.bd}`, background: active ? `${C.gold}18` : "rgba(255,255,255,.03)", cursor: "pointer", fontSize: 11, fontWeight: active ? 700 : 500, color: active ? C.gold : C.m }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
                   </div>
-                ))}
+                </div>
+
+                {/* Boolean categories */}
+                <div style={{ display: "grid", gap: 12 }}>
+                  {([
+                    { key: "message" as const, label: tt("notif.cat.message") },
+                    { key: "agreement" as const, label: tt("notif.cat.agreement") },
+                    { key: "swap_updates" as const, label: tt("notif.cat.swap_updates") },
+                    { key: "announcements" as const, label: tt("notif.cat.announcements") },
+                    { key: "digest" as const, label: tt("notif.cat.digest") },
+                  ]).map(({ key, label }) => (
+                    <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                      <span style={{ fontSize: 13, color: C.white, lineHeight: 1.4 }}>{label}</span>
+                      <PillToggle on={notifSettings.prefs[key]} onChange={v => savePrefs({ [key]: v })} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Quiet hours */}
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.bd}` }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, color: C.white }}>{tt("notif.quiet")}</span>
+                    {notifSettings.quietStart && (
+                      <button onClick={() => saveQuietHours(null, null)} style={{ background: "none", border: `1px solid ${C.bd}`, borderRadius: 8, padding: "3px 10px", cursor: "pointer", fontSize: 10, fontWeight: 600, color: C.m }}>
+                        {tt("notif.quietClear")}
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input
+                      type="time"
+                      aria-label="Quiet hours start"
+                      value={notifSettings.quietStart ?? ""}
+                      onChange={e => { const v = e.target.value; if (v) saveQuietHours(v, notifSettings.quietEnd ?? "07:00"); }}
+                      style={{ flex: 1, padding: "8px 10px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.04)", color: C.white, fontSize: 13, colorScheme: "dark" }}
+                    />
+                    <span style={{ fontSize: 12, color: C.m }}>{tt("notif.quietTo")}</span>
+                    <input
+                      type="time"
+                      aria-label="Quiet hours end"
+                      value={notifSettings.quietEnd ?? ""}
+                      onChange={e => { const v = e.target.value; if (v) saveQuietHours(notifSettings.quietStart ?? "22:00", v); }}
+                      style={{ flex: 1, padding: "8px 10px", borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.04)", color: C.white, fontSize: 13, colorScheme: "dark" }}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ) : (
           <div style={{ display: "grid", gap: 16 }}>

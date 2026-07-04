@@ -92,7 +92,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // Notify the swap poster that someone proposed
   const depotCode = await prisma.depot.findUnique({ where: { id: swap.depotId }, select: { code: true } });
   await notifyUser(swap.userId, {
-    title: "New swap proposal",
+    category: "agreement",
+      title: "New swap proposal",
     body: `${agreement.userA?.firstName ?? "An operator"} proposed a swap — review it`,
     url: `/depot/${depotCode?.code ?? swap.depotId}/swaps/${id}`,
   });
@@ -242,13 +243,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     await notifyUser(agreement.userAId, {
+      category: "agreement",
       title: "Proposal accepted! 🎉",
       body: "The owner accepted your swap proposal. It's locked in — coordinate with your dispatcher.",
       url: swapUrl,
     });
     if (result.declinedProposers.length > 0) {
       await notifyMany(result.declinedProposers, {
-        title: "Swap went to someone else",
+        category: "agreement",
+      title: "Swap went to someone else",
         body: "The owner went with another proposal — no effect on your reputation. Check the board for more swaps.",
         url: `/depot/${depotId}/swaps`,
       });
@@ -273,6 +276,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
     const updated = await prisma.swapAgreement.findUniqueOrThrow({ where: { id: agreement.id } });
     await notifyUser(agreement.userAId, {
+      category: "agreement",
       title: "Proposal declined",
       body: "The owner passed on your proposal — no effect on your reputation.",
       url: `/depot/${depotId}/swaps`,
@@ -328,6 +332,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const otherUserId = isUserB ? agreement.userAId : agreement.userBId;
     await notifyUser(otherUserId, {
+      category: "agreement",
       title: "Agreement cancelled",
       body: "The swap agreement was cancelled. The swap is back on the board.",
       url: swapUrl,
@@ -373,6 +378,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       throw e;
     }
     await notifyUser(agreement.userBId, {
+      category: "agreement",
       title: "Swap agreement completed!",
       body: "Both operators confirmed. Your swap is locked in.",
       url: swapUrl,
@@ -477,24 +483,28 @@ async function handlePostShift(
   const otherUserId = ctx.isUserA ? agreement.userBId : agreement.userAId;
   if (state.outcome === "completed") {
     await notifyMany([agreement.userAId, agreement.userBId], {
+      category: "agreement",
       title: "Swap completed! 🎉",
       body: "Both of you confirmed the swap happened. Leave a quick rating to build depot trust.",
       url: ctx.swapUrl,
     });
   } else if (state.outcome === "disputed") {
     await notifyUser(otherUserId, {
+      category: "agreement",
       title: "Swap outcome disputed",
       body: "Your answers about this swap don't match. An admin will review it — no reputation change for now.",
       url: ctx.swapUrl,
     });
   } else if (state.outcome === "cancelled") {
     await notifyUser(otherUserId, {
+      category: "agreement",
       title: "Swap marked as not happened",
       body: "Both of you said the swap didn't happen. No reputation change.",
       url: ctx.swapUrl,
     });
   } else {
     await notifyUser(otherUserId, {
+      category: "agreement",
       title: "Did your swap happen?",
       body: "The other operator answered. Confirm your side to settle the swap.",
       url: ctx.swapUrl,

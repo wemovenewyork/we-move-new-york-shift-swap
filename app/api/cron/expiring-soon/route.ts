@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
 
     // Notify swap owner
     notifyUser(swap.userId, {
+      category: "swap_updates",
       title: "Your swap expires tomorrow",
       body: `"${snippet}" — fill it or repost before it expires`,
       url: `/depot/${swap.depotId}/my`,
@@ -43,7 +44,8 @@ export async function GET(req: NextRequest) {
     const ids = interested.map(m => m.fromUserId);
     if (ids.length > 0) {
       notifyMany(ids, {
-        title: "Swap expiring tomorrow",
+        category: "swap_updates",
+      title: "Swap expiring tomorrow",
         body: `"${snippet}" — reach out now before it's gone`,
         url: `/depot/${swap.depotId}/swaps/${swap.id}`,
       });

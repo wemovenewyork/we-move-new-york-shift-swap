@@ -46,7 +46,8 @@ export async function GET(req: NextRequest) {
       });
       proposalsExpired = res.count;
       await notifyMany([...new Set(staleProposals.map((p) => p.userAId))], {
-        title: "Proposal expired",
+        category: "agreement",
+      title: "Proposal expired",
         body: "Your swap proposal wasn't answered within 48 hours — no effect on your reputation.",
         url: "/depots",
       });
@@ -75,7 +76,8 @@ export async function GET(req: NextRequest) {
       if (a.userAHappened == null) targets.push(a.userAId);
       if (a.userBHappened == null) targets.push(a.userBId);
       await notifyMany(targets, {
-        title: "Did your swap happen?",
+        category: "agreement",
+      title: "Did your swap happen?",
         body: "Confirm whether the swap happened to settle it and build your reputation.",
         url,
       });
@@ -155,7 +157,8 @@ export async function GET(req: NextRequest) {
         }
       });
       await notifyUser(nonResponderId, {
-        title: "Swap settled without your answer",
+        category: "agreement",
+      title: "Swap settled without your answer",
         body: "You didn't confirm whether your swap happened within 7 days — it was settled from the other operator's answer.",
         url,
       });
