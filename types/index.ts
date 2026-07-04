@@ -51,7 +51,14 @@ export interface RepScore {
 }
 
 export type UserRole = "operator" | "depotRep" | "subAdmin" | "admin";
-export type AgreementStatus = "pending" | "userA_confirmed" | "completed" | "cancelled";
+export type AgreementStatus =
+  | "pending" // trust v2: unlocked proposal awaiting the owner
+  | "userA_confirmed" // legacy two-step rows only
+  | "accepted" // owner accepted; swap locked
+  | "completed" // both parties confirmed post-shift
+  | "cancelled"
+  | "declined" // owner passed; no reputation effect
+  | "disputed"; // post-shift answers conflict; admin resolves
 
 export interface User {
   id: string;
@@ -104,6 +111,10 @@ export interface SwapAgreement {
   userAAt?: string | null;
   userBAt?: string | null;
   completedAt?: string | null;
+  acceptedAt?: string | null;
+  userAHappened?: boolean | null;
+  userBHappened?: boolean | null;
+  shiftDate?: string | null;
   createdAt: string;
   updatedAt: string;
   swap?: Pick<Swap, "id" | "details" | "category" | "posterName">;

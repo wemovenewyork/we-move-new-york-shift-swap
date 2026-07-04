@@ -6,6 +6,20 @@ import { rateLimit } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
 import { parseBody, BODY_1KB } from "@/lib/parseBody";
 
+// GET /api/swaps/:id/review — the caller's own review on this swap (404 if none).
+// Lets the UI decide whether to show the rating stars.
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  let user;
+  try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
+  const { id } = await params;
+  const review = await prisma.review.findFirst({
+    where: { swapId: id, reviewerId: user.userId },
+    select: { id: true, rating: true, createdAt: true },
+  });
+  if (!review) return err("No review found", 404);
+  return ok(review);
+}
+
 // POST /api/swaps/:id/review  { rating: 1–5 }
 // Trust v2: only participants of this swap's COMPLETED agreement may review,
 // one review per user per swap (reviews_swap_id_reviewer_id_key enforces),
