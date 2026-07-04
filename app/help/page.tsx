@@ -12,8 +12,16 @@ const faqs = [
     a: "Tap \"Post a Swap\", choose your swap type, fill in your shift details, and submit. Your swap will be visible to all operators at your depot.",
   },
   {
-    q: "What happens after both operators confirm?",
-    a: "Once both parties tap \"Agree to Swap\", the agreement is locked and you can print a confirmation PDF to bring to your supervisor. The swap still requires supervisor approval.",
+    q: "How do swap proposals work?",
+    a: "Tap \"Propose Swap\" on any open swap. Proposing is free — the swap stays on the board and several operators can propose at once. The poster picks one proposal to accept (locking the swap) or declines; declined proposals never affect anyone's reputation. Once accepted, you can print a confirmation PDF to bring to your supervisor. The swap still requires supervisor approval.",
+  },
+  {
+    q: "What is the \"Did your swap happen?\" prompt?",
+    a: "The day after your shift, both operators are asked to confirm the swap actually happened. When both confirm, you each earn reputation credit and can rate each other. If you back out after accepting, or skip a confirmed swap, that counts against your reliability.",
+  },
+  {
+    q: "How is my reputation score calculated?",
+    a: "Your score is based on your reliability — confirmed swaps versus cancellations and no-shows — plus star ratings once you have at least 3 reviews. You need 3 settled swaps to earn a label, and the Elite badge requires 10. New accounts show \"New\" until then.",
   },
   {
     q: "Can my supervisor override this?",
