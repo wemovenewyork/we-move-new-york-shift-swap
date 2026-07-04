@@ -27,9 +27,11 @@ export async function GET(req: NextRequest) {
   const saved = await prisma.savedSwap.findMany({
     where: {
       userId: user.userId,
-      ...(hiddenUserIds.size > 0
-        ? { swap: { userId: { notIn: [...hiddenUserIds] } } }
-        : {}),
+      // Hide archived swaps (retired from the board) and blocked-user swaps.
+      swap: {
+        archivedAt: null,
+        ...(hiddenUserIds.size > 0 ? { userId: { notIn: [...hiddenUserIds] } } : {}),
+      },
     },
     orderBy: { createdAt: "desc" },
     include: {

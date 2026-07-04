@@ -7,8 +7,11 @@ export async function GET(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
+  // "My Swaps" is an active-list view — exclude archived swaps. Archived swaps
+  // remain in the history view (/api/users/me/history), the dedicated place to
+  // find retired swaps.
   const swaps = await prisma.swap.findMany({
-    where: { userId: user.userId },
+    where: { userId: user.userId, archivedAt: null },
     orderBy: { createdAt: "desc" },
   });
 

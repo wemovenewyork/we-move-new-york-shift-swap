@@ -60,6 +60,24 @@ export async function GET(
     if (block) return err("Swap not found", 404);
   }
 
+  // Archived swaps are off the board but must stay reachable to participants so
+  // they can still print the agreement / dispatcher proof. Restrict them to the
+  // owner and anyone with an agreement or message on the swap; other depot
+  // members get a 404, matching the board's "it's gone" behavior.
+  if (swap.archivedAt && swap.userId !== user.userId) {
+    const [agr, msg] = await Promise.all([
+      prisma.swapAgreement.findFirst({
+        where: { swapId: id, OR: [{ userAId: user.userId }, { userBId: user.userId }] },
+        select: { id: true },
+      }),
+      prisma.message.findFirst({
+        where: { swapId: id, OR: [{ fromUserId: user.userId }, { toUserId: user.userId }] },
+        select: { id: true },
+      }),
+    ]);
+    if (!agr && !msg) return err("Swap not found", 404);
+  }
+
   return ok(swap);
 }
 

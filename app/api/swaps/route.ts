@@ -29,8 +29,9 @@ export async function GET(req: NextRequest) {
   const limitParam = parseInt(searchParams.get("limit") ?? "20", 10);
   const limit = Math.min(Math.max(limitParam, 1), 50);
 
-  // Build where clause
-  const andClauses: Record<string, unknown>[] = [{ depotId: dbUser.depotId }];
+  // Build where clause. Archived swaps are retired from the board — they stay
+  // reachable to participants via the detail/print routes, not list views.
+  const andClauses: Record<string, unknown>[] = [{ depotId: dbUser.depotId }, { archivedAt: null }];
 
   // Hide swaps from operators the current user has blocked, and from operators
   // who have blocked the current user. Symmetric, same as the messaging filter.
