@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { notifyUser, notifyMany } from "@/lib/notifyUser";
 import { nyToday } from "@/lib/nyDate";
+import { pingHeartbeat } from "@/lib/heartbeat";
 
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -92,7 +93,8 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return ok({ expired: result.count + result2.count + result3.count, proposalsDeclined: orphanedProposals.length });
+  await pingHeartbeat("expire-swaps");
+    return ok({ expired: result.count + result2.count + result3.count, proposalsDeclined: orphanedProposals.length });
   } catch (e) {
     return err(`Cron failed: ${e instanceof Error ? e.message : "unknown error"}`, 500);
   }
