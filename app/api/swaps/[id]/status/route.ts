@@ -67,7 +67,8 @@ export async function PUT(
     ])];
     if (ids.length > 0) {
       await notifyMany(ids, {
-        title: "Swap has been filled",
+        category: "swap_updates",
+      title: "Swap has been filled",
         body: `A swap you were interested in has been filled — check the board for new ones`,
         url: `/depot/${swap.depotId}/swaps`,
       });

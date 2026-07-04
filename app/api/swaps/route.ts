@@ -290,7 +290,8 @@ export async function POST(req: NextRequest) {
     : swap.category === "daysoff" ? "Days Off"
     : "Vacation";
   await notifyMany(depotUsers.map(u => u.id), {
-    title: `New ${categoryLabel} swap posted`,
+    category: "new_post",
+      title: `New ${categoryLabel} swap posted`,
     body: `${posterName} posted a new swap — check the board`,
     url: `/depot/${dbUser.depot!.code}/swaps/${swap.id}`,
   });

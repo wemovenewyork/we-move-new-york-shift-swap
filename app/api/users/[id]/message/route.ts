@@ -67,7 +67,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     : `/inbox`;
 
   await notifyUser(toUserId, {
-    title: `Message from ${sender?.firstName ?? "an operator"}`,
+    category: "message",
+      title: `Message from ${sender?.firstName ?? "an operator"}`,
     body: text.trim().substring(0, 80),
     url: threadUrl,
   });

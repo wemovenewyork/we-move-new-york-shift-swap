@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
       data: { status: "declined" },
     });
     await notifyMany([...new Set(orphanedProposals.map((p) => p.userAId))], {
+      category: "agreement",
       title: "Swap expired before a decision",
       body: "A swap you proposed on expired — no effect on your reputation. Check the board for fresh swaps.",
       url: "/depots",
@@ -64,6 +65,7 @@ export async function GET(req: NextRequest) {
   // Notify each owner — awaited so serverless doesn't kill before DB write
   for (const swap of toExpire) {
     await notifyUser(swap.userId, {
+      category: "swap_updates",
       title: "Your swap expired",
       body: `"${swap.details.substring(0, 60)}" — repost it to keep looking`,
       url: `/depot/${swap.depotId}/my`,

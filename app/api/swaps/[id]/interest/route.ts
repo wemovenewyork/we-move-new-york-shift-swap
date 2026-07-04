@@ -69,6 +69,7 @@ export async function POST(
   await notifyUserWithEmailFallback(
     swap.userId,
     {
+      category: "message",
       title: "New interest in your swap",
       body: `${senderName} is interested — "${text.trim().replace(/[\n\r\t]/g, " ").substring(0, 60)}"`,
       url: `/depot/${depotCode}/swaps/${id}`,
