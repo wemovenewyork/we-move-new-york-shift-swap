@@ -267,6 +267,20 @@ function ProposalsList({ swapId, proposals, onUpdate, onProposalsChanged }: {
   );
 }
 
+/** Add-to-calendar link — hidden for undated (vacation) agreements. Plain
+ * <a href> so mobile OSes hand the .ics to the native calendar. */
+function CalendarButton({ swapId, hasShiftDate, label, color }: { swapId: string; hasShiftDate: boolean; label: string; color: string }) {
+  if (!hasShiftDate) return null;
+  return (
+    <a
+      href={`/api/swaps/${swapId}/agreement/calendar`}
+      style={{ width: "100%", marginTop: 8, padding: "10px 14px", borderRadius: 10, border: `1px solid ${color}66`, background: `${color}1f`, cursor: "pointer", fontSize: 13, fontWeight: 700, color, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none", boxSizing: "border-box" }}
+    >
+      📅 {label}
+    </a>
+  );
+}
+
 export default function AgreementPanel({ swap, agreement, proposals, isOwner, currentUserId, onUpdate, onProposalsChanged, onPropose, onPrint }: Props) {
   const { user } = useAuth();
   const tt = useT(user?.language);
@@ -390,6 +404,7 @@ export default function AgreementPanel({ swap, agreement, proposals, isOwner, cu
               {tt("trust.printAgreement")}
             </button>
           )}
+          <CalendarButton swapId={swap.id} hasShiftDate={agreement.shiftDate != null} label={tt("trust.addToCalendar")} color="#60A5FA" />
         </div>
       )}
 
@@ -424,6 +439,7 @@ export default function AgreementPanel({ swap, agreement, proposals, isOwner, cu
               Print Agreement
             </button>
           )}
+          <CalendarButton swapId={swap.id} hasShiftDate={agreement.shiftDate != null} label={tt("trust.addToCalendar")} color="#00C9A7" />
         </div>
       )}
 
