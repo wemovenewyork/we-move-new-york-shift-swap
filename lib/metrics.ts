@@ -246,7 +246,7 @@ async function notifications(): Promise<NotificationsSection> {
 }
 
 
-async function timed<T>(fn: () => Promise<T>, key: string, timings: Record<string, number>, errors: string[]): Promise<T | null> {
+export async function timed<T>(fn: () => Promise<T>, key: string, timings: Record<string, number>, errors: string[]): Promise<T | null> {
   const t0 = Date.now();
   try {
     const r = await fn();
@@ -255,8 +255,11 @@ async function timed<T>(fn: () => Promise<T>, key: string, timings: Record<strin
   } catch (e) {
     timings[key] = Date.now() - t0;
     errors.push(key);
-    const Sentry = await import("@sentry/nextjs");
-    Sentry.captureException(e, { tags: { source: "admin-metrics", section: key } });
+    // Best-effort capture — a Sentry hiccup must never defeat the degradation.
+    try {
+      const Sentry = await import("@sentry/nextjs");
+      Sentry.captureException?.(e, { tags: { source: "admin-metrics", section: key } });
+    } catch { /* ignore */ }
     return null;
   }
 }
