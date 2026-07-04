@@ -142,12 +142,48 @@ Cron schedules are in `vercel.json`. All require the `CRON_SECRET` env var as a 
 | `/api/cron/cleanup-swaps` | Weekly | Two-phase retention: archive settled swaps, hard-delete long-dead ones (see Data Retention) |
 | `/api/cron/expire-announcements` | Daily | Delete expired depot announcements |
 | `/api/cron/daily-digest` | Daily morning | Send new-swaps digest to subscribers |
+| `/api/cron/agreement-followups` | Daily | Proposal expiry, post-shift prompts, non-response finalize |
 
 To manually trigger a cron during an incident:
 ```bash
 curl -X GET https://<your-domain>/api/cron/expire-swaps \
   -H "Authorization: Bearer <CRON_SECRET>"
 ```
+
+---
+
+## Cron Heartbeat
+
+Each cron pings an external uptime monitor on **success only** — a cron that
+fails (or never runs) goes silent, and the monitor alerts on the missed ping.
+Silence is the alarm.
+
+**Setup (optional but recommended):**
+1. Create an account on an uptime monitor that supports "dead-man's-switch"
+   pings (e.g. [healthchecks.io](https://healthchecks.io)).
+2. Create **six** checks — one per cron. For each, set the check's expected
+   **period = the cron's schedule** plus a grace window (~1–2× the period):
+
+   | Slug | Schedule (UTC) | Suggested period / grace |
+   |---|---|---|
+   | `expire-swaps` | `0 5 * * *` (daily) | 1 day / 6h |
+   | `expiring-soon` | `15 13 * * *` (daily) | 1 day / 6h |
+   | `daily-digest` | `0 12 * * *` (daily) | 1 day / 6h |
+   | `cleanup-swaps` | `0 8 * * *` (weekly effect) | 1 day / 12h |
+   | `expire-announcements` | `0 9 * * *` (daily) | 1 day / 6h |
+   | `agreement-followups` | `0 13 * * *` (daily) | 1 day / 6h |
+
+3. Take the monitor's **base ping URL** (the part before the per-check slug —
+   e.g. `https://hc-ping.com/<project-uuid>`) and set it as `HEARTBEAT_URL_BASE`
+   in Vercel (Production). Name each check's slug to match the table above so
+   `${HEARTBEAT_URL_BASE}/<slug>` resolves to the right check.
+4. Leave `HEARTBEAT_URL_BASE` unset in Preview/dev — heartbeats no-op when it's
+   absent, so those environments stay quiet.
+
+Implementation: `lib/heartbeat.ts` `pingHeartbeat(slug)` is the **last line of
+each cron's success path**, fire-and-forget with a 3s timeout; it swallows all
+errors and never throws, so it can't turn a healthy run into a failure. Failure
+paths (auth 401, caught 500) never ping.
 
 ---
 

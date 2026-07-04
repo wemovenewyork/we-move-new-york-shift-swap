@@ -4,6 +4,7 @@ import { ok, err } from "@/lib/apiResponse";
 import { notifyUser, notifyMany } from "@/lib/notifyUser";
 import { nyToday } from "@/lib/nyDate";
 import { assertRowsUpdated } from "@/lib/agreementGuard";
+import { pingHeartbeat } from "@/lib/heartbeat";
 
 // GET /api/cron/agreement-followups — daily, 13:00 UTC (≈ 9am ET).
 //
@@ -165,6 +166,7 @@ export async function GET(req: NextRequest) {
       finalized++;
     }
 
+    await pingHeartbeat("agreement-followups");
     return ok({ proposalsExpired, prompted, finalized });
   } catch (e) {
     return err(`Cron failed: ${e instanceof Error ? e.message : "unknown error"}`, 500);

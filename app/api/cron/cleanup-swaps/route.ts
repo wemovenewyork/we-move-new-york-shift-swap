@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { nyToday } from "@/lib/nyDate";
+import { pingHeartbeat } from "@/lib/heartbeat";
 
 // GET /api/cron/cleanup-swaps
 // Two-phase data retention. Phase A soft-archives retired swaps so they drop
@@ -82,6 +83,7 @@ export async function GET(req: NextRequest) {
       deleted = res.count;
     }
 
+    await pingHeartbeat("cleanup-swaps");
     return ok({ archived: archived.count, deleted });
   } catch (e) {
     return err(`Cron failed: ${e instanceof Error ? e.message : "unknown error"}`, 500);

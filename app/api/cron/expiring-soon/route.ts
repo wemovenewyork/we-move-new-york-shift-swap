@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { notifyMany, notifyUser } from "@/lib/notifyUser";
+import { pingHeartbeat } from "@/lib/heartbeat";
 
 // Runs daily — notifies owners and interested users about swaps expiring tomorrow
 export async function GET(req: NextRequest) {
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
     select: { id: true, userId: true, depotId: true, details: true },
   });
 
-  if (swaps.length === 0) return ok({ notified: 0 });
+  if (swaps.length === 0) { await pingHeartbeat("expiring-soon"); return ok({ notified: 0 }); }
 
   let notified = 0;
   for (const swap of swaps) {
@@ -53,7 +54,8 @@ export async function GET(req: NextRequest) {
     notified++;
   }
 
-  return ok({ notified });
+  await pingHeartbeat("expiring-soon");
+    return ok({ notified });
   } catch (e) {
     return err(`Cron failed: ${e instanceof Error ? e.message : "unknown error"}`, 500);
   }

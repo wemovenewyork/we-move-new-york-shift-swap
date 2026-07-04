@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
 import { notifyMany } from "@/lib/notifyUser";
 import { getPrefsMany } from "@/lib/notificationPrefs";
+import { pingHeartbeat } from "@/lib/heartbeat";
 
 // Runs every morning at 7 AM ET — sends each subscribed operator a summary of
 // new open swaps posted in their depot in the last 24 hours.
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
       countsByDepot.set(s.depotId, (countsByDepot.get(s.depotId) ?? 0) + 1);
     }
 
-    if (countsByDepot.size === 0) return ok({ sent: 0, message: "No new swaps" });
+    if (countsByDepot.size === 0) { await pingHeartbeat("daily-digest"); return ok({ sent: 0, message: "No new swaps" }); }
 
     // Subscribed users in affected depots, grouped per depot so each gets
     // their own count in the message body.
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
       },
       select: { id: true, depotId: true },
     });
-    if (users.length === 0) return ok({ sent: 0 });
+    if (users.length === 0) { await pingHeartbeat("daily-digest"); return ok({ sent: 0 }); }
 
     const prefsMap = await getPrefsMany(users.map(u => u.id));
     const byDepot = new Map<string, string[]>();
@@ -70,6 +71,7 @@ export async function GET(req: NextRequest) {
       sent += ids.length;
     }
 
+    await pingHeartbeat("daily-digest");
     return ok({ sent, excluded });
   } catch (e) {
     return err(`Cron failed: ${e instanceof Error ? e.message : "unknown error"}`, 500);
