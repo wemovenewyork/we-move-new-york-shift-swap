@@ -9,6 +9,7 @@ import { notifyMany } from "@/lib/notifyUser";
 import { touchLastActive } from "@/lib/touchLastActive";
 import { parseBody, BODY_16KB } from "@/lib/parseBody";
 import { nyToday, oneYearOut, parseDateOnly, validateSwapDate } from "@/lib/nyDate";
+import { getPrefsMany } from "@/lib/notificationPrefs";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -280,18 +281,64 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Notify all other users at this depot who have push subscriptions
+  // A7 targeted new-post delivery (mutual-match-lite). From the depot's
+  // subscribed users (minus poster and blocked pairs):
+  //   mode "all"     → always pushed
+  //   mode "matches" → pushed only when the post plausibly concerns them:
+  //                    flexibleMode on, OR they have an open swap of the same
+  //                    category (actively trading the same kind of thing)
+  //   mode "digest"/"off" → no real-time push (digest is the summary layer)
   const depotUsers = await prisma.user.findMany({
     where: { depotId: dbUser.depotId, id: { not: user.userId }, pushSubscriptions: { some: {} } },
-    select: { id: true },
+    select: { id: true, flexibleMode: true },
   });
+
+  // Blocked pairs (either direction) never hear about each other's posts.
+  const postBlocks = await prisma.block.findMany({
+    where: { OR: [{ blockerId: user.userId }, { blockedId: user.userId }] },
+    select: { blockerId: true, blockedId: true },
+  });
+  const blockedIds = new Set<string>();
+  for (const b of postBlocks) {
+    blockedIds.add(b.blockerId === user.userId ? b.blockedId : b.blockerId);
+  }
+  const candidates = depotUsers.filter(u => !blockedIds.has(u.id));
+
+  const prefsMap = await getPrefsMany(candidates.map(u => u.id));
+  const allIds: string[] = [];
+  const matchCandidates: { id: string; flexibleMode: boolean }[] = [];
+  for (const u of candidates) {
+    const mode = prefsMap.get(u.id)?.prefs.new_post ?? "digest";
+    if (mode === "all") allIds.push(u.id);
+    else if (mode === "matches") matchCandidates.push(u);
+  }
+
+  // "matches": flexible-mode users match everything; otherwise an open swap
+  // of the same category signals they're looking to trade the same thing.
+  let matchedIds: string[] = [];
+  if (matchCandidates.length > 0) {
+    const flexible = matchCandidates.filter(u => u.flexibleMode).map(u => u.id);
+    const rest = matchCandidates.filter(u => !u.flexibleMode).map(u => u.id);
+    let sameCategoryPosters: string[] = [];
+    if (rest.length > 0) {
+      const open = await prisma.swap.findMany({
+        where: { userId: { in: rest }, status: "open", category: swap.category },
+        select: { userId: true },
+        distinct: ["userId"],
+      });
+      sameCategoryPosters = open.map(o => o.userId);
+    }
+    matchedIds = [...flexible, ...sameCategoryPosters];
+  }
+
+  const recipients = [...new Set([...allIds, ...matchedIds])];
   const categoryLabel =
     swap.category === "work" ? "Work"
     : swap.category === "daysoff" ? "Days Off"
     : "Vacation";
-  await notifyMany(depotUsers.map(u => u.id), {
+  await notifyMany(recipients, {
     category: "new_post",
-      title: `New ${categoryLabel} swap posted`,
+    title: `New ${categoryLabel} swap posted`,
     body: `${posterName} posted a new swap — check the board`,
     url: `/depot/${dbUser.depot!.code}/swaps/${swap.id}`,
   });
