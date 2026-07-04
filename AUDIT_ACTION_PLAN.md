@@ -15,6 +15,9 @@ Fix these in order. HIGH items are launch-blockers.
   - M5 `RUNBOOK.md` exists. M6 Sentry rate-limit alert live. M7 export rate-limited (3/hr). M8 `form-action 'self'` in CSP. M9 GA/GTM disclosed in the Privacy Policy.
   - **M10 admin report alert — implemented this session** (`app/api/swaps/[id]/report/route.ts` emails `ADMIN_ALERT_EMAIL`, non-fatal, Sentry on failure).
   - M4 (Neon preview branch) and M11 (optional `hideName`) remain — M4 is infra-only; M11 is an optional feature.
+- **LOW:**
+  - **L1 npm audit — done this session.** `npm audit fix` (semver-safe) bumped next→16.2.10 + @sentry/nextjs→10.63.0, clearing all 3 HIGH Next.js advisories. Remaining 3 findings (1 low / 2 moderate) are dev/build-time only (esbuild Windows dev-server, Next's bundled postcss) and need the still-preview next@16.3.0 to clear; not runtime-exploitable.
+  - L3 (`JWT_RESET_SECRET` in CI) already landed. L2/L4/L6/L7 remain manual verifications.
 
 ---
 
