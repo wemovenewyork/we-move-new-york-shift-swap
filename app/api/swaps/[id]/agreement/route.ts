@@ -7,6 +7,7 @@ import { ok, err } from "@/lib/apiResponse";
 import { notifyUser, notifyMany } from "@/lib/notifyUser";
 import { parseBody, BODY_4KB } from "@/lib/parseBody";
 import { assertRowsUpdated, isFinalizedConflict } from "@/lib/agreementGuard";
+import { nyToday } from "@/lib/nyDate";
 
 // Trust v2: proposals don't lock the swap. Multiple concurrent pending
 // proposals per swap are allowed (from different users — one per user via
@@ -334,9 +335,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return ok(updated);
   }
 
-  // ── post-shift: confirm_happened / report_noshow (next commit) ──────────
+  // ── post-shift: confirm_happened / report_noshow ─────────────────────────
   if (action === "confirm_happened" || action === "report_noshow") {
-    return err("Post-shift confirmation not yet available", 400);
+    return handlePostShift(action, agreement, swap, { isUserA, depotId, swapUrl });
   }
 
   // ── legacy compat: old two-step confirm for userA_confirmed rows ────────
@@ -380,4 +381,124 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   return err("Invalid action", 400);
+}
+
+// Post-shift resolution. Both true → completed (+1 completed each, review
+// prompts). One true + one false → disputed (admin resolves; no auto-ding).
+// Both false → cancelled retroactively, no ding (mutually called off).
+// One answer only → stored; the followups cron finalizes after 7 days.
+async function handlePostShift(
+  action: "confirm_happened" | "report_noshow",
+  agreement: { id: string; swapId: string; userAId: string; userBId: string; status: string; userAHappened: boolean | null; userBHappened: boolean | null; shiftDate: Date | null; acceptedAt: Date | null },
+  swap: { id: string },
+  ctx: { isUserA: boolean; depotId: string; swapUrl: string },
+) {
+  if (agreement.status !== "accepted") {
+    return err("Post-shift confirmation is only available on accepted agreements", 400);
+  }
+  // Server-side gate: answers only count once the shift is actually behind us
+  // (UI gating alone would leave a collusion path — accept + instant mutual
+  // confirm to farm completed). Undated vacation swaps open at acceptedAt+30d,
+  // mirroring the followups cron.
+  const shiftPast = agreement.shiftDate
+    ? agreement.shiftDate.getTime() < nyToday().getTime()
+    : agreement.acceptedAt
+      ? Date.now() > agreement.acceptedAt.getTime() + 30 * 86400_000
+      : false;
+  if (!shiftPast) return err("The shift hasn't happened yet", 400);
+  const myField = ctx.isUserA ? "userAHappened" : "userBHappened";
+  if ((ctx.isUserA ? agreement.userAHappened : agreement.userBHappened) != null) {
+    return err("You already answered for this swap", 409);
+  }
+  const myAnswer = action === "confirm_happened";
+
+  const state = { outcome: "waiting" as "waiting" | "completed" | "disputed" | "cancelled" };
+  let updated;
+  try {
+    updated = await prisma.$transaction(async (tx) => {
+      // Guarded write: only set my answer if still accepted and my field is
+      // still null (double-submit / race with the cron's finalization).
+      const res = await tx.swapAgreement.updateMany({
+        where: { id: agreement.id, status: "accepted", [myField]: null },
+        data: { [myField]: myAnswer },
+      });
+      assertRowsUpdated(res.count);
+
+      const row = await tx.swapAgreement.findUniqueOrThrow({ where: { id: agreement.id } });
+      const a = row.userAHappened;
+      const b = row.userBHappened;
+
+      if (a != null && b != null) {
+        if (a && b) {
+          state.outcome = "completed";
+          const res2 = await tx.swapAgreement.updateMany({
+            where: { id: agreement.id, status: "accepted" },
+            data: { status: "completed", completedAt: new Date() },
+          });
+          assertRowsUpdated(res2.count);
+          await tx.swap.update({ where: { id: swap.id }, data: { status: "filled" } });
+          await Promise.all([
+            tx.reputation.upsert({
+              where: { userId: row.userAId },
+              update: { completed: { increment: 1 } },
+              create: { userId: row.userAId, completed: 1 },
+            }),
+            tx.reputation.upsert({
+              where: { userId: row.userBId },
+              update: { completed: { increment: 1 } },
+              create: { userId: row.userBId, completed: 1 },
+            }),
+          ]);
+        } else if (!a && !b) {
+          state.outcome = "cancelled";
+          const res2 = await tx.swapAgreement.updateMany({
+            where: { id: agreement.id, status: "accepted" },
+            data: { status: "cancelled" },
+          });
+          assertRowsUpdated(res2.count);
+          await tx.swap.update({ where: { id: swap.id }, data: { status: "open" } });
+        } else {
+          state.outcome = "disputed";
+          const res2 = await tx.swapAgreement.updateMany({
+            where: { id: agreement.id, status: "accepted" },
+            data: { status: "disputed" },
+          });
+          assertRowsUpdated(res2.count);
+          // Swap stays as-is; admin resolves from the disputes queue.
+        }
+      }
+      return tx.swapAgreement.findUniqueOrThrow({ where: { id: agreement.id } });
+    });
+  } catch (e) {
+    if (isFinalizedConflict(e)) return err("This agreement was already finalized", 409);
+    throw e;
+  }
+
+  const otherUserId = ctx.isUserA ? agreement.userBId : agreement.userAId;
+  if (state.outcome === "completed") {
+    await notifyMany([agreement.userAId, agreement.userBId], {
+      title: "Swap completed! 🎉",
+      body: "Both of you confirmed the swap happened. Leave a quick rating to build depot trust.",
+      url: ctx.swapUrl,
+    });
+  } else if (state.outcome === "disputed") {
+    await notifyUser(otherUserId, {
+      title: "Swap outcome disputed",
+      body: "Your answers about this swap don't match. An admin will review it — no reputation change for now.",
+      url: ctx.swapUrl,
+    });
+  } else if (state.outcome === "cancelled") {
+    await notifyUser(otherUserId, {
+      title: "Swap marked as not happened",
+      body: "Both of you said the swap didn't happen. No reputation change.",
+      url: ctx.swapUrl,
+    });
+  } else {
+    await notifyUser(otherUserId, {
+      title: "Did your swap happen?",
+      body: "The other operator answered. Confirm your side to settle the swap.",
+      url: ctx.swapUrl,
+    });
+  }
+  return ok(updated);
 }
