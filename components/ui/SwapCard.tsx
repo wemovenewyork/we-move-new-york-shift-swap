@@ -215,7 +215,7 @@ export default function SwapCard({ swap: s, user, onDelete, onStatusChange, onEd
           {own ? (
             <>
               {onShare && (
-                <button onClick={() => onShare(s)} title="Share swap" aria-label="Share swap" style={{ padding: "4px 8px", borderRadius: 8, border: `1px solid ${C.gold}33`, background: C.gs, cursor: "pointer", color: C.gold, display: "flex", alignItems: "center" }}>
+                <button onClick={() => onShare(s)} title={tr("share.button")} aria-label={tr("share.button")} style={{ padding: "4px 8px", borderRadius: 8, border: `1px solid ${C.gold}33`, background: C.gs, cursor: "pointer", color: C.gold, display: "flex", alignItems: "center" }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                 </button>
               )}

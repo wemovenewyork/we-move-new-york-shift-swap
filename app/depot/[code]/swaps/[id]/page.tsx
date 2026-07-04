@@ -50,7 +50,7 @@ export default function SwapDetailPage() {
 
   const handleShare = async () => {
     if (!id) return;
-    await shareSwap(id, () => showToast("Link copied!"));
+    await shareSwap(id, () => showToast(t("share.copied", user?.language ?? "en")));
   };
 
   useEffect(() => {

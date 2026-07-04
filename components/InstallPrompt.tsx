@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { C } from "@/constants/colors";
+import { useAuth } from "@/lib/AuthContext";
+import { useT } from "@/lib/i18n";
 import {
   detectPlatform,
   canShowInstallPrompt,
@@ -56,6 +58,8 @@ function readStored(): InstallPromptStored {
 }
 
 export default function InstallPrompt() {
+  const { user } = useAuth();
+  const tt = useT(user?.language);
   const [visible, setVisible] = useState(false);
   const [showIosSheet, setShowIosSheet] = useState(false);
   const [platform] = useState<"ios" | "other">(() =>
@@ -142,11 +146,11 @@ export default function InstallPrompt() {
       <div style={{ position: "fixed", left: 12, right: 12, bottom: 76, zIndex: 200, background: "rgba(1,0,40,.96)", backdropFilter: "blur(20px)", border: `1px solid ${C.gg}`, borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 8px 30px rgba(0,0,0,.4)" }}>
         <div style={{ fontSize: 22 }}>📲</div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.white }}>Install Shift Swap</div>
-          <div style={{ fontSize: 11, color: C.m, lineHeight: 1.4 }}>Faster access + notifications that work.</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.white }}>{tt("install.title")}</div>
+          <div style={{ fontSize: 11, color: C.m, lineHeight: 1.4 }}>{tt("install.subtitle")}</div>
         </div>
         <button onClick={onCta} style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: `linear-gradient(135deg,${C.gold},${C.gold}dd)`, color: C.bg, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
-          Install
+          {tt("install.cta")}
         </button>
         <button onClick={dismiss} aria-label="Dismiss" style={{ padding: 6, background: "none", border: "none", color: C.m, cursor: "pointer", fontSize: 16, flexShrink: 0 }}>×</button>
       </div>
@@ -154,15 +158,15 @@ export default function InstallPrompt() {
       {showIosSheet && (
         <div onClick={() => setShowIosSheet(false)} style={{ position: "fixed", inset: 0, zIndex: 210, background: "rgba(0,0,0,.6)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 440, background: C.bg, borderRadius: "20px 20px 0 0", border: `1px solid ${C.bd}`, padding: "24px 20px 32px" }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: C.white, marginBottom: 16 }}>Add to Home Screen</div>
-            <Step n={1} label="Tap the Share button in Safari">
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.white, marginBottom: 16 }}>{tt("install.iosTitle")}</div>
+            <Step n={1} label={tt("install.iosStep1")}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
             </Step>
-            <Step n={2} label='Choose "Add to Home Screen"'>
+            <Step n={2} label={tt("install.iosStep2")}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             </Step>
-            <div style={{ fontSize: 11, color: C.m, marginTop: 14, lineHeight: 1.5 }}>Push notifications need iOS 16.4 or later.</div>
-            <button onClick={dismiss} style={{ width: "100%", marginTop: 18, padding: 12, borderRadius: 12, border: `1px solid ${C.bd}`, background: C.s, color: C.white, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Got it</button>
+            <div style={{ fontSize: 11, color: C.m, marginTop: 14, lineHeight: 1.5 }}>{tt("install.iosNote")}</div>
+            <button onClick={dismiss} style={{ width: "100%", marginTop: 18, padding: 12, borderRadius: 12, border: `1px solid ${C.bd}`, background: C.s, color: C.white, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>{tt("install.gotIt")}</button>
           </div>
         </div>
       )}
