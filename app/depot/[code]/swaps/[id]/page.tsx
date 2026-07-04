@@ -14,6 +14,7 @@ import ConfirmModal from "@/components/ui/ConfirmModal";
 import AgreementPanel from "@/components/ui/AgreementPanel";
 import TimePicker from "@/components/ui/TimePicker";
 import { timeAgo, fmtTime } from "@/lib/format";
+import { t } from "@/lib/i18n";
 
 export default function SwapDetailPage() {
   const { user, loading } = useAuth();
@@ -126,7 +127,7 @@ export default function SwapDetailPage() {
       setProposeNote(""); setPRun(""); setPRoute(""); setPStart(""); setPClear("");
       setPFromDay(""); setPFromDate(""); setPToDay(""); setPToDate("");
       setPVacHave(""); setPVacWant("");
-      showToast("Proposal sent!");
+      showToast(t("trust.proposalToast", user?.language ?? "en"));
     } catch (e: unknown) { showToast(e instanceof Error ? e.message : "Failed to propose"); }
     setProposeBusy(false);
   };

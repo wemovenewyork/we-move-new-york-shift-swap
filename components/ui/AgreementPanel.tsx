@@ -7,6 +7,8 @@ import { C } from "@/constants/colors";
 import Icon from "./Icon";
 import Confetti from "./Confetti";
 import { playClick, playChime } from "@/lib/sound";
+import { useAuth } from "@/lib/AuthContext";
+import { useT } from "@/lib/i18n";
 import { analytics } from "@/lib/analytics";
 
 interface Props {
@@ -83,6 +85,8 @@ function isPostShift(agreement: SwapAgreement): boolean {
 
 /** Star rating input shown once the agreement is completed. */
 function ReviewStars({ swapId }: { swapId: string }) {
+  const { user } = useAuth();
+  const tt = useT(user?.language);
   const [existing, setExisting] = useState<number | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [hover, setHover] = useState(0);
@@ -112,7 +116,7 @@ function ReviewStars({ swapId }: { swapId: string }) {
   return (
     <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 12, background: "rgba(209,173,56,.06)", border: "1px solid rgba(209,173,56,.2)" }}>
       <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, marginBottom: 6 }}>
-        {existing ? "Your rating" : "Rate this swap partner"}
+        {existing ? tt("trust.yourRating") : tt("trust.rate")}
       </div>
       <div style={{ display: "flex", gap: 6 }}>
         {[1, 2, 3, 4, 5].map((n) => {
@@ -130,7 +134,7 @@ function ReviewStars({ swapId }: { swapId: string }) {
           );
         })}
       </div>
-      {!existing && <div style={{ fontSize: 10, color: C.m, marginTop: 6 }}>One rating per swap — it feeds their reputation score.</div>}
+      {!existing && <div style={{ fontSize: 10, color: C.m, marginTop: 6 }}>{tt("trust.rateHint")}</div>}
       {error && <div role="alert" style={{ fontSize: 11, color: "#EF4444", marginTop: 6 }}>{error}</div>}
     </div>
   );
@@ -140,6 +144,8 @@ function ReviewStars({ swapId }: { swapId: string }) {
 function DidItHappenCard({ swapId, agreement, currentUserId, onUpdate }: {
   swapId: string; agreement: SwapAgreement; currentUserId: string; onUpdate: (a: SwapAgreement) => void;
 }) {
+  const { user } = useAuth();
+  const tt = useT(user?.language);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const isUserA = agreement.userAId === currentUserId;
@@ -165,10 +171,10 @@ function DidItHappenCard({ swapId, agreement, currentUserId, onUpdate }: {
     return (
       <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 12, background: "rgba(255,255,255,.04)", border: `1px solid ${C.bd}` }}>
         <div style={{ fontSize: 12, color: C.white, fontWeight: 600 }}>
-          You answered: {myAnswer ? "it happened ✓" : "it didn't happen ✗"}
+          {myAnswer ? tt("trust.youAnsweredYes") : tt("trust.youAnsweredNo")}
         </div>
         {otherAnswer == null && (
-          <div style={{ fontSize: 11, color: C.m, marginTop: 4 }}>Waiting for the other operator to confirm their side.</div>
+          <div style={{ fontSize: 11, color: C.m, marginTop: 4 }}>{tt("trust.waitingOther")}</div>
         )}
       </div>
     );
@@ -176,17 +182,17 @@ function DidItHappenCard({ swapId, agreement, currentUserId, onUpdate }: {
 
   return (
     <div style={{ marginTop: 12, padding: "14px 16px", borderRadius: 12, background: "rgba(96,165,250,.08)", border: "1px solid rgba(96,165,250,.25)" }}>
-      <div style={{ fontSize: 13, fontWeight: 800, color: "#60A5FA", marginBottom: 4 }}>Did your swap happen?</div>
+      <div style={{ fontSize: 13, fontWeight: 800, color: "#60A5FA", marginBottom: 4 }}>{tt("trust.didItHappen")}</div>
       <div style={{ fontSize: 11, color: C.m, marginBottom: 10, lineHeight: 1.5 }}>
-        Confirm to settle the swap and build your reputation. Your answer is final.
+        {tt("trust.didItHappenHint")}
       </div>
       {error && <div role="alert" style={{ fontSize: 11, color: "#EF4444", marginBottom: 8 }}>{error}</div>}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <button onClick={() => { playClick(); answer(true); }} disabled={busy} style={{ padding: 12, borderRadius: 12, border: "none", background: "linear-gradient(135deg,#00C9A7,#00C9A7cc)", cursor: "pointer", fontSize: 13, fontWeight: 700, color: "#fff", opacity: busy ? 0.6 : 1 }}>
-          ✓ It happened
+          {tt("trust.itHappened")}
         </button>
         <button onClick={() => answer(false)} disabled={busy} style={{ padding: 12, borderRadius: 12, border: "1px solid #EF444433", background: "#EF444412", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#EF4444", opacity: busy ? 0.6 : 1 }}>
-          ✗ It didn&apos;t
+          {tt("trust.itDidnt")}
         </button>
       </div>
     </div>
@@ -197,6 +203,8 @@ function DidItHappenCard({ swapId, agreement, currentUserId, onUpdate }: {
 function ProposalsList({ swapId, proposals, onUpdate, onProposalsChanged }: {
   swapId: string; proposals: SwapAgreement[]; onUpdate: (a: SwapAgreement) => void; onProposalsChanged?: () => void;
 }) {
+  const { user } = useAuth();
+  const tt = useT(user?.language);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
@@ -222,11 +230,11 @@ function ProposalsList({ swapId, proposals, onUpdate, onProposalsChanged }: {
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <Icon n="shield" s={16} c="#F59E0B" />
         <span style={{ fontSize: 12, fontWeight: 700, color: "#F59E0B", textTransform: "uppercase", letterSpacing: 1 }}>
-          Proposals ({proposals.length})
+          {tt("trust.proposals")} ({proposals.length})
         </span>
       </div>
       <div style={{ fontSize: 11, color: C.m, marginBottom: 10, lineHeight: 1.5 }}>
-        Accepting one locks the swap and passes on the others — declined operators aren&apos;t penalized.
+        {tt("trust.proposalsHint")}
       </div>
       {error && <div role="alert" style={{ padding: "8px 12px", borderRadius: 10, background: "#EF444415", border: "1px solid #EF444433", fontSize: 12, color: "#EF4444", marginBottom: 10 }}>{error}</div>}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -242,14 +250,14 @@ function ProposalsList({ swapId, proposals, onUpdate, onProposalsChanged }: {
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: 11, color: C.m, marginBottom: 10 }}>No schedule added</div>
+              <div style={{ fontSize: 11, color: C.m, marginBottom: 10 }}>{tt("trust.noSchedule")}</div>
             )}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <button onClick={() => act(p, "decline")} disabled={busyId != null} style={{ padding: 10, borderRadius: 10, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.04)", cursor: "pointer", fontSize: 12, fontWeight: 600, color: C.m, opacity: busyId ? 0.6 : 1 }}>
-                Decline
+                {tt("trust.decline")}
               </button>
               <button onClick={() => { playClick(); act(p, "accept"); }} disabled={busyId != null} style={{ padding: 10, borderRadius: 10, border: "none", background: "linear-gradient(135deg,#00C9A7,#00C9A7cc)", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#fff", opacity: busyId ? 0.6 : 1 }}>
-                Accept
+                {tt("trust.accept")}
               </button>
             </div>
           </div>
@@ -260,6 +268,8 @@ function ProposalsList({ swapId, proposals, onUpdate, onProposalsChanged }: {
 }
 
 export default function AgreementPanel({ swap, agreement, proposals, isOwner, currentUserId, onUpdate, onProposalsChanged, onPropose, onPrint }: Props) {
+  const { user } = useAuth();
+  const tt = useT(user?.language);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
@@ -303,10 +313,10 @@ export default function AgreementPanel({ swap, agreement, proposals, isOwner, cu
           style={{ width: "100%", padding: "16px 20px", borderRadius: 16, border: `1px solid #00C9A744`, background: "rgba(0,201,167,.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 15, fontWeight: 700, color: "#00C9A7" }}
         >
           <Icon n="agree" s={18} c="#00C9A7" />
-          Propose Swap
+          {tt("trust.propose")}
         </button>
         <div style={{ fontSize: 10, color: C.m, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
-          Free to propose — the swap stays open until the poster accepts someone. Accepting creates a timestamped record both operators can show their dispatcher.
+          {tt("trust.proposeHint")}
         </div>
       </div>
     );
@@ -318,14 +328,14 @@ export default function AgreementPanel({ swap, agreement, proposals, isOwner, cu
       <div style={{ marginTop: 16, background: "rgba(255,255,255,.03)", borderRadius: 16, padding: 18, border: "1px solid rgba(245,158,11,.25)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
           <Icon n="shield" s={16} c="#F59E0B" />
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#F59E0B", textTransform: "uppercase", letterSpacing: 1 }}>Proposal Sent</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#F59E0B", textTransform: "uppercase", letterSpacing: 1 }}>{tt("trust.proposalSent")}</span>
         </div>
         <div style={{ fontSize: 12, color: C.m, lineHeight: 1.5, marginBottom: 12 }}>
-          The poster is reviewing proposals. You&apos;ll be notified when they decide — withdrawing now is free.
+          {tt("trust.proposalReviewing")}
         </div>
         {error && <div role="alert" style={{ padding: "8px 12px", borderRadius: 10, background: "#EF444415", border: "1px solid #EF444433", fontSize: 12, color: "#EF4444", marginBottom: 10 }}>{error}</div>}
         <button onClick={() => act("cancel")} disabled={busy} style={{ width: "100%", padding: 12, borderRadius: 12, border: `1px solid ${C.bd}`, background: "rgba(255,255,255,.04)", cursor: "pointer", fontSize: 13, fontWeight: 600, color: C.m, opacity: busy ? 0.6 : 1 }}>
-          Withdraw Proposal
+          {tt("trust.withdraw")}
         </button>
       </div>
     );
@@ -336,7 +346,7 @@ export default function AgreementPanel({ swap, agreement, proposals, isOwner, cu
     return (
       <div style={{ marginTop: 16, padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: `1px solid ${C.bd}` }}>
         <div style={{ fontSize: 12, color: C.m, lineHeight: 1.5 }}>
-          The poster went with another proposal this time — no effect on your reputation.
+          {tt("trust.declinedNote")}
         </div>
       </div>
     );
@@ -360,16 +370,16 @@ export default function AgreementPanel({ swap, agreement, proposals, isOwner, cu
         <Icon n="shield" s={16} c={color} />
         <span style={{ fontSize: 12, fontWeight: 700, color: color, textTransform: "uppercase", letterSpacing: 1 }}>Swap Agreement</span>
         <span style={{ marginLeft: "auto", padding: "3px 10px", borderRadius: 20, background: color + "18", border: `1px solid ${color}33`, fontSize: 10, fontWeight: 700, color, textTransform: "uppercase", letterSpacing: 0.5 }}>
-          {STATUS_BADGES[agreement.status] ?? agreement.status}
+          {tt(`trust.badge.${agreement.status}`) !== `trust.badge.${agreement.status}` ? tt(`trust.badge.${agreement.status}`) : (STATUS_BADGES[agreement.status] ?? agreement.status)}
         </span>
       </div>
 
       {/* Accepted banner */}
       {isAccepted && (
         <div style={{ background: "rgba(96,165,250,.08)", border: "1px solid rgba(96,165,250,.25)", borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#60A5FA" }}>Locked in!</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#60A5FA" }}>{tt("trust.lockedIn")}</div>
           <div style={{ fontSize: 11, color: C.m, marginTop: 2, lineHeight: 1.5 }}>
-            Print the agreement for your dispatcher. Backing out now counts as a cancellation on your record.
+            {tt("trust.lockedInHint")}
           </div>
           {onPrint && (
             <button
@@ -377,7 +387,7 @@ export default function AgreementPanel({ swap, agreement, proposals, isOwner, cu
               style={{ width: "100%", marginTop: 10, padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(96,165,250,.4)", background: "rgba(96,165,250,.12)", cursor: "pointer", fontSize: 13, fontWeight: 700, color: "#60A5FA", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
-              Print Agreement
+              {tt("trust.printAgreement")}
             </button>
           )}
         </div>
@@ -386,9 +396,9 @@ export default function AgreementPanel({ swap, agreement, proposals, isOwner, cu
       {/* Disputed banner */}
       {isDisputed && (
         <div style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.3)", borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#F59E0B" }}>Outcome disputed</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#F59E0B" }}>{tt("trust.disputed")}</div>
           <div style={{ fontSize: 11, color: C.m, marginTop: 2, lineHeight: 1.5 }}>
-            Your answers about this swap don&apos;t match. An admin will review it — reputations are unchanged until then.
+            {tt("trust.disputedHint")}
           </div>
         </div>
       )}
@@ -399,7 +409,7 @@ export default function AgreementPanel({ swap, agreement, proposals, isOwner, cu
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: onPrint ? 12 : 0 }}>
             <Icon n="chk" s={20} c="#00C9A7" />
             <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#00C9A7" }}>This swap is taken!</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#00C9A7" }}>{tt("trust.taken")}</div>
               <div style={{ fontSize: 11, color: C.m, marginTop: 2 }}>
                 Confirmed {agreement.completedAt ? new Date(agreement.completedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : ""}
               </div>
@@ -481,10 +491,10 @@ export default function AgreementPanel({ swap, agreement, proposals, isOwner, cu
       {!canConfirm && canCancel && (
         <div style={{ marginTop: isAccepted ? 4 : 0 }}>
           <button onClick={() => act("cancel")} disabled={busy} style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid #EF444433", background: "#EF444412", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#EF4444", opacity: busy ? 0.6 : 1 }}>
-            Cancel Agreement
+            {tt("trust.cancelAgreement")}
           </button>
           <div style={{ fontSize: 10, color: C.m, textAlign: "center", marginTop: 6 }}>
-            Cancelling an accepted swap adds a cancellation to your record.
+            {tt("trust.cancelWarning")}
           </div>
         </div>
       )}
