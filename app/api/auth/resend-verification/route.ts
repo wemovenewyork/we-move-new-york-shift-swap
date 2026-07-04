@@ -7,6 +7,7 @@ import { ok, err } from "@/lib/apiResponse";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { parseBody, BODY_1KB } from "@/lib/parseBody";
 import { escapeHtml } from "@/lib/escapeHtml";
+import { getAppUrl } from "@/lib/appUrl";
 
 // POST /api/auth/resend-verification
 // Accepts { email } — re-issues a verification token if the account exists and is unverified.
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+      const appUrl = getAppUrl();
       if (!appUrl) throw new Error("NEXT_PUBLIC_APP_URL is not set");
       const verifyLink = `${appUrl}/verify-email/${verifyToken}`;
       const safeFirstName = escapeHtml(user.firstName);

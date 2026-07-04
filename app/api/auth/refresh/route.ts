@@ -2,11 +2,30 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyRefreshToken, signAccessToken, signRefreshToken, checkActive } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { err } from "@/lib/apiResponse";
-import { blockRefreshToken, isRefreshTokenBlocked } from "@/lib/tokenBlocklist";
+import { blockRefreshToken, isRefreshTokenBlocked, storeRotationGrace, getRotationGrace } from "@/lib/tokenBlocklist";
 import crypto from "crypto";
 
 function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function withAuthCookies(res: NextResponse, accessToken: string, refreshToken: string): NextResponse {
+  const isProd = process.env.NODE_ENV === "production";
+  res.cookies.set("accessToken", accessToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "strict",
+    path: "/",
+    maxAge: 900,
+  });
+  res.cookies.set("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "strict",
+    path: "/api/auth",
+    maxAge: 604800,
+  });
+  return res;
 }
 
 export async function POST(req: NextRequest) {
@@ -16,9 +35,16 @@ export async function POST(req: NextRequest) {
   try {
     const payload = verifyRefreshToken(refreshToken);
 
-    // Reject if token has been revoked
+    // Reject if token has been revoked — unless we're inside the 30s rotation
+    // grace window (A12): a concurrent tab that lost the rotation race gets
+    // the SAME replacement pair instead of a broken session. Reuse after the
+    // window stays 401.
     const tokenHash = hashToken(refreshToken);
     if (await isRefreshTokenBlocked(tokenHash)) {
+      const grace = await getRotationGrace(tokenHash);
+      if (grace) {
+        return withAuthCookies(NextResponse.json({ ok: true }), grace.accessToken, grace.refreshToken);
+      }
       return err("Token has been revoked", 401);
     }
 
@@ -43,33 +69,19 @@ export async function POST(req: NextRequest) {
       return err("Email not verified", 403);
     }
 
-    // Revoke the current refresh token (token rotation — each token usable once)
+    // Rotate: sign the replacement pair, cache it in the grace window keyed by
+    // the OLD token hash (BEFORE blocking, so a parallel request can never see
+    // "blocked" without the grace entry existing), then revoke the old token.
     const decoded = JSON.parse(Buffer.from(refreshToken.split(".")[1], "base64url").toString());
     const ttlSeconds = Math.max(0, (decoded.exp ?? 0) - Math.floor(Date.now() / 1000));
-    await blockRefreshToken(tokenHash, ttlSeconds);
 
     const newAccessToken = signAccessToken({ userId: payload.userId, email: payload.email });
     const newRefreshToken = signRefreshToken({ userId: payload.userId, email: payload.email });
 
-    const res = NextResponse.json({ ok: true });
+    await storeRotationGrace(tokenHash, { accessToken: newAccessToken, refreshToken: newRefreshToken });
+    await blockRefreshToken(tokenHash, ttlSeconds);
 
-    const isProd = process.env.NODE_ENV === "production";
-    res.cookies.set("accessToken", newAccessToken, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: "strict",
-      path: "/",
-      maxAge: 900,
-    });
-    res.cookies.set("refreshToken", newRefreshToken, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: "strict",
-      path: "/api/auth",
-      maxAge: 604800,
-    });
-
-    return res;
+    return withAuthCookies(NextResponse.json({ ok: true }), newAccessToken, newRefreshToken);
   } catch {
     return err("Invalid or expired refresh token", 401);
   }

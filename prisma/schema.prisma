@@ -136,6 +136,9 @@ model Swap {
 
   @@index([depotId, status, createdAt(sort: Desc)])
   @@index([archivedAt])
+  // A9: hot paths — per-user active-swap caps and "my swaps" listings
+  @@index([userId, status])
+  @@index([userId, createdAt])
   @@map("swaps")
 }
 
@@ -164,6 +167,10 @@ model Message {
   fromUser User  @relation("SentMessages", fields: [fromUserId], references: [id])
   toUser   User  @relation("ReceivedMessages", fields: [toUserId], references: [id])
 
+  // A9: hot paths — unread counts, per-swap threads, conversation history
+  @@index([toUserId, read])
+  @@index([swapId])
+  @@index([fromUserId, toUserId, createdAt(sort: Desc)])
   @@map("messages")
 }
 
@@ -280,7 +287,7 @@ enum SwapCategory {
   work
   daysoff
   vacation
-  open_work
+  open_work // reserved — open-work pickups, unimplemented; do not use in validation until built (A11; removing a PG enum value needs type recreation — not worth it)
 }
 
 enum SwapStatus {
@@ -362,12 +369,3 @@ model Notification {
   @@map("notifications")
 }
 
-enum AuditAction {
-  role_change
-  invite_revoke
-  invite_generate
-  report_dismiss
-  report_review
-  user_delete
-  account_delete
-}

@@ -33,12 +33,32 @@ export async function GET(req: NextRequest) {
     data: { status: "expired" },
   });
 
-  // Also expire daysoff swaps where fromDate is in the past
+  // A13: daysoff swaps expire on the LATER of fromDate/toDate — a swap
+  // offering "my Tue for your Sat" is still tradeable after Tue passes as
+  // long as Sat hasn't. Expire only when every concrete date is behind us.
   const result2 = await prisma.swap.updateMany({
     where: {
       status: { in: ["open", "pending"] },
-      fromDate: { lt: today, not: null },
       date: null,
+      fromDate: { lt: today, not: null },
+      OR: [
+        { toDate: null },
+        { toDate: { lt: today } },
+      ],
+    },
+    data: { status: "expired" },
+  });
+
+  // A13: vacation swaps carry no dates at all — without a bound they'd sit
+  // open forever. Auto-expire at createdAt + 60 days.
+  const sixtyDaysAgo = new Date(Date.now() - 60 * 86400_000);
+  const result3 = await prisma.swap.updateMany({
+    where: {
+      status: { in: ["open", "pending"] },
+      date: null,
+      fromDate: null,
+      toDate: null,
+      createdAt: { lt: sixtyDaysAgo },
     },
     data: { status: "expired" },
   });
@@ -72,7 +92,7 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return ok({ expired: result.count + result2.count, proposalsDeclined: orphanedProposals.length });
+  return ok({ expired: result.count + result2.count + result3.count, proposalsDeclined: orphanedProposals.length });
   } catch (e) {
     return err(`Cron failed: ${e instanceof Error ? e.message : "unknown error"}`, 500);
   }

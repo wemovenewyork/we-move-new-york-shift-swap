@@ -7,6 +7,7 @@ import { ok, err } from "@/lib/apiResponse";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { parseBody, BODY_1KB } from "@/lib/parseBody";
 import { escapeHtml } from "@/lib/escapeHtml";
+import { getAppUrl } from "@/lib/appUrl";
 
 // POST /api/auth/forgot-password
 // Accepts { email } — sends reset link if account exists. Always returns 200 to prevent enumeration.
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     if (user) {
       const token = signResetToken(user.id);
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+      const appUrl = getAppUrl();
       if (!appUrl) throw new Error("NEXT_PUBLIC_APP_URL is not set");
       const resetLink = `${appUrl}/reset-password/${token}`;
 
