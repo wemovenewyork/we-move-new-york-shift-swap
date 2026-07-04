@@ -5,6 +5,19 @@ Fix these in order. HIGH items are launch-blockers.
 
 ---
 
+## Status — verified 2026-07-03
+
+- **HIGH (H1–H5):** all landed in production. Verified in code.
+- **MEDIUM:** all code items complete.
+  - M1 solved via Redis force-logout (`middleware.ts` read side + `logout-all` write side) instead of the `tokenVersion` approach below — no per-request DB hit.
+  - M2 date re-validation present in the swap `PUT` handler.
+  - M3 crons rescheduled (`expire-swaps` at `0 5 * * *`).
+  - M5 `RUNBOOK.md` exists. M6 Sentry rate-limit alert live. M7 export rate-limited (3/hr). M8 `form-action 'self'` in CSP. M9 GA/GTM disclosed in the Privacy Policy.
+  - **M10 admin report alert — implemented this session** (`app/api/swaps/[id]/report/route.ts` emails `ADMIN_ALERT_EMAIL`, non-fatal, Sentry on failure).
+  - M4 (Neon preview branch) and M11 (optional `hideName`) remain — M4 is infra-only; M11 is an optional feature.
+
+---
+
 ## HIGH PRIORITY — Fix before launch
 
 ### H1 · Agreement race condition → unhandled 500
