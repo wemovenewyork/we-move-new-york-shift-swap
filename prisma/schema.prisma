@@ -201,6 +201,8 @@ model Review {
   reviewer User @relation("ReviewsGiven", fields: [reviewerId], references: [id])
   reviewed User @relation("ReviewsReceived", fields: [reviewedId], references: [id])
 
+  // One review per user per swap (trust v2)
+  @@unique([swapId, reviewerId])
   @@map("reviews")
 }
 
@@ -229,6 +231,11 @@ model SwapAgreement {
   userAAt     DateTime?       @map("user_a_at")
   userBAt     DateTime?       @map("user_b_at")
   completedAt DateTime?       @map("completed_at")
+  // Trust v2 fields
+  acceptedAt    DateTime? @map("accepted_at")
+  userAHappened Boolean?  @map("user_a_happened") // post-shift answers
+  userBHappened Boolean?  @map("user_b_happened")
+  shiftDate     DateTime? @map("shift_date") @db.Date // denormalized from swap at accept time
   createdAt   DateTime        @default(now()) @map("created_at")
   updatedAt   DateTime        @updatedAt @map("updated_at")
 
@@ -236,11 +243,18 @@ model SwapAgreement {
   userA User @relation("AgreementUserA", fields: [userAId], references: [id])
   userB User @relation("AgreementUserB", fields: [userBId], references: [id])
 
-  // Raw SQL partial unique index — NOT representable in Prisma DSL.
-  // Defined in migration 20260414_agreement_unique_active:
-  //   CREATE UNIQUE INDEX "swap_agreements_swap_id_active_key"
-  //   ON "swap_agreements" ("swap_id") WHERE status IN ('pending', 'userA_confirmed')
-  // DO NOT drop this index — it prevents race-condition duplicate agreements.
+  // Raw SQL partial unique indexes — NOT representable in Prisma DSL.
+  // Defined in migration 20260704_trust_v2 (replacing the pre-trust-v2
+  // swap_agreements_swap_id_active_key from 20260414_agreement_unique_active):
+  //   CREATE UNIQUE INDEX "swap_agreements_swap_id_accepted_key"
+  //   ON "swap_agreements" ("swap_id") WHERE status IN ('accepted', 'userA_confirmed')
+  //   CREATE UNIQUE INDEX "swap_agreements_swap_user_pending_key"
+  //   ON "swap_agreements" ("swap_id", "user_a_id") WHERE status = 'pending'
+  // DO NOT drop these — the first allows only one accepted agreement per swap
+  // (userA_confirmed kept in the predicate so legacy in-flight rows can't be
+  // double-accepted); the second blocks duplicate proposals from the same user.
+  // Multiple pending proposals per swap from DIFFERENT users are intentional.
+  @@index([status, shiftDate])
   @@map("swap_agreements")
 }
 
@@ -286,10 +300,13 @@ enum UserRole {
 }
 
 enum AgreementStatus {
-  pending
-  userA_confirmed
-  completed
+  pending // proposal awaiting owner (trust v2: does NOT lock the swap)
+  userA_confirmed // legacy — keep for old rows, never write new
+  accepted // owner accepted; swap locked
+  completed // both parties confirmed post-shift that the swap happened
   cancelled
+  declined // owner said no; no reputation effect
+  disputed // parties disagree post-shift; admin resolves
 }
 
 model Block {
