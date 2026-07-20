@@ -6,6 +6,20 @@ import { truncBucket, generateBuckets, timed } from "../lib/metrics";
 const DB = !!process.env.DATABASE_URL;
 process.env.JWT_SECRET ??= "metrics-test-secret";
 
+// ⚠️  This file MUST run isolated from the other DB-backed test files.
+//
+// buildMetrics() aggregates across the WHOLE database for a time range — it is
+// an admin dashboard, so there is no tag/depot to scope it to. Every other test
+// file seeds rows in the same window and cleans up in `finally`, so while they
+// are mid-flight their agreements are visible here and skew the aggregates.
+// Observed failure: an in-flight agreement with ~0h fill latency dragged
+// `hoursToFill.median` from the expected 2h down to 1.0h.
+//
+// `npm test` therefore runs `test:concurrent` (every other file, in parallel)
+// and only then `test:isolated` (this file, alone). Do not fold this file back
+// into the concurrent list — the failure is intermittent and will read as a
+// product regression in reputation/marketplace metrics.
+
 // ── bucket math (pure) ──────────────────────────────────────────────────────
 
 test("truncBucket: day = UTC midnight, week = Monday", () => {
