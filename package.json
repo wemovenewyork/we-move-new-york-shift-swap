@@ -8,7 +8,7 @@
     "vercel-build": "prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --import tsx --test test/nyDate.test.ts test/agreementGuard.test.ts test/trustV2.test.ts test/notificationPrefs.test.ts test/auditSmalls.test.ts test/growth.test.ts test/metrics.test.ts",
+    "test": "node --import tsx --test test/clientIp.test.ts test/nyDate.test.ts test/agreementGuard.test.ts test/trustV2.test.ts test/notificationPrefs.test.ts test/auditSmalls.test.ts test/growth.test.ts test/metrics.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
