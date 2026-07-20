@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { signResetToken } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { ok, err } from "@/lib/apiResponse";
-import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { rateLimitByIp, clientIp } from "@/lib/rateLimit";
 import { parseBody, BODY_1KB } from "@/lib/parseBody";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { getAppUrl } from "@/lib/appUrl";
@@ -13,7 +13,7 @@ import { getAppUrl } from "@/lib/appUrl";
 // Accepts { email } — sends reset link if account exists. Always returns 200 to prevent enumeration.
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
-  if (!await rateLimit(`forgot:${ip}`, 5, 15 * 60 * 1000)) {
+  if (!await rateLimitByIp(ip, "forgot", 5, 15 * 60 * 1000)) {
     Sentry.captureEvent({ message: "Forgot-password rate limit hit", level: "warning", tags: { ip } });
     return err("Too many attempts — try again in 15 minutes", 429);
   }

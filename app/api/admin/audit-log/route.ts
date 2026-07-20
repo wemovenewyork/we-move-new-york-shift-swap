@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     action: "audit_log_export",
     targetType: "audit_log",
     detail: `Exported ${logs.length} audit log entries`,
-    ip: clientIp(req),
+    ip: clientIp(req) ?? undefined,
   });
 
   return ok(logs);

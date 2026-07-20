@@ -4,7 +4,7 @@ import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { signAccessToken, signRefreshToken } from "@/lib/auth";
 import { err } from "@/lib/apiResponse";
-import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { rateLimitByIp, clientIp } from "@/lib/rateLimit";
 import { parseBody, BODY_1KB } from "@/lib/parseBody";
 import { writeAuditLog } from "@/lib/audit";
 import { isDepotInSoftLaunch } from "@/lib/softLaunch";
@@ -15,7 +15,7 @@ const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
 export async function POST(req: NextRequest) {
   try {
     const ip = clientIp(req);
-    if (!await rateLimit(`login:${ip}`, 10, 60_000)) {
+    if (!await rateLimitByIp(ip, "login", 10, 60_000)) {
       Sentry.captureEvent({
         message: "Login rate limit hit",
         level: "warning",
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         targetId: user.id,
         targetType: "user",
         detail: `Failed login attempt (${attempts}/${MAX_ATTEMPTS})${locked ? " — account locked" : ""}`,
-        ip,
+        ip: ip ?? undefined,
       });
       if (locked) {
         Sentry.captureEvent({
