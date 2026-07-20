@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { ok, err } from "@/lib/apiResponse";
-import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { rateLimitByIp, clientIp } from "@/lib/rateLimit";
 import { sendEmail } from "@/lib/email";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { getAppUrl } from "@/lib/appUrl";
@@ -12,7 +12,7 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> }
 ) {
   const ip = clientIp(req);
-  if (!await rateLimit(`verify-email:${ip}`, 5, 15 * 60 * 1000)) {
+  if (!await rateLimitByIp(ip, "verify-email", 5, 15 * 60 * 1000)) {
     Sentry.captureEvent({ message: "Verify-email rate limit hit", level: "warning", tags: { ip } });
     return err("Too many attempts — try again in 15 minutes", 429);
   }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser, checkActive } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { rateLimit } from "@/lib/rateLimit";
+import { rateLimit, rateLimitByIp, clientIp } from "@/lib/rateLimit";
 import { ok, err } from "@/lib/apiResponse";
 import { SwapCategory, SwapStatus } from "@prisma/client";
 import { calcScore } from "@/lib/reputation";
@@ -130,8 +130,8 @@ export async function POST(req: NextRequest) {
   let user;
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
-  const postIp = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!await rateLimit(`post:ip:${postIp}`, 30, 3_600_000)) return err("Rate limit exceeded — too many posts from this network", 429);
+  const ip = clientIp(req);
+  if (!await rateLimitByIp(ip, "post:ip", 30, 3_600_000)) return err("Rate limit exceeded — too many posts from this network", 429);
   if (!await rateLimit(`post:${user.userId}`, 5, 3_600_000)) return err("Rate limit: max 5 posts per hour", 429);
   if (!await rateLimit(`post30s:${user.userId}`, 2, 30_000)) return err("Please wait 30 seconds between posts", 429);
 

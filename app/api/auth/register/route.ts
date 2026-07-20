@@ -5,7 +5,7 @@ import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { genInviteCode } from "@/lib/inviteCode";
 import { err } from "@/lib/apiResponse";
-import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { rateLimitByIp, clientIp } from "@/lib/rateLimit";
 import { parseBody, BODY_4KB } from "@/lib/parseBody";
 import { sendEmail } from "@/lib/email";
 import { escapeHtml } from "@/lib/escapeHtml";
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   }
 
   const ip = clientIp(req);
-  if (!await rateLimit(`register:${ip}`, 5, 3_600_000)) {
+  if (!await rateLimitByIp(ip, "register", 5, 3_600_000)) {
     Sentry.captureEvent({ message: "Register rate limit hit", level: "warning", tags: { ip } });
     return err("Too many registration attempts — try again in an hour", 429);
   }

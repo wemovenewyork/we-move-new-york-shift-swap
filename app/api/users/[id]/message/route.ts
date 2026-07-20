@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser, checkActive } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { rateLimit, rateLimitByIp, clientIp } from "@/lib/rateLimit";
 import { parseBody, BODY_2KB } from "@/lib/parseBody";
 import { ok, err } from "@/lib/apiResponse";
 import { notifyUser } from "@/lib/notifyUser";
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try { user = requireUser(req); } catch { return err("Unauthorized", 401); }
 
   const ip = clientIp(req);
-  if (!await rateLimit(`dm:ip:${ip}`, 60, 3_600_000)) return err("Rate limit exceeded — too many messages from this network", 429);
+  if (!await rateLimitByIp(ip, "dm:ip", 60, 3_600_000)) return err("Rate limit exceeded — too many messages from this network", 429);
   if (!await rateLimit(`dm:${user.userId}`, 10, 3_600_000)) return err("Rate limit: max 10 direct messages per hour", 429);
 
   const { id: toUserId } = await params;

@@ -4,7 +4,7 @@ import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { verifyResetToken } from "@/lib/auth";
 import { ok, err } from "@/lib/apiResponse";
-import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { rateLimitByIp, clientIp } from "@/lib/rateLimit";
 import { parseBody, BODY_2KB } from "@/lib/parseBody";
 import { consumeResetToken, isResetTokenUsed } from "@/lib/resetTokenBlocklist";
 import { blockUserAccessTokens } from "@/lib/tokenBlocklist";
@@ -14,7 +14,7 @@ import jwt from "jsonwebtoken";
 // Accepts { token, newPassword } — verifies JWT, updates password
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
-  if (!await rateLimit(`reset-password:${ip}`, 5, 15 * 60 * 1000)) {
+  if (!await rateLimitByIp(ip, "reset-password", 5, 15 * 60 * 1000)) {
     Sentry.captureEvent({ message: "Reset-password rate limit hit", level: "warning", tags: { ip } });
     return err("Too many attempts — try again in 15 minutes", 429);
   }
