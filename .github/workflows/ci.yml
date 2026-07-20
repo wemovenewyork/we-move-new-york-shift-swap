@@ -72,7 +72,19 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npx prisma generate
+      # db push + partial-indexes.sql, NOT migrate deploy.
+      #
+      # migrate deploy cannot build this database from scratch: Prisma orders
+      # migrations by numeric prefix, so the hand-named 8-digit dirs sort ahead
+      # of the 14-digit baseline (20260401214939_init) and the first one applied
+      # ALTERs a users table that does not exist yet. Production and preview are
+      # unaffected — they were built incrementally — but a bare DB fails.
+      #
+      # db push builds the full schema, then partial-indexes.sql adds the two
+      # partial unique indexes db push cannot express. Without them the conflict
+      # tests return 201 instead of 409. See prisma/partial-indexes.sql.
       - run: npx prisma db push --accept-data-loss
+      - run: npx prisma db execute --file prisma/partial-indexes.sql
 
       - name: Run tests
         run: |
@@ -85,12 +97,16 @@ jobs:
       #
       # One skip IS expected and must not fail the job: "A12 (grace window,
       # Redis required)" gates on Redis, which CI has no service for.
+      #
+      # Match both output formats. node --test emits spec ("✔ name", "ℹ pass N")
+      # on a TTY but TAP ("ok 12 - name", "# pass N") when piped, which is what
+      # Actions gets. A spec-only pattern silently never matches here.
       - name: Verify DB-backed tests actually ran
         run: |
-          if ! grep -qE '^✔ conflict paths' test-output.txt; then
+          if ! grep -qE '^(✔|ok [0-9]+ -).*conflict paths' test-output.txt; then
             echo "::error::DB-backed tests did not run — DATABASE_URL is not reaching the suite"
-            grep -E '^ℹ (tests|pass|fail|skipped)' test-output.txt || true
+            grep -E '^(ℹ|#) (tests|pass|fail|skipped)' test-output.txt || true
             exit 1
           fi
           echo "DB-backed tests confirmed running:"
-          grep -E '^ℹ (tests|pass|fail|skipped)' test-output.txt
+          grep -E '^(ℹ|#) (tests|pass|fail|skipped)' test-output.txt
