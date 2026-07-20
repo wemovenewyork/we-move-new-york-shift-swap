@@ -14,6 +14,40 @@ function getRedis(): Redis | null {
   return redis;
 }
 
+export type RedisHealth =
+  | { state: "ok"; latencyMs: number }
+  | { state: "not_configured" }
+  | { state: "unreachable"; latencyMs: number };
+
+/**
+ * Liveness probe for the Redis dependency, for /api/health.
+ *
+ * Distinguishes "not configured" (dev, and any deploy without Upstash env set)
+ * from "configured but unreachable" (a real outage). Callers decide the HTTP
+ * consequence — this only reports.
+ */
+// A dead Upstash host takes ~4.3s to surface a connection error, which would
+// stall every /api/health call for that long. Bound it: past this, the answer
+// is "unreachable" regardless of what the socket eventually says.
+const HEALTH_PING_TIMEOUT_MS = 2_000;
+
+export async function redisHealth(): Promise<RedisHealth> {
+  const store = getRedis();
+  if (!store) return { state: "not_configured" };
+  const started = Date.now();
+  try {
+    await Promise.race([
+      store.ping(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("health ping timeout")), HEALTH_PING_TIMEOUT_MS).unref(),
+      ),
+    ]);
+    return { state: "ok", latencyMs: Date.now() - started };
+  } catch {
+    return { state: "unreachable", latencyMs: Date.now() - started };
+  }
+}
+
 /**
  * Returns true if the request is allowed, false if rate limited.
  * @param key      Unique key (e.g. "login:1.2.3.4")
