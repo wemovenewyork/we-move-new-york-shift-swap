@@ -2,6 +2,18 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { calcScore } from "../lib/reputation";
+import { nyToday } from "../lib/nyDate";
+
+// Shift-date fixtures must be anchored to the NY calendar date, not NOW().
+// shift_date is a DATE column, so NOW() casts through the session timezone
+// (UTC on Neon) while the server gate compares against nyToday() — the NY
+// calendar date at midnight UTC. Between 20:00 EDT and midnight EDT those
+// disagree by a day, so a NOW()-relative offset no longer clears the gate
+// and every post-shift test fails. Anchoring to nyToday() makes the fixtures
+// hour-of-day independent, which also keeps CI green after 00:00 UTC.
+function nyDateMinus(days: number): string {
+  return new Date(nyToday().getTime() - days * 86400_000).toISOString().slice(0, 10);
+}
 
 // Route-handler tests run against a real Postgres (the Neon preview branch)
 // via DATABASE_URL, calling the actual Next.js route handlers with minted
@@ -212,7 +224,7 @@ test("scenario 4: both confirm post-shift → both +1 completed; one review each
     );
 
     // Shift must be past before post-shift answers are accepted (server gate)
-    await ctx.prisma.$executeRaw`UPDATE "swap_agreements" SET "shift_date" = NOW() - INTERVAL '1 day' WHERE "id" = ${proposal.id}`;
+    await ctx.prisma.$executeRaw`UPDATE "swap_agreements" SET "shift_date" = ${nyDateMinus(1)}::date WHERE "id" = ${proposal.id}`;
 
     const r1 = await ctx.agreementRoute.PATCH(
       ctx.makeReq(u.id, u.email, { method: "PATCH", body: { action: "confirm_happened", agreementId: proposal.id } }),
@@ -254,7 +266,7 @@ test("scenario 5 (conservative): yes-answer + 7d silence → completed, responde
     );
     // Backdate the shift 8 days (opens the answer gate AND the cron's 7-day
     // finalize window), then the proposer answers "it happened"; owner silent.
-    await ctx.prisma.$executeRaw`UPDATE "swap_agreements" SET "shift_date" = NOW() - INTERVAL '8 days' WHERE "id" = ${proposal.id}`;
+    await ctx.prisma.$executeRaw`UPDATE "swap_agreements" SET "shift_date" = ${nyDateMinus(8)}::date WHERE "id" = ${proposal.id}`;
     await ctx.agreementRoute.PATCH(
       ctx.makeReq(u.id, u.email, { method: "PATCH", body: { action: "confirm_happened", agreementId: proposal.id } }),
       ctx.params(s.swapId),
@@ -288,7 +300,7 @@ test("locked decision: both silent 7 days → completed-unverified, zero reputat
       ctx.makeReq(s.owner.id, s.owner.email, { method: "PATCH", body: { action: "accept", agreementId: proposal.id } }),
       ctx.params(s.swapId),
     );
-    await ctx.prisma.$executeRaw`UPDATE "swap_agreements" SET "shift_date" = NOW() - INTERVAL '8 days' WHERE "id" = ${proposal.id}`;
+    await ctx.prisma.$executeRaw`UPDATE "swap_agreements" SET "shift_date" = ${nyDateMinus(8)}::date WHERE "id" = ${proposal.id}`;
 
     const { NextRequest } = await import("next/server");
     await ctx.followupsCron.GET(
@@ -336,7 +348,7 @@ test("conflict paths: decline-after-accept 409; double answer 409; duplicate pro
     assert.equal(reopen.status, 409);
 
     // Double post-shift answer by the same user → 409
-    await ctx.prisma.$executeRaw`UPDATE "swap_agreements" SET "shift_date" = NOW() - INTERVAL '1 day' WHERE "id" = ${p1.id}`;
+    await ctx.prisma.$executeRaw`UPDATE "swap_agreements" SET "shift_date" = ${nyDateMinus(1)}::date WHERE "id" = ${p1.id}`;
     await ctx.agreementRoute.PATCH(
       ctx.makeReq(u1.id, u1.email, { method: "PATCH", body: { action: "confirm_happened", agreementId: p1.id } }),
       ctx.params(s.swapId),
@@ -361,7 +373,7 @@ test("disputed: split answers → disputed status, no reputation writes", { skip
       ctx.params(s.swapId),
     );
     // Shift must be past before post-shift answers are accepted (server gate)
-    await ctx.prisma.$executeRaw`UPDATE "swap_agreements" SET "shift_date" = NOW() - INTERVAL '1 day' WHERE "id" = ${proposal.id}`;
+    await ctx.prisma.$executeRaw`UPDATE "swap_agreements" SET "shift_date" = ${nyDateMinus(1)}::date WHERE "id" = ${proposal.id}`;
     await ctx.agreementRoute.PATCH(
       ctx.makeReq(u.id, u.email, { method: "PATCH", body: { action: "confirm_happened", agreementId: proposal.id } }),
       ctx.params(s.swapId),
@@ -416,7 +428,7 @@ test("conservative finalize: noshow-report + 7d silence → cancelled, silent pa
       ctx.makeReq(s.owner.id, s.owner.email, { method: "PATCH", body: { action: "accept", agreementId: proposal.id } }),
       ctx.params(s.swapId),
     );
-    await ctx.prisma.$executeRaw`UPDATE "swap_agreements" SET "shift_date" = NOW() - INTERVAL '8 days' WHERE "id" = ${proposal.id}`;
+    await ctx.prisma.$executeRaw`UPDATE "swap_agreements" SET "shift_date" = ${nyDateMinus(8)}::date WHERE "id" = ${proposal.id}`;
     // Proposer explicitly reports a no-show; owner stays silent 7+ days.
     await ctx.agreementRoute.PATCH(
       ctx.makeReq(u.id, u.email, { method: "PATCH", body: { action: "report_noshow", agreementId: proposal.id } }),
