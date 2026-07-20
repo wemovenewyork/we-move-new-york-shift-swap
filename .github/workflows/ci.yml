@@ -33,3 +33,80 @@ jobs:
           CRON_SECRET: placeholder
           UPSTASH_REDIS_REST_URL: https://placeholder.upstash.io
           UPSTASH_REDIS_REST_TOKEN: placeholder
+
+  test:
+    runs-on: ubuntu-latest
+
+    # Throwaway Postgres per run. The DB-backed tests self-gate on
+    # DATABASE_URL (`{ skip: !DB }`), so without a database they silently skip
+    # and the job would go green having verified almost nothing. A service
+    # container keeps them running on every PR with no shared-infra risk and no
+    # secret to manage.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: shiftswap_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/shiftswap_test
+      JWT_SECRET: ci-test-secret-do-not-use-in-prod
+      JWT_REFRESH_SECRET: ci-test-refresh-secret-do-not-use-in-prod
+      JWT_RESET_SECRET: ci-test-reset-secret-do-not-use-in-prod
+      CRON_SECRET: ci-test-cron-secret
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx prisma generate
+      # db push + partial-indexes.sql, NOT migrate deploy.
+      #
+      # migrate deploy cannot build this database from scratch: Prisma orders
+      # migrations by numeric prefix, so the hand-named 8-digit dirs sort ahead
+      # of the 14-digit baseline (20260401214939_init) and the first one applied
+      # ALTERs a users table that does not exist yet. Production and preview are
+      # unaffected — they were built incrementally — but a bare DB fails.
+      #
+      # db push builds the full schema, then partial-indexes.sql adds the two
+      # partial unique indexes db push cannot express. Without them the conflict
+      # tests return 201 instead of 409. See prisma/partial-indexes.sql.
+      - run: npx prisma db push --accept-data-loss
+      - run: npx prisma db execute --file prisma/partial-indexes.sql
+
+      - name: Run tests
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee test-output.txt
+
+      # Canary: a green run with DATABASE_URL unset is indistinguishable from a
+      # real pass, because the DB tests self-gate via `{ skip: !DB }`. Assert
+      # that a specific DB-backed test actually executed.
+      #
+      # One skip IS expected and must not fail the job: "A12 (grace window,
+      # Redis required)" gates on Redis, which CI has no service for.
+      #
+      # Match both output formats. node --test emits spec ("✔ name", "ℹ pass N")
+      # on a TTY but TAP ("ok 12 - name", "# pass N") when piped, which is what
+      # Actions gets. A spec-only pattern silently never matches here.
+      - name: Verify DB-backed tests actually ran
+        run: |
+          if ! grep -qE '^(✔|ok [0-9]+ -).*conflict paths' test-output.txt; then
+            echo "::error::DB-backed tests did not run — DATABASE_URL is not reaching the suite"
+            grep -E '^(ℹ|#) (tests|pass|fail|skipped)' test-output.txt || true
+            exit 1
+          fi
+          echo "DB-backed tests confirmed running:"
+          grep -E '^(ℹ|#) (tests|pass|fail|skipped)' test-output.txt
